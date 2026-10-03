@@ -1,0 +1,549 @@
+<!doctype html><html lang="ja"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>よぴぴっぴのゲーム棚</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* Layout: night arcade shelf — logo bar, featured newest game, category chips, cartridge-like cards in a dense grid */
+:root{
+  --bg:#12152a;
+  --bg-2:#1a1e38;
+  --card:#20254a;
+  --line:#2f3566;
+  --fg:#f4f1ff;
+  --dim:#9aa0cc;
+  --accent:#ffd23f;
+  --accent-ink:#2a1d00;
+  --act:#ff7a6b;
+  --puz:#5fd4e8;
+  --tbl:#b6e36a;
+  --display:"Dela Gothic One","Hiragino Sans","Noto Sans JP",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+  color-scheme:dark;
+}
+html,body{min-height:100%}
+body{
+  background:var(--bg);color:var(--fg);font-family:var(--body);
+  background-image:radial-gradient(var(--bg-2) 1.2px,transparent 1.2px);
+  background-size:18px 18px;
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:14px 40px;display:flex;flex-direction:column;gap:18px}
+
+header{display:flex;align-items:center;gap:12px}
+.logo{font-family:var(--display);font-size:clamp(24px,7vw,34px);line-height:1;letter-spacing:.02em;margin:0}
+.logo small{display:block;font-size:.42em;letter-spacing:.08em;color:var(--dim);margin-bottom:4px}
+.logo b{color:var(--accent);font-weight:400}
+.count{font-family:var(--display);font-size:13px;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:4px 10px;font-variant-numeric:tabular-nums}
+.chip:focus-visible,.card:focus-visible,.hero:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* featured */
+.hero{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:16px;align-items:center;
+  background:linear-gradient(135deg,var(--card),var(--bg-2));border:1px solid var(--line);border-radius:20px;padding:12px;
+  color:inherit;text-decoration:none;transition:transform .12s ease}
+.hero img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:12px;display:block;background:var(--bg)}
+.hero .txt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.hero .new{align-self:flex-start;font-family:var(--display);font-size:12px;letter-spacing:.12em;color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:3px 8px}
+.hero h2{font-family:var(--display);font-weight:400;font-size:clamp(22px,6.4vw,36px);line-height:1.2;margin:0;text-wrap:balance}
+.hero p{margin:0;color:var(--dim);font-size:14px;line-height:1.7}
+.play{align-self:flex-start;font-family:var(--display);font-size:16px;letter-spacing:.06em;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:10px 22px;box-shadow:0 4px 0 #b8901a}
+.hero:active{transform:scale(.985)}
+
+/* chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:700 14px var(--body);color:var(--fg);background:var(--bg-2);border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .15s,color .15s}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--c,var(--accent))}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.sort{display:flex;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.sort button{font:700 13px var(--body);color:var(--dim);background:none;border:0;border-radius:999px;padding:6px 12px;cursor:pointer;transition:background .15s,color .15s}
+.sort button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.sort button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));grid-auto-flow:dense;gap:14px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:7px 7px 11px;
+  color:inherit;text-decoration:none;transition:transform .12s ease,border-color .12s ease;min-width:0}
+.card img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:10px;display:block;background:var(--bg)}
+.card.wide{grid-column:span 2}
+.card.wide img{aspect-ratio:16/9}
+.card .shot{position:relative}
+.card .plays{position:absolute;right:6px;bottom:6px;display:flex;align-items:center;gap:4px;font:700 12px var(--body);font-variant-numeric:tabular-nums;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:2px 8px}
+.card .plays svg{width:14px;height:14px;fill:currentColor}
+.card .name{font-weight:700;font-size:15px;line-height:1.35;display:flex;align-items:baseline;gap:7px;padding-inline:4px}
+.card .name i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--c);transform:translateY(-1px)}
+.card .tag{font-size:12px;line-height:1.55;color:var(--dim);padding-inline:4px}
+.card:active{transform:scale(.97)}
+@media (hover:hover){.card:hover,.hero:hover{transform:translateY(-3px);border-color:var(--accent)}}
+.cat-act{--c:var(--act)} .cat-puz{--c:var(--puz)} .cat-tbl{--c:var(--tbl)}
+
+@media (min-width:640px){.hero{grid-template-columns:240px minmax(0,1fr);padding:16px;gap:24px}.hero p{font-size:15px}}
+@media (prefers-reduced-motion:reduce){.card,.hero,.chip{transition:none}}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;
+  background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:4px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.tabs button{font:400 14px var(--display);letter-spacing:.02em;white-space:nowrap;color:var(--dim);background:none;border:0;border-radius:10px;padding:10px 4px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,color .15s}
+.tabs button svg{width:16px;height:16px;fill:currentColor;flex:none}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{display:flex;flex-direction:column;gap:18px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sec-h h2{font:400 20px var(--display);margin:0;letter-spacing:.02em}
+.sec-h p{margin:0;color:var(--dim);font-size:13px}
+.lead{margin:0;color:var(--dim);font-size:14px;line-height:1.75;max-width:62ch}
+
+/* reading cards */
+.reads{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.read{display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 14px 13px;
+  color:inherit;text-decoration:none;min-width:0;transition:transform .12s ease,border-color .12s ease}
+.read .k{align-self:flex-start;font:700 11px var(--body);letter-spacing:.12em;border-radius:6px;padding:2px 7px;background:var(--bg);border:1px solid var(--line);color:var(--dim)}
+.read .k.cap{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+.read b{font-size:16px;line-height:1.4}
+.read span.d{font-size:13px;line-height:1.65;color:var(--dim)}
+.read:active{transform:scale(.98)}
+@media (hover:hover){.read:hover{transform:translateY(-2px);border-color:var(--accent)}}
+.read:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* guide list */
+.glist{display:flex;flex-direction:column;gap:10px}
+.gd{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.gd[open]{border-color:color-mix(in srgb,var(--c) 55%,var(--line))}
+.gd summary{list-style:none;display:grid;grid-template-columns:52px minmax(0,1fr) 20px;gap:12px;align-items:center;padding:9px 12px 9px 9px;cursor:pointer}
+.gd summary::-webkit-details-marker{display:none}
+.gd summary:focus-visible{outline:3px solid var(--accent);outline-offset:-3px;border-radius:14px}
+.th{width:52px;height:52px;border-radius:9px;object-fit:cover;object-position:top;background:var(--bg);display:block}
+.gd .t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gd .t b{font-size:15px;line-height:1.35;display:flex;align-items:baseline;gap:7px}
+.gd .t b i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--c)}
+.gd .t span{font-size:12px;color:var(--dim);line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gd .chev{width:20px;height:20px;fill:var(--dim);transition:transform .2s ease}
+.gd[open] .chev{transform:rotate(180deg)}
+.gb{padding:2px 16px 16px;display:flex;flex-direction:column;gap:14px;font-size:14px;line-height:1.75}
+.gb h3{margin:0 0 4px;font:700 12px var(--body);letter-spacing:.14em;color:var(--c)}
+.gb p{margin:0}
+.gb ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.gb ul li::marker{color:var(--c)}
+.gb .acts{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:700 13px var(--body);display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:8px 14px;text-decoration:none;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg-2);color:var(--fg)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn svg{width:14px;height:14px;fill:currentColor}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* bgm */
+.bgm-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.tracks{display:flex;flex-direction:column;gap:8px;list-style:none;margin:0;padding:0}
+.trk{position:relative;display:grid;grid-template-columns:24px 48px minmax(0,1fr) auto 42px;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:8px 10px;overflow:hidden}
+.trk .no{font:400 13px var(--display);color:var(--dim);text-align:center;font-variant-numeric:tabular-nums}
+.trk .th{width:48px;height:48px}
+.trk .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.trk .t b{font-size:15px;line-height:1.35}
+.trk .t span{font-size:12px;color:var(--dim);line-height:1.5}
+.trk .t small{font-size:11.5px;color:var(--dim);opacity:.85;line-height:1.5}
+.trk .len{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.pp{width:42px;height:42px;border-radius:50%;border:0;background:var(--bg-2);color:var(--fg);display:grid;place-items:center;cursor:pointer;box-shadow:inset 0 0 0 1px var(--line)}
+.pp svg{width:18px;height:18px;fill:currentColor}
+.pp:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.trk.on{border-color:var(--accent)}
+.trk.on .pp{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+.trk.on .no{color:var(--accent)}
+.trk .bar{position:absolute;left:0;bottom:0;height:3px;width:0;background:var(--accent)}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:12px;margin-left:6px}
+.eq i{width:3px;background:var(--accent);border-radius:1px;animation:eq .9s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}
+.eq[hidden]{display:none}
+.th.w{object-position:center}
+@keyframes eq{0%,100%{height:3px}50%{height:12px}}
+.paused .eq i{animation-play-state:paused}
+
+.player{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+  background:color-mix(in srgb,var(--bg-2) 94%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.player .in{max-width:980px;margin:0 auto;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center}
+.player .th{width:44px;height:44px}
+.player .t{display:flex;flex-direction:column;gap:4px;min-width:0}
+.player .t b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player .row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.player input[type=range]{flex:1;min-width:0;accent-color:var(--accent);height:16px}
+.player .ctl{display:flex;gap:4px;align-items:center}
+.player .ctl button{width:38px;height:38px;border:0;border-radius:50%;background:none;color:var(--fg);display:grid;place-items:center;cursor:pointer}
+.player .ctl button.main{background:var(--accent);color:var(--accent-ink);width:44px;height:44px}
+.player .ctl svg{width:18px;height:18px;fill:currentColor}
+.player .ctl button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+body.has-player .wrap{padding-bottom:110px}
+@media (max-width:420px){.trk{grid-template-columns:44px minmax(0,1fr) 42px}.trk .no,.trk .len{display:none}.trk .th{width:44px;height:44px}}
+@media (prefers-reduced-motion:reduce){.eq i{animation:none;height:8px}.read,.gd .chev{transition:none}}
+
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 class="logo"><small>よぴぴっぴの</small>ゲーム<b>棚</b></h1>
+    <span class="count" id="count"></span>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="ページ">
+    <button type="button" role="tab" id="tab-games" aria-controls="p-games" data-t="games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10a5 5 0 0 1 0 10c-1.5 0-2.4-.8-3.2-1.6-.5-.5-1-.9-1.8-.9s-1.3.4-1.8.9C9.4 16.2 8.5 17 7 17A5 5 0 0 1 7 7zm1 3v1.5H6.5v1.5H8v1.5h1.5V13H11v-1.5H9.5V10H8zm7.5.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm2 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/></svg>ゲーム</button>
+    <button type="button" role="tab" id="tab-guide" aria-controls="p-guide" data-t="guide"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h6a3 3 0 0 1 1 .2A3 3 0 0 1 13 4h6v14h-6a2 2 0 0 0-1 .3 2 2 0 0 0-1-.3H5V4zm2 2v10h4c.4 0 .7 0 1 .1V7a1 1 0 0 0-1-1H7zm6 1v9.1c.3-.1.6-.1 1-.1h3V6h-3a1 1 0 0 0-1 1zM4 19h7a1 1 0 0 1 2 0h7v1h-7.5a1 1 0 0 1-1 0H4v-1z"/></svg>解説・攻略</button>
+    <button type="button" role="tab" id="tab-bgm" aria-controls="p-bgm" data-t="bgm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3v12.5a3.5 3.5 0 1 1-2-3.2V7.2l-8 1.6v8.7a3.5 3.5 0 1 1-2-3.2V5.4L19 3z"/></svg>BGM</button>
+  </nav>
+
+  <section class="panel" id="p-games" role="tabpanel" aria-labelledby="tab-games">
+  <a class="hero" id="hero" ></a>
+
+  <div class="bar">
+    <nav class="chips" id="chips" aria-label="ジャンル"></nav>
+    <div class="sort" id="sort" role="group" aria-label="並び順">
+      <button type="button" id="sort-new" data-s="new">新着順</button>
+      <button type="button" id="sort-pop" data-s="pop">人気順</button>
+      <button type="button" id="sort-title" data-s="title">タイトル順</button>
+    </div>
+  </div>
+
+  <main class="grid" id="grid"></main>
+  </section>
+
+  <section class="panel" id="p-guide" role="tabpanel" aria-labelledby="tab-guide" hidden>
+    <div class="sec-h"><h2>読みもの</h2><p>攻略ページとしくみの解説</p></div>
+    <div class="reads" id="reads"></div>
+    <div class="sec-h"><h2>ゲーム別 攻略メモ</h2><p id="gcount"></p></div>
+    <nav class="chips" id="gchips" aria-label="攻略のジャンル"></nav>
+    <div class="glist" id="glist"></div>
+  </section>
+
+  <section class="panel" id="p-bgm" role="tabpanel" aria-labelledby="tab-bgm" hidden>
+    <div class="bgm-top">
+      <p class="lead">ゲームの中で流れている曲を、効果音を抜いて録音したもの。<span id="bcount"></span></p>
+      <button type="button" class="btn pri" id="playAll"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>全曲を続けて再生</button>
+    </div>
+    <ol class="tracks" id="tracks"></ol>
+  </section>
+</div>
+
+<div class="player" id="player" hidden>
+  <div class="in">
+    <img class="th" id="plImg" alt="">
+    <div class="t">
+      <b id="plName"></b>
+      <div class="row"><span id="plCur">0:00</span><input type="range" id="plSeek" min="0" max="100" step="0.1" value="0" aria-label="再生位置"><span id="plDur">0:00</span></div>
+    </div>
+    <div class="ctl">
+      <button type="button" id="plPrev" aria-label="前の曲"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button type="button" class="main" id="plPlay" aria-label="再生"><svg viewBox="0 0 24 24" id="plIco"><path d="M7 5l12 7-12 7z"/></svg></button>
+      <button type="button" id="plNext" aria-label="次の曲"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+    </div>
+  </div>
+</div>
+<audio id="au" preload="none"></audio>
+
+
+<script>
+// ---- game list: newest first. To add a game, add one line at the top. ----
+const GAMES = [
+  {id:"tekkotsu",   title:"鉄骨渡り",           cat:"act", url:"games/tekkotsu/", tag:"左右の足を交互に出して、高所の鉄骨を渡りきれ。"},
+  {id:"amida",      title:"あみだシャッフル",     cat:"tbl", url:"games/amida/", tag:"あみだの先のメダルの行き先を、早い者勝ちで当てる。"},
+  {id:"atsunabe",   title:"アツナベの達人",       cat:"act", url:"games/atsunabe/", tag:"3の倍数と3がつく数でタイコをたたき、アホになれ。"},
+  {id:"igo",        title:"師匠つき囲碁",         cat:"tbl", url:"games/igo/", tag:"超最強CPUの師匠がヒントをくれる囲碁。"},
+  {id:"chikuwa",    title:"ちくわ笛ジャンプ",     cat:"act", url:"games/chikuwa/", tag:"長押しで音が上がり、はなすとジャンプ。曲にのって進む。"},
+  {id:"kurofuku",   title:"黒服から逃げろ",       cat:"act", url:"games/kurofuku/", tag:"黒服をかわして四隅のカードを集め、中央へ届けろ。", wide:true},
+  {id:"bowling",    title:"ナイトレーン ボウリング", cat:"act", url:"games/bowling/", tag:"夜のレーンで遊ぶ3Dボウリング。ストライクを狙え。"},
+  {id:"golf",       title:"そよかぜゴルフ",       cat:"act", url:"games/golf/", tag:"方向とパワーを決めて打つ、3ホールの3Dゴルフ。"},
+  {id:"tango",      title:"単語さがし",           cat:"puz", url:"games/tango/", tag:"文字の盤から隠れた単語を探す。CPU対戦もあり。"},
+  {id:"pinball",    title:"ネオンピンボール",     cat:"act", url:"games/pinball/", tag:"画面の左右タッチでフリッパー。光るネオン台のピンボール。"},
+  {id:"dungeons10", title:"6ダンジョンズ",        cat:"puz", url:"games/dungeons10/", tag:"6x6のダンジョンで、地下6階を目指せ。"},
+  {id:"lvbattle",   title:"数字バトル",           cat:"puz", url:"games/lvbattle/", tag:"自分より弱い敵から倒して吸収し、塔の頂上のボスへ。"},
+  {id:"deathroomba", title:"デスルンバ",          cat:"act", url:"games/deathroomba/", tag:"刃つきのルンバだらけの部屋で、60秒逃げ切れ。"},
+  {id:"sugi",       title:"スギ切りハクション",   cat:"act", url:"games/sugi/", tag:"花粉症の男がタップでスギを切りまくる。鼻の限界に注意。"},
+  {id:"templerunners", title:"テンプルランナーズ", cat:"act", url:"games/templerunners/", tag:"左右2画面の遺跡を、2人同時に走らせる。"},
+  {id:"pinnuki",    title:"ピンぬきダンジョン",   cat:"puz", url:"games/pinnuki/", tag:"ピンを抜く順番で、金貨を勇者のもとへ届ける。"},
+  {id:"shisho",     title:"師匠つきオセロ",       cat:"tbl", url:"games/shisho/", tag:"超最強CPUの師匠が最善手を教えてくれるオセロ。"},
+  {id:"zorogate",   title:"ぞろぞろゲート",       cat:"act", url:"games/zorogate/", tag:"＋や×のゲートで仲間を増やし、敵の群れに突っこむ。"},
+  {id:"gakegp",     title:"崖っぷちドライブGP",   cat:"act", url:"games/gakegp/", tag:"崖のループコースでCPU3台とレース。落ちたら爆発。"},
+  {id:"kotoba",     title:"ことばさがし",         cat:"puz", url:"games/kotoba/", tag:"風船がなくなる前に、ひらがなの言葉を見つけよう。"},
+  {id:"surechigai", title:"すれ違いストリート",   cat:"act", url:"games/surechigai/", tag:"前から来る人を3レーンでよけて歩く。"},
+  {id:"gake",       title:"崖っぷちドライブ",     cat:"act", url:"games/gake/", tag:"ハンドルをスライドして崖道を走り抜ける。"},
+  {id:"tetris",     title:"テトリスタワーバトル", cat:"act", url:"games/tetris/", tag:"ブロックを積み上げて、落としたら負け。"},
+  {id:"souko",      title:"夜勤の倉庫番",         cat:"puz", url:"games/souko/", tag:"スワイプで荷物を押して定位置へ。"},
+  {id:"lightsout",  title:"ライツアウト",         cat:"puz", url:"games/lightsout/", tag:"押すと上下左右も反転。全部消そう。"},
+  {id:"hitofude",   title:"ひとふでタイル",       cat:"puz", url:"games/hitofude/", tag:"すべてのタイルを一筆書きでなぞる。"},
+  {id:"watersort",  title:"ウォーターソート",     cat:"puz", url:"games/watersort/", tag:"試験管の色水を一色ずつにそろえる。"},
+  {id:"hotaru",     title:"ホタル迷宮",           cat:"act", url:"games/hotaru/", tag:"夜の森の迷路をスワイプで駆けまわる。"},
+  {id:"jiji",       title:"ジジ抜き神経衰弱",     cat:"tbl", url:"games/jiji/", tag:"ジョーカーが場をかき混ぜる、CPUとの神経衰弱。"},
+  {id:"shanghai",   title:"トランプ上海",         cat:"tbl", url:"games/shanghai/", tag:"麻雀牌のかわりにトランプで遊ぶ上海。"},
+  {id:"hakushon",   title:"ハックション砲",       cat:"act", url:"games/hakushon/", tag:"長押しで吸って、くしゃみでおじさんを遠くへ。"},
+  {id:"superball",  title:"スーパーボールよけ",   cat:"act", url:"games/superball/", tag:"はね回るボールをひたすらよける。"},
+  {id:"gyakusuika", title:"逆スイカゲーム",       cat:"puz", url:"games/gyakusuika/", tag:"大きな果物を落とし、同じ果物で小さくしていく。"},
+  {id:"neji",       title:"ネジはずし工房",       cat:"puz", url:"games/neji/", tag:"ネジを外して、同じ色の箱に3本ずつ。"},
+  {id:"meikyu",     title:"迷宮エスケープ",       cat:"puz", url:"games/meikyu/", tag:"ファミコン風の3D迷路から脱出。"},
+  {id:"doublerun",  title:"ダブルラン",           cat:"act", url:"games/doublerun/", tag:"上下2人のランナーを同時にジャンプさせる。"},
+  {id:"climax9",    title:"クライマックス9",      cat:"tbl", url:"games/climax9/", tag:"8番と9番だけ残ったビリヤードでCPUと勝負。", wide:true},
+  {id:"hebi",       title:"ヘビはしごラッシュ",   cat:"tbl", url:"games/hebi/", tag:"順番なしの早い者勝ちすごろく。"},
+  {id:"nebaneba",   title:"ねばねば10秒",         cat:"act", url:"games/nebaneba/", tag:"10秒間、納豆をぐるぐるかき混ぜる。"},
+  {id:"tsumiki",    title:"ゆうぐれ積み木",       cat:"act", url:"games/tsumiki/", tag:"タップでブロックを落として、夕空の上まで。"},
+  {id:"kozeni",     title:"小銭の5秒勘定",        cat:"puz", url:"games/kozeni/", tag:"5秒だけ見える小銭の合計を答える。"},
+];
+const CATS = [["all","すべて"],["act","アクション"],["puz","パズル"],["tbl","テーブル"]];
+// reading for タイトル順 (kanji titles sort by reading, not code point). New games without an entry fall back to their title.
+const YOMI = {
+  tekkotsu:"てっこつわたり", atsunabe:"あつなべのたつじん", igo:"ししょうつきいご", chikuwa:"ちくわぶえじゃんぷ",
+  kurofuku:"くろふくからにげろ", tango:"たんごさがし",
+  dungeons10:"ろくだんじょんず",
+  lvbattle:"すうじばとる",
+  shisho:"ししょうつきおせろ",
+  sugi:"すぎきりはくしょん",
+  gakegp:"がけっぷちどらいぶじーぴー", gake:"がけっぷちどらいぶ", gake1:"がけっぷちどらいぶいちがめん",
+  souko:"やきんのそうこばん", hitofude:"ひとふでたいる", hotaru:"ほたるめいきゅう", jiji:"じじぬきしんけいすいじゃく",
+  shanghai:"とらんぷしゃんはい", hakushon:"はっくしょんほう", futayama:"ふたやまぼうずめくり", omotemuki:"おもてむきぼうずめくり",
+  gyakusuika:"ぎゃくすいかげーむ", neji:"ねじはずしこうぼう", meikyu:"めいきゅうえすけーぷ", climax9:"くらいまっくすないん",
+  nebaneba:"ねばねばじゅうびょう", tsumiki:"ゆうぐれつみき", kozeni:"こぜにのごびょうかんじょう",
+  surechigai:"すれちがいすとりーと", superball:"すーぱーぼーるよけ", tetris:"てとりすたわーばとる",
+};
+const toHira = s => s.replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+const key = g => toHira(YOMI[g.id] || g.title);
+const coll = new Intl.Collator("ja");
+const SORTS = ["new","pop","title"];
+let sortBy = "new";
+try { const v = localStorage.getItem("shelf-sort"); if (SORTS.includes(v)) sortBy = v; } catch (e) {}
+
+const $ = id => document.getElementById(id);
+const byId = Object.fromEntries(GAMES.map(g => [g.id, g]));
+
+// ---- views: each person keeps their own doc plays/<id> = {g:{gameId:opens}}; 人気 = total opens across everyone ----
+let pop = {};            // gameId -> total opens
+let firstSnap = true;
+let myId = null, myCounts = {}, db = null, writing = Promise.resolve();
+function aggregate(snap){
+  const p = {};
+  for (const d of snap.docs) {
+    const g = (d.data() || {}).g || {};
+    for (const [k, n] of Object.entries(g)) {
+      if (!byId[k] || typeof n !== "number" || n <= 0) continue;
+      p[k] = (p[k] || 0) + n;
+    }
+    if (myId && d.id === myId) myCounts = {...g};
+  }
+  pop = p;
+  // reorder only on the first load; later updates just refresh the numbers so the card you tapped stays in place
+  if (firstSnap) { firstSnap = false; if (sortBy === "pop") renderGrid(); }
+  else updateViews();
+}
+async function initPop(){
+  if (!window.claude?.use) return;
+  const [d, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (!d) return;
+  db = d;
+  try { myId = user ? await user.id() : null; } catch (e) {}
+  db.collection("plays").onSnapshot(aggregate, () => {});
+}
+function recordPlay(id){
+  if (!db || !myId) return;
+  myCounts[id] = (myCounts[id] || 0) + 1;
+  const body = {g: {...myCounts}};
+  writing = writing.then(() => db.doc("plays/" + myId).set(body)).catch(() => {});
+}
+
+// ---- render ----
+function img(g){ return `<img src="shots/${g.id}.webp" alt="${g.title}の画面" loading="lazy" decoding="async">`; }
+function renderHero(){
+  const g = GAMES[Math.floor(Math.random() * GAMES.length)], h = $("hero");
+  h.href = g.url; h.dataset.id = g.id;
+  h.className = "hero cat-" + g.cat;
+  h.innerHTML = `${img(g).replace(' loading="lazy"','')}
+    <div class="txt"><span class="new">PICK UP</span><h2>${g.title}</h2><p>${g.tag}</p><span class="play">あそぶ</span></div>`;
+}
+let current = "all";
+try { current = localStorage.getItem("shelf-cat") || "all"; } catch (e) {}
+function renderChips(){
+  $("chips").innerHTML = CATS.map(([k,l]) =>
+    `<button class="chip cat-${k}" type="button" data-k="${k}" aria-pressed="${k===current}" id="chip-${k}">${k==="all"?"":"<i></i>"}${l}</button>`).join("");
+}
+const order = Object.fromEntries(GAMES.map((g, i) => [g.id, i]));
+function sorted(){
+  const a = [...GAMES];
+  if (sortBy === "title") return a.sort((x, y) => coll.compare(key(x), key(y)));
+  if (sortBy === "pop") return a.sort((x, y) => (pop[y.id] || 0) - (pop[x.id] || 0) || order[x.id] - order[y.id]);
+  return a;
+}
+const EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C6.5 5 2.7 9.2 1.5 12c1.2 2.8 5 7 10.5 7s9.3-4.2 10.5-7C21.3 9.2 17.5 5 12 5zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-2.2a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6z"/></svg>';
+function updateViews(){
+  if (sortBy !== "pop") return;
+  document.querySelectorAll(".card[data-id]").forEach(c => {
+    const b = c.querySelector(".plays"); if (!b) return;
+    const n = pop[c.dataset.id] || 0;
+    b.hidden = !n; b.innerHTML = EYE + n;
+  });
+}
+function renderGrid(){
+  const list = sorted().filter(g => current==="all" || g.cat===current);
+  $("grid").innerHTML = list.map(g => {
+    const n = sortBy === "pop" ? `<span class="plays"${pop[g.id] ? "" : " hidden"}>${EYE}${pop[g.id] || 0}</span>` : "";
+    return `<a class="card cat-${g.cat}${g.wide?" wide":""}" href="${g.url}" data-id="${g.id}" >
+      <div class="shot">${img(g)}${n}</div><div class="name"><i></i>${g.title}</div><div class="tag">${g.tag}</div></a>`;
+  }).join("");
+  $("count").textContent = GAMES.length + "本";
+}
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if(!b) return;
+  current = b.dataset.k; try{ localStorage.setItem("shelf-cat", current); }catch(e){}
+  document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c===b));
+  renderGrid();
+});
+function setSort(){ document.querySelectorAll("#sort button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s===sortBy)); }
+$("sort").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b || b.dataset.s===sortBy) return;
+  sortBy = b.dataset.s; try{ localStorage.setItem("shelf-sort", sortBy); }catch(e){}
+  setSort(); renderGrid();
+});
+document.addEventListener("click", e => {
+  const a = e.target.closest("a[data-id]"); if (a) recordPlay(a.dataset.id);
+});
+
+if(!CATS.some(c=>c[0]===current)) current = "all";
+if (!window.claude?.use) { $("sort-pop").hidden = true; if (sortBy === "pop") sortBy = "new"; }
+renderHero(); renderChips(); setSort(); renderGrid();
+initPop();
+
+// ---- 解説・攻略 / BGM tabs ----
+const GUIDES = {"hebi": {"rule": "CPU3人と同時進行で進むリアルタイムすごろく。順番は無く、演出が終わればすぐ次を振れる。最初に100マス目へ着いた人の勝ち。", "controls": ["「サイコロをふる」ボタン・盤面タップ・スペース/Enterでサイコロを振る", "開始前にCPUの強さ(よわい/ふつう/つよい)と『ぴったりゴール』を選べる", "右上の「音 ON/OFF」で音の切り替え"], "tips": ["待ち時間の勝負。CPUは振れるようになってから、よわい0.9〜1.6秒・ふつう0.42〜0.9秒・つよい0.14〜0.38秒で振るので、READYになった瞬間に連打しよう(キー押しっぱなしのリピートは無効)", "★マスに止まると次の目が2倍。止まったら即振りで一気に進める", "相手と同じマス(スタート以外)に止まるとドーン!と相手を5マス戻せる。すぐ前にいる相手を狙えるときは狙い目", "盤面は毎回ランダムで、はしご7本・ヘビ8匹・★6個。うち1匹のヘビは必ず94〜99マスに頭があるのでゴール前は要注意", "『ぴったりゴール』ONだと出目が多すぎた分ははね返る。OFFなら超えてもそのままゴール"], "bgm": {"name": "ネオンすごろくビート", "note": "レース中に流れ、誰かが80マスを越えるとテンポアップ", "sec": 30}}, "gake": {"rule": "崖の上の曲がりくねった道を真上から見て車を運転し、転落せずにゴールまで走り切る。道から大きくはみ出したり、ジャンプの着地に失敗したりすると崖下へ転落。", "controls": ["画面下のハンドル部分を左右にスライドしてハンドルを切る(指を離すと中央に戻る)", "キーボードは ← / → (A / D) でハンドル", "右上の ‖ ボタン / Esc / P でポーズ、スペース / Enter でスタート・リトライ", "タイトルの ◀ ▶ で EASY・NORMAL・HARD(各10ステージ)・ENDLESS・RANDOM を切り替え"], "tips": ["アクセル操作はない。ステージでは時速60km固定なので、ハンドルさばきだけに集中しよう", "車の中心が路肩に寄るとガタガタ音と警告音が鳴る。車の中心が道の端をほんの少し(3px)越えた時点で転落なので、音が鳴ったらすぐ戻そう", "スライドは指の位置ではなく『動かした量』でハンドルが切れる。指を離すと自動で中央に戻るのを使うと、切りすぎを直しやすい", "ステージ6〜10にはジャンプ台が3か所ある。空中ではハンドルが効かず踏み切ったときの向きのまま飛ぶので、台に乗る前に道とまっすぐにしておこう", "道幅はEASY62・NORMAL47・HARD34とどんどん狭くなる。ENDLESSは道幅44で、走るほど時速約90kmまで加速していく"], "bgm": {"name": "崖っぷちドライブ・チップチューン", "note": "カウントダウン後の走行中にループ。転落・ゴール・ポーズで止まる", "sec": 33}}, "surechigai": {"rule": "3レーンの歩道で前から来る人をよけながら500m歩ききればクリア。誰かにぶつかったらその場で終了。", "controls": ["画面の左右をタップ、または←→/A・Dキーでレーン移動", "タイトルで1〜3キーでステージを選べる。Esc/Pでポーズ、Mで音のオン・オフ"], "tips": ["スマホを見ている人はほぼ気づかない(反応率12%)。自分からよけよう", "正面の人が気づくと警告の矢印と音のあと0.15〜0.35秒で左右へよける。矢印の方向へは動かないのが鉄則", "先に自分がよけても、相手は45%の確率でそのまま踏み出してくる。矢印が出ている間は相手の移動先を空けよう", "近い範囲で3レーンが同時にふさがることはないので、必ずどこか1レーンは抜けられる", "すぐ横をかすめてすれ違うと「すれすれ！」としてカウントされる。速度は時間とともに上がり、駅のホームは最高380まで速くなる"], "bgm": {"name": "通学路のおさんぽ", "note": "Lv1 通学路のプレイ中に流れる曲(ステージごとに曲が変わる)", "sec": 33}}, "kotoba": {"rule": "ひらがなを1文字ずつ選んで、かくれた言葉を当てるゲーム。はずれるたびにふうせんが1つ割れ、全部割れたら負け。3つの言葉を当てればクリアで、残ったふうせんの数がスコア。", "controls": ["下の50音タイルをタップして文字を選ぶ(濁音・半濁音・小さい字・のばし棒は右側の台)", "タイトルで「かんたん/ふつう/むずかしい」を選ぶ", "台の右下ボタンで音のオン/オフ、家のボタンでタイトルへ"], "tips": ["問題ごとに答えに無い文字が15個最初から消され、答えの文字も1つ開いた状態で始まる。残ったタイルから絞り込もう", "正解するとふうせんは最大数(かんたん30・ふつう25・むずかしい20)まで回復する。スコアになるのは3問目を当てた時点の残り数", "かんたんは4文字以下、ふつうは3〜6文字、むずかしいは5文字以上の言葉。のばし棒『ー』や小さい『ゃ』『っ』も1文字に数える", "答えは動物・食べもの・乗りもの・スポーツなど絵文字になるものばかり。163語のうち『ん』は45語、『ー』は33語に入っているので、まずはこの2文字から試すのが狙い目", "当たった文字は答えの中の同じ文字がまとめて開く。くり返し出てくる文字を当てると一気に進む"], "bgm": {"name": "ふうせん日和のうた", "note": "問題に答えている間ずっと流れる", "sec": 27}}, "hitofude": {"rule": "金色の枠のタイルから一筆書きで線を引き、すべてのタイルを決められた回数だけ通ればクリア。全100ステージで、進むほど盤面が広がり、2回通るタイルが増えていく。", "controls": ["スタートのタイルからなぞって線を引く(タップで隣のマスに1マスずつ進むこともできる)", "ひとつ前のマスに戻ると1手取り消し。線上のマスをタップするとそこまで戻せる", "下のボタンで1手戻す・やり直し・ヒント。上の数字でステージ選択"], "tips": ["クリーム色で内側に枠線があるタイルは2回通る必要がある。枠線の数が残りの通過回数。ステージ5から登場し、先へ進むほど増える", "通れる回数を使い切ったタイルにはもう入れない。行き止まりになりやすい角や端のマスから先に埋めるのがコツ", "ヒントは正解ルートからずれた所まで線を自動で巻き戻し、続きの3手を表示してくれる。何度使ってもペナルティなし", "盤面は3×3から始まり、最終的に7×9まで大きくなる。ステージはレベルごとに固定なので、同じ面は何度でも同じ形", "クリア後は約2秒で自動的に次のステージへ。好きなステージは上の数字から選んで遊び直せる"], "bgm": {"name": "青いタイルの子守唄", "note": "最初に画面に触れたときから流れ続ける", "sec": 33}}, "golf": {"rule": "3ホールずつの3コース(はじまりの丘・みずべの森・かぜの谷)を回る3Dゴルフ。少ない打数でカップインを目指そう。池とOBは1打罰で打ち直し、パー+5打に達するとギブアップ扱い。", "controls": ["画面を左右ドラッグで狙う方向を調整", "ショットボタンを押し続けてゲージをため、離して打つ", "クラブボタンでクラブ変更、視点ボタンで上空ビュー", "PCはSpace長押しで打つ、←→で方向、Cでクラブ、Escでポーズ"], "tips": ["ゲージは0.8秒で満タンになり、そのまま下がって往復する。最大で離せばクラブ通りの飛距離(1Wは230y)", "表示される弾道の点線に風は入っていない。風向き矢印を見て、風上に少しずらして狙おう", "バンカーからはSWが有利。他のクラブは飛距離が55%に落ちるが、SWは85%出せる。ラフでは82%", "パターの最大は32y。グリーンには傾斜があり、転がる間ずっと球が流される", "勢いよくカップを通過すると縁で弾かれてしまう。パットは強すぎず、ぎりぎり届くくらいが狙い目"]}, "deathroomba": {"rule": "刃のついた殺人ルンバが走り回る部屋で60秒間逃げ切れば生還。ルンバに触れたら吸い込まれてゲームオーバーで、逃げた秒数がベスト記録になる。", "controls": ["画面下のパッドをドラッグ(触れた場所が仮想スティックの中心になる)で移動", "キーボードは矢印キー / WASD で移動", "Enter / スペースでスタート・リトライ"], "tips": ["ルンバはプレイヤーを追ってこない。まっすぐ走って壁で跳ね返るだけなので、進行方向の延長線上から外れておけば安全", "自分の速さは36、ルンバは25から終盤でも約32.5まで。足ではずっと勝っているので、焦らず横へよければ間に合う", "残り40秒と20秒で1台ずつ増えて最大5台に。1.5秒前にサイレンが鳴り、そのとき自分から一番遠いゲートの赤ランプが点滅して、そこから入ってくる", "ルンバが近づくとモーター音が大きく高くなり、キャラに汗が出る。音と汗を危険センサー代わりにしよう", "壁際はルンバが跳ね返る場所で、跳ね返る向きもランダム。部屋の中ほどで余裕を持って動くのが安定"], "bgm": {"name": "掃除機の死の行進", "note": "60秒の逃走中に流れ、残り40秒・20秒でテンポが上がり音が増える(録音は1ラウンド通し)", "sec": 60}}, "tekkotsu": {"rule": "高層ビルの間に渡した鉄骨を、左右の足を交互に出して50歩で渡り切る。バランスのずれが限界を超えると落下。", "controls": ["画面タップ(またはスペース/Enter)で、振れるメーターの針を止めて一歩踏み出す"], "tips": ["針を真上(90°)で止めるほどずれが小さい。ずれの0.8倍がバランスに加算されて蓄積する", "真上から±4°以内なら『ピタッ』でバランスの傾きが25%戻る", "40°以上ずれる(赤ゾーン)とバランスが一気に100振れて即落下レベル。放置すると針は端まで行って自動で踏み出すので注意", "許容できる傾きは最初60で、1歩ごとに1ずつ狭くなり最後は10まで。終盤ほどピッタリが必要", "針の速さは歩数とともに上がる(40歩目で最速)。右に傾いたら次は逆側にずらして打ち消すのも手"]}, "gyakusuika": {"rule": "落ちてくるのは大きな果物。同じ果物がぶつかるとひとつ小さくなり、さくらんぼ同士なら消滅する。判定ラインより上に果物が2.5秒はみ出し続けるとゲームオーバー。", "controls": ["左右にスライドして狙い、指を離して落とす(PCはマウス移動+クリック)", "キーボードは←→で狙い、スペースか↓で落とす", "右上のスピーカーボタンで音のオン/オフ"], "tips": ["合体の点数は(11−段階)×10点で、小さい果物ほど高い。さくらんぼの消滅は150点なので細かい果物も積極的に消そう", "前の合体から1.4秒以内に次の合体が起きると連鎖。2連で1.5倍、3連で2倍と0.5倍ずつ上がる", "落ちてくるのは、りんご〜スイカの6種だけ。りんご・なし・ももが出やすく、スイカは一番出にくい", "落とした直後の1.2秒間と、縦に速く動いている果物はライン判定の対象外。警告が出たら大きい果物を合体させて下げよう", "落としてから次を落とせるまで0.55秒の待ちがある。NEXTを見て、同じ果物の真上を先に探しておこう"], "bgm": {"name": "果物かごのペンタトニック", "note": "プレイ中ずっと流れる", "sec": 37}}, "hakushon": {"rule": "長押しで息を吸いこみ、指を離してくしゃみ。となりのおじさんを吹き飛ばし、止まるまでの飛距離(m)を競う。1.55秒以上ためると、くしゃみがひっこんで不発になる。", "controls": ["画面を長押しで吸いこみ、離すとくしゃみ発射", "おじさんが飛んでいる間に画面タップで追いくしゃみ(コショウの数だけ)", "右上のスピーカーボタンで音のオン/オフ"], "tips": ["パワーは1秒ためると最大。角度は40°を中心に±24°で揺れていて、空気抵抗なしなので45°付近が一番飛ぶ。ため始めから約1.45〜1.5秒で離すのが狙い目", "1秒ちょうどで離すと角度は約19°と低め。ただし1.55秒を超えると不発になるので、矢印の向きを見ながらギリギリを攻めよう", "追いくしゃみは最初2回、空中のコショウを取ると+1(最大5回)。使うと前と上に大きく加速する", "ハトに当たると上に跳ね上がり、ふとんはボヨーンと大ジャンプ、バナナはツルッと前へ加速。水たまりと犬は大きく減速するので、追いくしゃみで飛び越えよう", "ランクは15m・50m・120m・250m・500mが境目。500m以上で『伝説のくしゃみ』"], "bgm": {"name": "昼下がりの住宅街マーチ", "note": "最初のタップから流れ続ける", "sec": 32}}, "bowling": {"rule": "夜空の下で遊ぶ5フレームのボウリング。スワイプでボールを投げてピンを倒す。最終フレームはストライクかスペアで3投目があり、満点150点でPERFECT GAME。", "controls": ["タイトルをタップしてスタート", "画面に指を置いて左右に動かすと投げる位置を調整", "そのまま上へスワイプして投球。速く振るほど速い球になる", "弧を描くようにスワイプするとスピンがかかってカーブする"], "tips": ["球速は指を離す直前0.09秒のスワイプ速度で決まる(3.2〜11)。最後まで勢いよく振り抜こう", "指を22px以上上に動かした時点で位置が固定され、そこから50px以上スワイプしないと投げられない", "スワイプの斜め具合で付く角度はごくわずか。狙いは主に投げる前の左右位置で決めるのがコツ", "スピンは手前4mまでは効かず、そこから奥へ行くほど強く曲がる。端から投げて曲げ、ピンの斜め前(ポケット)に入れるとストライクが出やすい", "ボールはピンの4倍以上重い(7対1.6)。ピン同士もぶつかって倒れ合うので、先頭ピンの斜め前に当てて連鎖させよう"], "bgm": {"name": "ナイトレーン・ラウンジ", "note": "ゲーム開始から投球中ずっと流れる(ストライク等で一瞬小さくなる)", "sec": 38}}, "kozeni": {"rule": "トレイにばらまかれた小銭を5秒だけ見て、消えたあと10秒以内に合計金額をテンキーで答えよう。全5問の正解数で『まずは両替から』〜『レジの神』のランクが決まる。", "controls": ["難易度(かんたん/ふつう/むずかしい)を選んでスタート", "テンキーで金額を入力して『決定』", "PCは数字キーで入力、Enterで決定、Backspaceで1字消し、Esc/Deleteでクリア"], "tips": ["硬貨は実物の大きさ比で描かれている。一番大きいのが500円(26.5mm)、一番小さいのが1円(20mm)", "穴あきは5円と50円の2種類。色で5円(金色)と50円(銀色)を見分けよう", "枚数は、かんたん3〜5枚・ふつう5〜8枚・むずかしい8〜12枚。6種類の硬貨が同じ確率で出る", "まず500円と100円の枚数を数えて大きい桁を確定させ、細かい硬貨は後回しにするのが効率的", "500円玉は2種類の絵柄で出てくる。どちらも500円なので惑わされないように"]}, "templerunners": {"rule": "左右2人のランナーを同時に操り、遺跡の道を走り続けるエンドレスラン。どちらか一方でも障害物にぶつかるか落ちたら終了。", "controls": ["画面左半分のスワイプで左ランナー、右半分のスワイプで右ランナーを操作", "上でジャンプ、下でスライディング、左右でレーン移動・曲がり角で曲がる", "キーボードは左がW/A/S/D、右が矢印キー"], "tips": ["丸太はジャンプ、赤い刃のついた石門はスライディング、岩は別レーンへ移動。岩はジャンプでは越えられない", "曲がり角が近づくと画面端が光る。光ったら矢印の方向へスワイプ。少し早めの入力も0.35秒だけ受け付けてくれる", "穴はジャンプで飛び越える。ジャンプ中に下スワイプすると即座に着地してしまうので注意", "速度は約70秒かけて最大まで上がり、BGMの太鼓も速くなる。曲がり角は75〜125mごとに来る", "高い位置のコインは丸太の上にあり、ジャンプしないと取れない"], "bgm": {"name": "遺跡を駆ける太鼓", "note": "走っている間ずっと鳴る太鼓のループ。スピードに合わせて速くなる", "sec": 30}}, "tetris": {"rule": "浮島の上にテトリス型のブロックを積み上げるバランスゲーム。ブロックを海に落とした人の負け。ひとりなら積んだ数を競い、CPU・ふたり対戦は交互に落とし合う。", "controls": ["画面を左右にドラッグでブロックを移動、指をはなすと落とす", "右下の⟳ボタンで90°回転", "キーボードは←→で半マス移動、↑/Z/Xで回転、スペース/↓で落とす", "左上のボタンでポーズ"], "tips": ["次のブロックは右上のNEXT枠で確認できる。7種類が1巡ごとに必ず1回ずつ出る袋方式なので、IやOが来るタイミングを読める", "持っているブロックの下に伸びる色の帯は落下位置のガイド。帯が全部足場に当たる位置ほど安定しやすい", "島の足場は幅320(ブロック約10個分)しかない。端に置くと転げ落ちやすいので中央寄りに積むのが基本", "対戦は1手10秒。残り3秒でカウントダウンが出て、0秒でその場に自動で落ちる。迷ったら早めに中央へ", "負けは『最後に落とした人』。自分の番が終わっても、相手が次を落とす前にタワーが崩れたら自分の負けになる"], "bgm": {"name": "浮島タワーのテーマ", "note": "ひとり・対戦のプレイ中に流れる(ポーズ中は停止)", "sec": 42}}, "lightsout": {"rule": "マスを押すとそのマスと上下左右の明かりが反転する。全部の明かりを消せばクリア。最少手数以内で解けば星3つ。", "controls": ["マスをタップ(Enter/スペースでも可)で押す", "上部の数字で盤面サイズ3〜7を切り替え", "下のボタンで一手戻す・ヒント・最初からやり直す・新しい問題"], "tips": ["同じマスを2回押すと元に戻り、押す順番も結果に関係ない。各マスは『押すか押さないか』だけ考えればいい", "上の行から順に、点いているマスの真下を押していくと1行ずつ消せる(ライトチェイス)。最下段に残った形で最初の行の押し方を見直そう", "星は最少手数以内で3つ、最少＋(2と最少の半分の大きい方)手以内で2つ、それ以上は1つ", "ヒントは今の盤面からの最短解に含まれるマスを1つ光らせる。詰まったら1回だけ使うのもあり", "問題は必ず解ける形で作られ、最少手数は3×3なら3手以上、それ以外は『辺の数＋1』手以上になる"]}, "amida": {"rule": "金(3点)・銀(2点)・銅(1点)のメダルがあみだくじのどこに落ちるかを読み、CPU3人と早い者勝ちでゴールを取り合う。全5ラウンドの合計点で1位なら優勝。", "controls": ["タイトルで「ふつう」か「むずかしい」を選んでスタート", "「GO!」の後、画面下のゴール枠をタップして自分の行き先を確保", "右上のスピーカーボタンで音のON/OFF"], "tips": ["シャッフル後の本番のあみだは『まっすぐ真下に落ちる線が1本もない』ように作られている。真下のゴールは必ずハズレ候補から外せる", "ゴールは4つ、メダルは3枚なので必ず1つは0点。まずは金メダルの線だけを素早く追うのが効率的", "ツル子は速いが正解率64%、タコ子は80%、カメ子は遅いが95%。ラウンドが進むごとにみんな3.5%ずつミスしやすくなる", "自分が選んだ瞬間、まだ選んでいないCPUも0.3秒後から次々に決めてしまう。カメ子が選ぶ前なら、まだ考える時間はある", "横線の数は「ふつう」で4→12本、「むずかしい」で6→18本と増える。後半は追い切るより、取られる前に決める判断も大事"]}, "dungeons10": {"rule": "たいまつ一本で6×6マスの暗い迷路を進み、ハシゴを見つけて降りていく。地下6階の宝箱にたどり着けばクリアで、かかったタイムを競う。", "controls": ["画面のどこかに触れてドラッグすると、その場所に出るスティックで移動", "キーボードは矢印キー / WASD で移動", "右上の ‖ ボタン / Esc / P でポーズ(つづける・さいしょから・タイトルへ)"], "tips": ["見えるのは今いるマスと、壁のない隣のマスだけ。行き止まりかどうかは近づかないと分からない", "迷路は穴掘り法で作られていてループがない。片方の壁に沿って進み続ける『右手法』でも必ずハシゴに着ける", "ハシゴのマスに体が少しかかるだけで降りられる。マスの中央まで行かなくていい", "階の表示(B2など)が出ている約0.85秒はタイマーも止まっている。焦らず次の階の様子を見よう", "壁にぶつかると押し戻されて減速する。曲がり角は少し手前から斜めに入力して滑らかに曲がると速い"], "bgm": {"name": "たいまつ探検隊のマーチ", "note": "迷路探索中にずっとループ。ポーズで止まる", "sec": 42}}, "nebaneba": {"rule": "10秒間、鉢の納豆をぐるぐるかき混ぜて糸を伸ばすゲーム。時間切れで箸を持ち上げ、糸の長さ(cm)で記録と称号が決まる。150cm以上で魯山人級。", "controls": ["かき混ぜ開始ボタンでスタート", "鉢の中を指(マウス)でぐるぐるドラッグしてかき混ぜる", "右手/左手ボタンで箸の向きを切り替え"], "tips": ["1回転で1.5cm伸び、同じ向きに回し続けるとコンボで最大2倍(1回転3cm)。コンボは途切れず回した秒数で、3秒続ければ最大", "逆回しするとコンボが0に戻り、0.4秒手を止めてもリセット。一方向に止めずに回し続けよう", "鉢の中心近くでは回転が数えられず、1回の動きで約70°以上飛ぶ速すぎる動きも無視される。中くらいの円をなめらかに速く", "称号は20cm未満『まだ豆』、50cm未満『ねばり初段』、90cm未満『糸引き名人』、150cm未満『水戸の匠』、それ以上『魯山人級』", "魯山人級には最大コンボでも約50回転、つまり秒間5回転前後が目安"]}, "superball": {"rule": "左右から跳ねてくるスーパーボールを床の上でよけ続けるサバイバル。当たったら終了で、0.1秒ごとに1点。", "controls": ["画面の左半分を押している間は左、右半分で右へ走る", "キーボードは←→またはA/D、スペース/Enterでスタート"], "tips": ["ボールの頂点は小さいボールでも自分の背丈の1.9倍以上。弾みの頂点付近の下をくぐり抜けよう", "画面端の三角マークは入ってくるボールの高さと色の予告。濃くなるほど到着が近い", "当たり判定はボール半径の86%なので、見た目より少しだけギリギリまで攻められる", "大きいボールほど高く跳ねてわずかに遅い。小さいボールは低く速く跳ねるので注意", "100秒(1000点)で難しさが最大。55秒を過ぎるとボールが2個同時に来ることがある"], "bgm": {"name": "ゴムまりダンスホール", "note": "プレイ中に流れ、時間とともにテンポが上がる", "sec": 31}}, "pinnuki": {"rule": "ピンを抜いて金貨・水・溶岩を流し、勇者の部屋に金貨を6割以上集めて番人を全滅させればクリア。溶岩や番人が勇者に触れる、金貨が足りなくなる、ピンを全部抜いても条件を満たせないと失敗。全20ステージ。", "controls": ["ピン(またはその持ち手)をタップで引き抜く", "下のボタンでやり直し・ステージ選択"], "tips": ["溶岩に触れた番人は一発で燃え尽きる。番人は床に着くと勇者へ歩いてくるので、先に溶岩を落として片付けよう", "水と溶岩が触れると石に変わる。溶岩の上に水をかぶせれば安全な床になる", "金貨は溶岩に触れると溶けて消える。残りの金貨が必要数(上のメーター)を下回った時点で失敗なので、抜く順番が肝心", "金貨は全部集める必要はなく、基本は総数の60%(ステージ11『ふたつの金庫』は65%)集まればOK", "画面が落ち着いてから判定されるので、1本抜いたら流れが止まるまで見届けてから次を抜こう"], "bgm": {"name": "ダンジョンのゆるい足取り", "note": "タイトルからプレイ中までずっと流れる", "sec": 37}}, "igo": {"rule": "師匠の解説つきで、9路盤の囲碁をCPUと対局する。2人続けてパスで終局し、石と陣地の合計(中国ルール、白にコミ6目半)が多いほうが勝ち。", "controls": ["盤の交点をタップして石を置く", "ヒントのON/OFF、待った(一手戻す)、パス(2回押して確定)、音のON/OFFボタン", "右上のボタンでポーズ・リトライ"], "tips": ["ヒントONなら師匠が☆で最善手を示し、理由も解説してくれる。上のバーは形勢(勝率)の目安", "☆と違う手で大きく損すると、本当は良かった場所を薄い☆で教えてくれる", "待ったは何回でも使える。取られた・失敗したと思ったら遠慮なく戻して打ち直そう", "赤い輪はアタリ(呼吸点が残り1つ)の石。自分の石なら逃げるか、相手を先に取ろう", "CPU「よわい」は考える時間が短く、75%の確率で候補上位6手からランダムに選ぶ。まずはここで勝ってから上げよう"]}, "watersort": {"rule": "試験管の色水を注ぎ分けて、各試験管を1色4つずつにそろえるパズル。すべてそろえばクリア。", "controls": ["注ぐ元の試験管をタップ、次に注ぎ先の試験管をタップ", "上のボタンで一手戻す・最初から・サウンド切替、LVでステージ選択"], "tips": ["注げるのは注ぎ先が空か、一番上が同じ色のときだけ。上の同じ色はまとめて注がれる(入るだけ)", "色の数はステージ3つごとに1増え、28面からは最大の12色になる", "空の試験管は基本2本。1本でも解ける配置なら1本だけになるので、空きを無駄に埋めないこと", "1色そろった試験管にはフタがされ、もう触れない。一手戻すは何回でも使える", "ステージは毎回同じ配置。EXTRAは12色のランダム問題で、クリアすると自動で次の問題が始まる"]}, "climax9": {"rule": "台に残るのは8番・9番・手玉だけのナインボール終盤戦。CPUと交互に打ち、必ず台上の小さい番号から当てて、先に9番を入れた方の勝ち。8番に当てて9番を落とすコンビもOK。", "controls": ["台をタッチ/ドラッグして狙う方向を決める", "右のPOWERゲージを下へ引いて離すとショット(引いた長さが強さ)", "左のSPINで押し・引き、↺↻ボタンか←→キー(Shiftで大きく)で狙いを微調整", "フリーボールのときは手玉をドラッグして好きな位置に置ける"], "tips": ["空振り・先球違い・手玉イン・ノークッション(当てた後どの球もクッションに当たらず、何も入らない)はファウル。相手に手玉を自由に置かれてしまう", "ファウルで9番が落ちても勝ちにはならず、9番は台の右側の決まった位置に戻される", "8番を正しく入れたら続けて自分の番。9番が狙いやすい位置に手玉が止まるよう、SPINの押し(当たった後に前へ)・引き(手前に戻る)を使い分けよう", "白い点線のガイドが手玉の進路と当たる位置、当てた球の飛ぶ方向まで示してくれる。9番に当たるときは線が金色になる", "CPUの狙いのブレは弱1.5°・中0.6°・強0.2°ほど。強相手にフリーボールを渡すとほぼ決められるので、入らないときは無理せずファウルを避けよう"]}, "tango": {"rule": "ひらがなの盤面から、お題に沿った単語を線でなぞって全部見つけるワードサーチ。ひとりならタイム、CPU戦なら見つけた数で勝負。", "controls": ["文字の上をドラッグして直線を引き、指を離すと判定", "ヒントボタンで残りの単語の1文字目が光る(3回まで)"], "tips": ["逆向きになぞっても正解になるので、最後の文字から引いてもOK", "かんたん(7×7)は横と縦だけ、ふつう(8×8)は斜めも加わり、むずかしい(9×9)は8方向すべてに単語が隠れている", "ひとりモードのヒントはタイムに+10秒のペナルティ。CPU戦ならペナルティなしで使える", "CPUは、かんたん12〜17秒、ふつう8.5〜13秒、むずかしい6.5〜10秒に1語ずつ取っていく。それより速く見つけよう", "下の単語リストは短い順。長い単語は特徴的な文字が多いので先に探すと見つけやすい"], "bgm": {"name": "ことばさがしのマリンバ", "note": "対局中ずっと流れるのんびりしたループ", "sec": 32}}, "sugi": {"rule": "花粉症の男を操ってスギを伐採し続けるスコアアタック。育ったスギは花粉をまき、鼻ゲージが100になるとゲームオーバー。", "controls": ["スギをタップすると男が駆け寄り、斧で一撃で伐採する", "ときどき出るティッシュ箱をタップすると鼻をかめる"], "tips": ["点数は若木10点・中木30点・花粉の出る成木100点。成木を切ると鼻ゲージが差し引き2.8減るので、成木ほど優先して切ろう", "成木は1.2〜2.4秒ごとに花粉を噴いてゲージ+2.8。放置した成木の本数がそのままゲージ上昇の速さになる", "ティッシュは14〜20秒ごとに4.5秒だけ出現し、ゲージを22も下げる。点滅したら消える寸前なので最優先で取ろう", "ゲージ35超えでくしゃみが起きやすくなり、約1秒動けなくなる。くしゃみ自体はゲージを6下げる", "時間とともに成長が速く(最短3秒で成木)、芽吹きも平均0.4秒間隔まで早まる。後半は手前から休まず切り続けよう"], "bgm": {"name": "のんきな杉山のうた", "note": "伐採中ずっと流れる。花粉がたまるとテンポが上がる", "sec": 31}}, "kurofuku": {"rule": "黒服のハンターが徘徊する街で、四隅にあるA(♠♥♦♣)のカード4枚を集め、中央の装置に届ければクリア。ハンターに触れたら即アウト。クリアタイムを競う。", "controls": ["画面左半分をドラッグでスティック移動", "画面右半分をドラッグでカメラを回す", "ダッシュボタン長押しで全力疾走(スタミナ消費)", "PCはWASD/矢印で移動、Shift/Spaceでダッシュ、Q/Eでカメラ回転"], "tips": ["ハンターは6m以内か、建物にさえぎられず見通せる34m以内でこちらに気づく。建物の陰を伝って移動しよう", "見失って2.2秒、または10秒追い続けるとハンターはあきらめる。角を曲がって視線を切るのが基本", "ダッシュは秒速9.6で追跡中のハンター(4.9〜6.2)より速いが、スタミナを毎秒30消費。残り15未満からは走り出せない", "青緑に光る栄養ドリンクを取るとスタミナが一気に満タン。逃走ルート上のドリンクを覚えておこう", "ハンターは45秒ごと、カードを1枚取るごとに増える(最大7人)。時間をかけるほど不利なので最短ルートで回ろう"], "bgm": {"name": "黒服チェイス", "note": "タイトルと逃走中に流れ、追われるとキックとアルペジオが加わって激しくなる(録音は追跡中の状態)", "sec": 29}}, "shisho": {"rule": "CPUと対戦するオセロ(リバーシ)。打てる場所が無ければ自動でパス、両者打てなくなった時点で石の多い方が勝ち。", "controls": ["マスをタップして石を置く(置ける場所に点が出る)", "タイトルで石の色(黒先手・ランダム・白後手)、CPUの強さ、師匠のヒントON/OFFを選ぶ", "『待った』で自分の手番まで一手戻せる、右上でポーズ"], "tips": ["ヒントONだと師匠が最善手に★を付け、上のバーで形勢を見せてくれる。残り20マス以下では★に最終石差(+4など)まで出る", "CPUの評価は角が+100、角の斜め隣(X打ち)が-80、角の横隣が-40。角を取り、角の隣を避けよう", "よわいは35%の確率で適当に打つ。ふつうは読み3手・残り8マスから完全読み、つよいは読み7手・残り14マスから完全読み", "CPUは相手の打てる場所を減らす手を好む。自分の打てる場所(着手可能数)を多く残すのが勝ち筋", "『待った』は何回でも使えるので、★の手と自分の手を比べて研究できる"]}, "lvbattle": {"rule": "塔の部屋をタップして勇者を送り込み、自分よりLvが低い敵を倒してそのLvを吸収しよう。塔の敵とボスを全部倒せばクリア。同じLv以上の敵に挑むか、勝てる手が無くなると負け。", "controls": ["部屋をタップでその部屋へ移動して戦う・アイテムを取る(どの部屋でも順番自由)", "タイトルの◀▶で到達済みステージを選べる", "右上の矢印ボタンでやり直し"], "tips": ["敵のLvが緑なら勝てる、赤なら負ける。同じLvでも負けるので要注意", "倒した敵のLvがそのまま自分に加算される。弱い敵から順に倒して雪だるま式に育てよう", "×2・×3の星は自分のLvを掛け算する。ポーションや敵で十分育ててから取るのが鉄則", "紫の÷2トラップは取ると半減するだけ。ステージは罠なしで解ける手順から逆算して作られているので無視でOK", "ボスのLvは、罠以外を全部取った最終Lvの82%以上。ザコとアイテムは取りこぼさずに最後に挑もう"]}, "atsunabe": {"rule": "1から40まで1秒ごとに流れてくる数字のうち、3の倍数と3がつく数字のときだけタイコをたたいてアホになるリズムゲーム。タイミングの正確さとコンボでスコアを稼ぎ、アツナベ度(達成率)で称号が決まる。", "controls": ["画面タップでタイコをたたく", "キーボードはスペース / F / J / D / K", "タイトルの「声 ON/OFF」で読み上げ音声を切り替え"], "tips": ["たたく数字は3,6,9,12,13,15,18,21,23,24,27と30〜39の全21個。30台は10連打になるのでリズムを崩さないように", "判定は±0.06秒で『良』(1000点)、±0.13秒で『可』(500点)。さらにコンボ数×10点(最大50コンボ分)が加算される", "3と関係ない数字の近くでたたくと『まちがい』で-300点&コンボ切れ。ただし音符から離れた空振りはノーカウント", "最後の40はたたいてはいけないひっかけ。じっと我慢すればファンファーレで締めくくれる", "上のタイマーは対象の秒になると一瞬赤く光る。全部『良』で取れば最高称号『アホの達人』"], "bgm": {"name": "アツナベ囃子", "note": "スタート後のカウント(カッカッ)から40拍のあいだ鳴るベースとハイハットの伴奏", "sec": 43}}, "tsumiki": {"rule": "左右に動く積み木をタップで落として積み上げる。はみ出た分は切り落とされ、完全に外すとくずれて終了。", "controls": ["画面タップ(またはスペース/Enter)でブロックを落とす"], "tips": ["下の段とのずれが5px以内なら『ぴったり』で、切り落とされずに幅を保てる", "ぴったりが3回以上続くと、1回ごとにブロックが8px広がる(最初の幅まで)", "ブロックの速さは段数とともに上がり、約39段で最高速になる。序盤のうちに幅を稼いでおこう", "落下位置の点線ガイドが下の段の端を示すので、ガイドに合わせて落とすのが狙い目", "1段12cm換算で高さが表示され、10段・20段・40段で結果メッセージが変わる"]}, "jiji": {"rule": "A〜5の神経衰弱にジョーカー2枚が混ざったジジ抜き版。同じ数字のペアを多く取ったほうが勝ち(全9ペア)。", "controls": ["カードをタップしてめくる。1ターンに2枚まで", "タイトルでCPUの強さ(よわい・ふつう・つよい)を選ぶ"], "tips": ["スートは関係なく同じ数字ならペア。ペアを取ると続けてもう一度めくれる", "ジョーカーをめくるとその時点でターン終了。ジョーカーは消え、残りのカードがすべてシャッフルされる", "シャッフルでCPUの記憶もリセットされる。CPUに覚えられてそうな局面なら、ジョーカーが逆に味方になる", "数字のどれか1つは2枚がジョーカーに置き換わっていて、その数字はペアが1組しかない", "CPUがめくったカードを覚える確率は、よわい35%・ふつう65%・つよい93%。相手がめくったカードも必ず覚えておこう"]}, "shanghai": {"rule": "トランプ52枚を4層に積んだピラミッドから、同じ数字の札を2枚ずつ取り除く上海。全部取ればクリア、取れるペアが無くなると手詰まり。", "controls": ["取れる札をタップで選択、同じ数字のもう1枚をタップで消える", "下のボタンで新しいゲーム・一手戻す・ヒント・シャッフル・サウンド切替"], "tips": ["取れるのは上に札が重なっておらず、左右どちらかが空いている札だけ。暗く表示された札はまだ取れない", "マークは関係なく数字(ランク)が同じなら消せる", "配り直しは必ず解ける順番から作られているので、詰んだら『戻す』で手順を見直す価値あり", "シャッフルは残りの札を必ず解ける並びに配り直してくれる。ペナルティは無く、一手戻すで取り消しも可能", "3.5秒以内に続けて消すと×2・×3…と連鎖表示され、音が音階で上がっていく。クリアタイムも表示されるので速さに挑戦しよう"]}, "neji": {"rule": "板を留めているネジを外し、同じ色の箱に3本ずつ入れていくパズル。全部のネジを箱に収めればクリア。予備スロット5つが埋まって詰まると失敗。全30レベル。", "controls": ["ネジをタップして外す", "タイトルのスライダーでレベル1〜30を選んでスタート", "右上のボタンで音のON/OFF・タイトルへ・やり直し"], "tips": ["上に重なった板がかぶっているネジは外せない(ネジが揺れてカチッと鳴る)。上の板から順に崩そう", "外したネジは同じ色の箱があれば直行、なければ予備スロットへ。予備が4つ埋まると枠が赤くなるので要注意", "棚の中央の小さな点で次に来る3箱の色が見える。予備に置いた同色のネジは箱が来ると自動で移動する", "ネジの色は上の層の板から3本ずつまとめて割り振られる。上の板から外していけば箱の色と合いやすい", "ネジが1本だけになった板はぶら下がって回り、0本になると落ちる。板が落ちれば下のネジが解放される"]}, "zorogate": {"rule": "群衆を左右に動かしてゲートを選び、人数を増やしていくランゲーム。敵集団やボスと同数ずつ打ち消し合い、残った人数で倍率階段を登ってスコアを稼ぐ。0人になると失敗。", "controls": ["画面を左右にドラッグして群衆を移動", "キーボードの←→でも移動できる", "スタート/つぎへボタンでステージ開始"], "tips": ["ゲートはコースの左右半分ずつ。群衆の中心がコース中央より左か右かで通るゲートが決まる。青(＋・×)は増え、赤(−・÷)は減る", "×2ゲートは5人以上、×3ゲートは8人以上かつLV2以降で出現する。人数が多いときほど×ゲートが得", "敵集団とはお互い同じ人数ずつ減らし合う。敵の頭上の数字ぶん確実に減るので、その前にしっかり増やしておこう", "ボスの人数は『毎回良いほうを選んだ場合の最大人数』の50%＋LV×2.5%(上限78%)。レベルが上がるほど取りこぼしが許されなくなる", "ゴール後の階段は×1.2〜×5の10段で、1段ごとに決まった人数を払って登る。最善ルートならだいたい7段目(×3)前後まで届く設計"], "bgm": {"name": "ぞろぞろ行進曲", "note": "ステージを走っている間に流れる", "sec": 29}}, "gakegp": {"rule": "柵のない崖っぷちサーキットでCPU3台と3周レースし、順位を競う。最後尾スタートからゴールして順位が決まり、道からはみ出しすぎて崖下へ落ちたらリタイア。", "controls": ["スライド操作: 画面に触れて左右にずらした量だけハンドルが切れ、指を離すとまっすぐに戻る", "タップ操作: 画面の左半分/右半分を押している間その方向へ曲がる(タイトルかポーズで切り替え)", "キーボードは ← / → (A / D) でハンドル、Esc / P でポーズ", "アクセルは自動。タイトルでコース(EASY・NORMAL・HARD・RANDOM)とクラス(100cc/150cc)を選ぶ"], "tips": ["ハンドルを切るほど最高速が落ちる(全開で約30%減)。ラインを整えて直線ではまっすぐ走るのが一番速い", "自分の車はCPU(最高速の84〜99%)より速い。最後尾スタートでも直線で抜けるので、序盤は無理をしないこと", "道の外にはみ出すと速度が7割に落ち、さらに外へ出ると転落する。ポーズのアシストONならカーブ方向の補助と崖から離す補正が入る", "CPUはカーブでときどきミスしてふくらみ、自分から落ちることもある。外側に並ばずインから抜こう", "150ccはスピード1.38倍・曲がり1.22倍になり、CPUのミスも減る上級クラス"]}, "souko": {"rule": "夜の倉庫で作業員を動かし、木箱を押してすべての黄色い目標マスに運ぶ倉庫番。全22面、前の面をクリアすると次が開く。", "controls": ["スワイプで上下左右に1マス移動(引っぱり続けると連続移動)。矢印キー/WASDでも可", "戻るボタンかZ・Backspaceで一手戻す、リセットボタンは2回タップ(Rキー)でやり直し", "電球ボタンでヒント表示、一覧ボタンで面選択"], "tips": ["箱は押せるだけで引けない。壁の角や壁際に押し込むと戻せなくなるので、押す前に向きを確認しよう", "ヒントONで箱にA・B・C…の文字、目標マスに同じ文字が出る。正解手順でどの箱をどこへ運ぶかがわかる", "手数は歩いた分も含めて数えられ、各面のベスト手数が記録される。少ない手数での再挑戦も楽しめる", "一手戻すは何回でも使える。詰んだと思ったら数手戻して押す順番を変えてみよう", "目標に乗った箱は緑になり、外すと音で知らせてくれる"]}, "hotaru": {"rule": "ホタルを操って迷路の種を全部食べればステージクリア。4匹のオバケに触れるとミス、残機が尽きたらゲームオーバー。迷路は毎ステージ自動生成される。", "controls": ["スワイプで上下左右に移動方向を指定(先行入力OK)", "PCは矢印キー/WASDで移動、Space/Enterでスタート", "タップでスタート・リトライ"], "tips": ["四隅の光るランタン(50点)を取るとオバケが青くなり食べられる。効果は1面7秒で面ごとに0.7秒短くなる(最短1.5秒)", "青いオバケは連続で食べると200→400→800→1600点。ランタンはオバケを引きつけてから取ろう", "左右のワープトンネル内ではオバケの速度が半分になるので逃げ道に使える", "種を60個・150個食べるとスタート地点に宝石が9秒だけ出現。1面300点〜8面以降5000点", "10000点で1回だけ残機が増える。直線ではホタルの方が速いが、面が進むとオバケが差を詰めてくるので序盤で稼いでおこう"]}, "chikuwa": {"rule": "ちくわ笛を長押しすると音がドから上がっていき、離すとジャンプ。次の杭と同じ音で離せばぴったり着地し、杭をたどって曲を演奏できる。音がずれると海に落ちてライフが減り、3回落ちたら終わり。", "controls": ["画面を長押しで音が上がり、離すとジャンプ(スペースキーでも同じ)", "タイトルで曲(かえるの歌・きらきら星・ちょうちょう・エンドレス)を選ぶ", "右上のボタンで一時停止"], "tips": ["音はドから1段ずつ上がって上のドで折り返し、また下がる。次の杭の色と音名に合った瞬間に離そう。高すぎると飛び越えて海、低すぎると杭にごつんと当たって落ちる", "音が切り替わる間隔は、かえるの歌とエンドレスが0.235秒、きらきら星が0.2秒、ちょうちょうが0.17秒。曲が難しいほど速い", "着地すると0.26秒後に次の杭の音がヒントで鳴る。耳で音の高さを覚えておくと合わせやすい", "ぴったり着地は100点で、2連続目からは1回ごとに+10点ずつボーナスが増える(最大+200)。落ちるとコンボが0に戻るので、連続成功が高得点のカギ", "落ちても同じ杭からやり直せる。クリア時のぴったり率90%以上で★3、70%以上で★2。エンドレスは8本ごとに音の切り替えが速くなる"], "bgm": {"name": "ちくわ笛のかえるの歌", "note": "BGMは無く、ぴったり着地で鳴るメロディが曲になる(タイトルのデモ演奏を音あり録音)", "sec": 41}}, "doublerun": {"rule": "上下2つのレーンを走るランナーを同時に操作し、迫る障害物をジャンプでかわして距離を伸ばす。どちらか一方でもぶつかったらゲームオーバー。", "controls": ["左ボタン(下 JUMP)/ F / ← キーで下のランナーがジャンプ", "右ボタン(上 JUMP)/ J / → キーで上のランナーがジャンプ", "タイトル・ゲームオーバー画面ではどちらかのボタンかスペースキーでスタート", "右上の ♪ ボタンで音のON/OFF"], "tips": ["上のランナーは左向き、下のランナーは右向きに走る。障害物は上レーンでは左から、下レーンでは右から来るので視線を左右に振ろう", "ジャンプの滞空は約1秒。早すぎると着地前に障害物に当たるので、引きつけてから跳ぶのが基本", "背の高い障害物(全体の35%)でも高さはジャンプの最高点の8割ほど。早めに跳びすぎなければ必ず越えられる", "速度は約83秒(830m)で最高速の2倍に達し、障害物の間隔も少しずつ詰まる。中盤以降はリズムを崩さないことが大事", "当たり判定はキャラの見た目より少し小さめ。ギリギリの着地でも案外セーフになる"], "bgm": {"name": "二人三脚チップチューン", "note": "プレイ中にループ。ゲームオーバーで止まる", "sec": 32}}, "meikyu": {"rule": "一人称視点の3D迷路で、どこかに落ちている鍵を拾って外周のEXIT扉から脱出しよう。鍵が無いと扉は開かない。6×6・8×8・10×10から選べ、タイムと歩数が記録される。", "controls": ["上スワイプで前進、下スワイプで後退", "左右スワイプでその場で90度向きを変える", "PCは矢印キー/WASDで同じ操作"], "tips": ["スタートは出口から一番遠いマスに置かれる。鍵はスタートと出口を結ぶ本道の中ほどから分かれた脇道の奥にある", "鍵への寄り道の往復は本道の約7割の長さになるよう作られている。行き止まりの奥が怪しい", "最短歩数ぴったりで脱出すると『パーフェクト！』。壁への体当たりは歩数にならないが、後退は1歩に数えられる", "オートマップは通ったマスだけ描かれ、見つけた出口は茶色(鍵ありで黄色)で表示される。難しくしたいなら『なし』にしよう", "向き変えは歩数に入らないので、分かれ道では左右を見回してから進むと無駄足が減る"], "bgm": {"name": "地下迷宮の行進", "note": "迷路の探索中にずっと流れる", "sec": 34}}, "pinball": {"rule": "ネオン色のピンボール。フリッパーでボールを打ち返し、バンパー・レーン・ターゲットで得点を稼ぐ。ボール3個を全部落とすとゲームオーバー。", "controls": ["画面の左半分/右半分をタッチで左右のフリッパー", "ボール待機中は長押しで力を溜め、離して発射", "キーボードはZ/←で左、M・/・→で右、スペース/↓で発射", "画面右上のスピーカーでミュート切り替え"], "tips": ["上の3レーン(各100点)を全部点灯させると倍率+1(最大×5)と1000点。フリッパーを動かすと点灯ランプが左右にずれるので、空いている位置に寄せよう", "左壁の3ターゲット(各500点)を全部当てると5000点と10秒間のボールセーブ", "発射後8秒間はボールセーブ(下の緑ランプ)。発射レーンにいる間はカウントが減らないので強めの発射で問題ない", "倍率はすべての得点にかかるが、ボールを落とすと×1に戻る。倍率が高いうちはバンパー(100点)を狙い撃ち", "150,000点でエクストラボール。次の条件はその2.5倍(375,000点)"]}};
+const READS = [{"title": "夜勤の倉庫番 攻略", "kind": "攻略", "game": "souko", "url": "guides/souko-guide/", "desc": "全22ステージの解き方。各ステージのボードが解答手順どおりに動く。"}, {"title": "ライツアウト攻略", "kind": "攻略", "game": "lightsout", "url": "guides/lightsout-guide/", "desc": "追っかけ法とサイズ別の表で、どんな盤面でも必ず全部消せる。ソルバーつき。"}, {"title": "オセロのしくみ", "kind": "解説", "game": "shisho", "url": "guides/othello/", "desc": "8×8の配列と8方向の探索でオセロが動くしくみを、盤で試しながら読める。"}, {"title": "小銭の5秒勘定のしくみ", "kind": "解説", "game": "kozeni", "url": "guides/kozeni-guide/", "desc": "コインの並べ方・効果音・エフェクトの作り方を、動かしながら解説。"}, {"title": "キューブ完全攻略", "kind": "攻略", "game": null, "url": "guides/cube/", "desc": "ルービックキューブの記号から7ステップの解法、CFOPまで。シミュレーターつき。"}, {"title": "ソート図鑑", "kind": "解説", "game": null, "url": "guides/sort/", "desc": "並べ替えアルゴリズムの比較と交換を、アニメーションで見比べる図鑑。"}, {"title": "迷路生成ラボ", "kind": "解説", "game": null, "url": "guides/maze/", "desc": "9つの迷路生成方式を動かして、できあがる迷路のクセを見比べる。"}];
+const PLAY_I = '<path d="M7 5l12 7-12 7z"/>', PAUSE_I = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+const CHEV = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9l5 5 5-5z"/></svg>';
+const thumb = (g, cls = "th") => `<img class="${cls}${g.wide ? " w" : ""}" src="shots/${g.id}.webp" alt="" loading="lazy" decoding="async">`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+// tabs
+const TABS = ["games","guide","bgm"];
+let tab = "games";
+const fromHash = () => { const h = (location.hash || "").slice(1); return TABS.includes(h) ? h : null; };
+try { tab = fromHash() || localStorage.getItem("shelf-tab") || "games"; } catch (e) { tab = fromHash() || "games"; }
+if (!TABS.includes(tab)) tab = "games";
+function showTab(t, push){
+  tab = t;
+  TABS.forEach(k => {
+    const b = $("tab-" + k), p = $("p-" + k);
+    b.setAttribute("aria-selected", k === t); b.tabIndex = k === t ? 0 : -1;
+    p.hidden = k !== t;
+  });
+  try { localStorage.setItem("shelf-tab", t); } catch (e) {}
+  if (push) { try { history.replaceState(null, "", t === "games" ? location.pathname + location.search : "#" + t); } catch (e) {} }
+}
+document.querySelector(".tabs").addEventListener("click", e => {
+  const b = e.target.closest("[data-t]"); if (!b) return;
+  showTab(b.dataset.t, true); window.scrollTo({top: 0});
+});
+document.querySelector(".tabs").addEventListener("keydown", e => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const i = (TABS.indexOf(tab) + (e.key === "ArrowRight" ? 1 : 2)) % 3;
+  showTab(TABS[i], true); $("tab-" + TABS[i]).focus();
+});
+window.addEventListener("hashchange", () => { const h = fromHash(); if (h) showTab(h, false); });
+
+// reads
+$("reads").innerHTML = READS.map(r => {
+  const g = r.game && byId[r.game];
+  return `<a class="read" href="${r.url}" >
+    <span class="k${r.kind === "攻略" ? " cap" : ""}">${r.kind}${g ? "・" + esc(g.title) : ""}</span>
+    <b>${esc(r.title)}</b><span class="d">${esc(r.desc)}</span></a>`;
+}).join("");
+
+// guide list
+let gcat = "all";
+function renderGChips(){
+  $("gchips").innerHTML = CATS.map(([k,l]) =>
+    `<button class="chip cat-${k}" type="button" data-k="${k}" aria-pressed="${k===gcat}" id="gchip-${k}">${k==="all"?"":"<i></i>"}${l}</button>`).join("");
+}
+function renderGuides(){
+  const list = GAMES.filter(g => GUIDES[g.id] && (gcat === "all" || g.cat === gcat));
+  $("gcount").textContent = list.length + "本";
+  $("glist").innerHTML = list.map(g => {
+    const d = GUIDES[g.id], r = READS.find(x => x.game === g.id);
+    return `<details class="gd cat-${g.cat}" id="guide-${g.id}">
+      <summary>${thumb(g)}<span class="t"><b><i></i>${esc(g.title)}</b><span>${esc(d.rule)}</span></span>${CHEV}</summary>
+      <div class="gb">
+        <div><h3>ルール</h3><p>${esc(d.rule)}</p></div>
+        <div><h3>操作</h3><ul>${d.controls.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>
+        <div><h3>攻略のコツ</h3><ul>${d.tips.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>
+        <div class="acts">
+          <a class="btn pri" href="${g.url}" data-id="${g.id}" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>あそぶ</a>
+          ${r ? `<a class="btn" href="${r.url}" >${esc(r.title)}</a>` : ""}
+          ${d.bgm ? `<button type="button" class="btn" data-listen="${g.id}">${'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3v12.5a3.5 3.5 0 1 1-2-3.2V7.2l-8 1.6v8.7a3.5 3.5 0 1 1-2-3.2V5.4L19 3z"/></svg>'}BGMを聴く</button>` : ""}
+        </div>
+      </div></details>`;
+  }).join("");
+}
+$("gchips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  gcat = b.dataset.k;
+  document.querySelectorAll("#gchips .chip").forEach(c => c.setAttribute("aria-pressed", c === b));
+  renderGuides();
+});
+$("glist").addEventListener("click", e => {
+  const b = e.target.closest("[data-listen]"); if (!b) return;
+  showTab("bgm", true); playIdx(TRACKS.findIndex(t => t.id === b.dataset.listen));
+  const row = $("trk-" + b.dataset.listen); if (row) row.scrollIntoView({block: "center"});
+});
+
+// bgm
+const TRACKS = GAMES.filter(g => GUIDES[g.id] && GUIDES[g.id].bgm).map(g => ({id: g.id, game: g, ...GUIDES[g.id].bgm}));
+const au = $("au");
+let cur = -1, auto = false;
+$("bcount").textContent = `全${TRACKS.length}曲。`;
+$("tracks").innerHTML = TRACKS.map((t, i) => `<li class="trk" id="trk-${t.id}" data-i="${i}">
+  <span class="no">${i + 1}</span>${thumb(t.game)}
+  <span class="t"><b>${esc(t.name)}<span class="eq" hidden><i></i><i></i><i></i></span></b><span>${esc(t.game.title)}</span><small>${esc(t.note)}</small></span>
+  <span class="len">${fmt(t.sec)}</span>
+  <button type="button" class="pp" aria-label="${esc(t.name)}を再生"><svg viewBox="0 0 24 24">${PLAY_I}</svg></button>
+  <span class="bar"></span></li>`).join("");
+function paint(){
+  const playing = cur >= 0 && !au.paused;
+  document.querySelectorAll(".trk").forEach(el => {
+    const on = +el.dataset.i === cur;
+    el.classList.toggle("on", on); el.classList.toggle("paused", on && !playing);
+    el.querySelector(".eq").hidden = !on;
+    el.querySelector(".pp svg").innerHTML = on && playing ? PAUSE_I : PLAY_I;
+    el.querySelector(".pp").setAttribute("aria-label", TRACKS[+el.dataset.i].name + (on && playing ? "を一時停止" : "を再生"));
+    if (!on) el.querySelector(".bar").style.width = "0";
+  });
+  $("plIco").innerHTML = playing ? PAUSE_I : PLAY_I;
+  $("plPlay").setAttribute("aria-label", playing ? "一時停止" : "再生");
+}
+function playIdx(i){
+  if (i < 0 || i >= TRACKS.length) return;
+  const t = TRACKS[i];
+  if (i !== cur) {
+    cur = i; au.src = "bgm/" + t.id + ".mp3";
+    $("plImg").src = "shots/" + t.id + ".webp"; $("plName").textContent = t.name + " — " + t.game.title;
+    $("plDur").textContent = fmt(t.sec); $("plCur").textContent = "0:00"; $("plSeek").value = 0;
+  }
+  $("player").hidden = false; document.body.classList.add("has-player");
+  const p = au.play(); if (p && p.catch) p.catch(() => paint());
+  paint();
+}
+function toggle(){ if (cur < 0) return playIdx(0); au.paused ? playIdx(cur) : au.pause(); }
+$("tracks").addEventListener("click", e => {
+  const row = e.target.closest(".trk"); if (!row) return;
+  const i = +row.dataset.i;
+  if (i === cur) toggle(); else { auto = true; playIdx(i); }
+});
+$("playAll").addEventListener("click", () => { auto = true; playIdx(0); });
+$("plPlay").addEventListener("click", toggle);
+$("plPrev").addEventListener("click", () => { if (au.currentTime > 3) au.currentTime = 0; else playIdx((cur - 1 + TRACKS.length) % TRACKS.length); });
+$("plNext").addEventListener("click", () => playIdx((cur + 1) % TRACKS.length));
+$("plSeek").addEventListener("input", e => { if (au.duration) au.currentTime = e.target.value / 100 * au.duration; });
+au.addEventListener("timeupdate", () => {
+  if (cur < 0 || !au.duration) return;
+  const r = au.currentTime / au.duration * 100;
+  $("plSeek").value = r; $("plCur").textContent = fmt(au.currentTime); $("plDur").textContent = fmt(au.duration);
+  const bar = document.querySelector(`.trk[data-i="${cur}"] .bar`); if (bar) bar.style.width = r + "%";
+});
+au.addEventListener("play", paint); au.addEventListener("pause", paint);
+au.addEventListener("ended", () => { if (auto && cur < TRACKS.length - 1) playIdx(cur + 1); else { auto = false; paint(); } });
+
+renderGChips(); renderGuides(); showTab(tab, false);
+
+</script>
+
+</body></html>

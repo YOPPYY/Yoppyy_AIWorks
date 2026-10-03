@@ -1,0 +1,539 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ダブルラン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #0f1020;
+    --top-sky: #16203f;
+    --top-accent: #6fd3ff;
+    --mid-sky: #3a1c2c;
+    --mid-accent: #ffb454;
+    --paper: #f3eee4;
+    --miss: #ff4d5e;
+    --font: "DotGothic16", "Hiragino Kaku Gothic ProN", "Yu Gothic", monospace;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font);
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #app {
+    height: 100vh;
+    height: 100svh;
+    min-height: 280px;
+    display: grid;
+    grid-template-rows: 2fr 1fr;
+    max-width: 1280px;
+    margin: 0 auto;
+    position: relative;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  /* 背の低い横画面ではボタンの中身を詰める */
+  @media (max-height: 520px) {
+    #pad { gap: 8px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); }
+    .btn { gap: 2px; border-radius: 12px; box-shadow: inset 0 -6px 0 rgba(0,0,0,.28); }
+    .btn .arrow { display: none; }
+    .btn .big { font-size: clamp(18px, 6.5vh, 28px); }
+    .btn .small { font-size: 11px; }
+    #mute { top: 6px; right: 8px; padding: 4px 8px; font-size: 12px; }
+  }
+
+  /* 縦向きのスマホに出す回転案内 */
+  #rotate {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--ink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 36px; padding: 24px;
+    text-align: center;
+  }
+  #rotate[hidden] { display: none; }
+  #rotate p { margin: 0; font-size: 22px; letter-spacing: .08em; line-height: 1.6; }
+  #rotate .sub { font-size: 13px; color: #9aa0c8; letter-spacing: .04em; }
+  .phone {
+    width: 74px; height: 132px;
+    border: 5px solid var(--paper);
+    border-radius: 14px;
+    position: relative;
+    animation: turn 2.4s cubic-bezier(.6,0,.3,1) infinite;
+  }
+  .phone::before {
+    content: ""; position: absolute; left: 50%; bottom: 6px;
+    width: 14px; height: 4px; margin-left: -7px; border-radius: 2px; background: var(--paper);
+  }
+  .phone .scr {
+    position: absolute; inset: 8px 6px 16px;
+    background: linear-gradient(to left, var(--top-accent) 0 50%, var(--mid-accent) 50% 100%);
+    border-radius: 3px; opacity: .85;
+  }
+  @keyframes turn {
+    0%, 15%   { transform: rotate(0deg); }
+    55%, 85%  { transform: rotate(-90deg); }
+    100%      { transform: rotate(0deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .phone { animation: none; transform: rotate(-90deg); } }
+  #stage { position: relative; min-height: 0; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #pad {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: #0a0b17;
+    border-top: 2px solid #26284a;
+  }
+  .btn {
+    font-family: var(--font);
+    border: 0;
+    border-radius: 14px;
+    color: var(--ink);
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: inset 0 -8px 0 rgba(0,0,0,.28);
+    transition: transform .05s, box-shadow .05s, filter .05s;
+    touch-action: none;
+  }
+  .btn .big { font-size: clamp(22px, 6vw, 34px); letter-spacing: .08em; }
+  .btn .small { font-size: 13px; opacity: .75; letter-spacing: .05em; }
+  .btn .arrow { font-size: 22px; line-height: 1; }
+  #btnMid { background: var(--mid-accent); }
+  #btnTop { background: var(--top-accent); }
+  .btn.down { transform: translateY(5px); box-shadow: inset 0 -3px 0 rgba(0,0,0,.28); filter: brightness(1.12); }
+  .btn:focus-visible { outline: 3px solid var(--paper); outline-offset: 2px; }
+  #mute {
+    position: absolute; top: 8px; right: 12px;
+    font-family: var(--font); font-size: 13px;
+    background: rgba(15,16,32,.7); color: var(--paper);
+    border: 1px solid #3c3f6e; border-radius: 8px; padding: 6px 10px; cursor: pointer;
+    z-index: 2;
+  }
+  #mute:focus-visible { outline: 2px solid var(--top-accent); }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+
+<div id="app">
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <button id="mute" type="button" aria-pressed="false">♪ ON</button>
+  </div>
+  <div id="pad">
+    <button id="btnMid" class="btn" type="button" aria-label="下のキャラをジャンプ">
+      <span class="arrow">▼</span>
+      <span class="big">下 JUMP</span>
+      <span class="small">F / ←</span>
+    </button>
+    <button id="btnTop" class="btn" type="button" aria-label="上のキャラをジャンプ">
+      <span class="arrow">▲</span>
+      <span class="big">上 JUMP</span>
+      <span class="small">J / →</span>
+    </button>
+  </div>
+</div>
+
+<div id="rotate" hidden>
+  <div class="phone" aria-hidden="true"><div class="scr"></div></div>
+  <p>横画面にしてください</p>
+  <p class="sub">自動回転をオンにして<br>スマホを横に向けてください</p>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const stage = document.getElementById('stage');
+  const FONT = '"DotGothic16", "Hiragino Kaku Gothic ProN", monospace';
+
+  // ---------- Layout ----------
+  let W = 0, H = 0, LH = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = stage.getBoundingClientRect();
+    W = Math.max(1, r.width); H = Math.max(1, r.height); LH = H / 2;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+  resize();
+
+  // ---------- Audio ----------
+  let ac = null, master = null, muted = false, bgmTimer = null, nextNote = 0, step = 0;
+  function initAudio() {
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = muted ? 0 : 0.5;
+      master.connect(ac.destination);
+    } catch (e) { ac = null; }
+  }
+  function tone({ type = 'square', f0 = 440, f1 = null, t = 0, dur = 0.12, vol = 0.2, dest = master }) {
+    if (!ac) return;
+    const start = ac.currentTime + t;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, start);
+    if (f1) o.frequency.exponentialRampToValueAtTime(f1, start + dur);
+    g.gain.setValueAtTime(vol, start);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    o.connect(g); g.connect(dest); o.start(start); o.stop(start + dur + 0.02);
+  }
+  function noise(dur = 0.4, vol = 0.25) {
+    if (!ac) return;
+    const len = Math.floor(ac.sampleRate * dur);
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const s = ac.createBufferSource(), g = ac.createGain(), f = ac.createBiquadFilter();
+    f.type = 'lowpass'; f.frequency.value = 1400;
+    s.buffer = buf; g.gain.value = vol;
+    s.connect(f); f.connect(g); g.connect(master); s.start();
+  }
+  const sfx = {
+    jumpTop: () => tone({ f0: 520, f1: 1040, dur: 0.13, vol: 0.14 }),
+    jumpMid: () => tone({ f0: 330, f1: 700, dur: 0.13, vol: 0.14 }),
+    land:    () => tone({ type: 'triangle', f0: 180, f1: 90, dur: 0.06, vol: 0.12 }),
+    point:   () => { tone({ f0: 988, dur: 0.07, vol: 0.1 }); tone({ f0: 1319, t: 0.07, dur: 0.14, vol: 0.1 }); },
+    start:   () => { [523, 659, 784, 1047].forEach((f, i) => tone({ f0: f, t: i * 0.07, dur: 0.1, vol: 0.12 })); },
+    over:    () => { noise(0.35, 0.2); tone({ type: 'sawtooth', f0: 440, f1: 70, dur: 0.7, vol: 0.18 }); },
+  };
+
+  // Simple chiptune loop (A minor, 8 bars of 8 steps)
+  const TEMPO = 150, STEP = 60 / TEMPO / 2;
+  const bass = [45,45,57,45, 45,57,45,57, 41,41,53,41, 41,53,41,53, 43,43,55,43, 43,55,43,55, 40,40,52,40, 44,44,56,44];
+  const lead = [69,0,72,0, 76,0,74,72, 72,0,69,0, 65,0,69,0, 67,0,71,0, 74,0,72,71, 69,0,0,0, 68,0,71,0];
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  function scheduleBgm() {
+    if (!ac) return;
+    while (nextNote < ac.currentTime + 0.12) {
+      const i = step % bass.length;
+      const t = nextNote - ac.currentTime;
+      tone({ type: 'triangle', f0: mtof(bass[i]), t, dur: STEP * 0.9, vol: 0.13 });
+      if (lead[i]) tone({ type: 'square', f0: mtof(lead[i]), t, dur: STEP * 0.8, vol: 0.035 });
+      if (i % 2 === 0) tone({ type: 'square', f0: 2400, f1: 1800, t, dur: 0.02, vol: 0.02 });
+      nextNote += STEP; step++;
+    }
+  }
+  function startBgm() {
+    if (!ac) return;
+    stopBgm();
+    nextNote = ac.currentTime + 0.05; step = 0;
+    bgmTimer = setInterval(scheduleBgm, 25);
+  }
+  function stopBgm() { if (bgmTimer) clearInterval(bgmTimer); bgmTimer = null; }
+
+  const muteBtn = document.getElementById('mute');
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    initAudio();
+    if (master) master.gain.value = muted ? 0 : 0.5;
+    muteBtn.textContent = muted ? '♪ OFF' : '♪ ON';
+    muteBtn.setAttribute('aria-pressed', String(muted));
+    muteBtn.blur();
+  });
+
+  // ---------- Game state ----------
+  let best = 0;
+  try { best = Number(localStorage.getItem('doublerun-best')) || 0; } catch (e) {}
+
+  const lanes = [
+    { name: '上', dir: -1, sky: '#16203f', far: '#223063', ground: '#2c3a73', line: '#4b5ea8', accent: '#6fd3ff', body: '#e8f7ff' },
+    { name: '下', dir: 1,  sky: '#3a1c2c', far: '#55283a', ground: '#6b3346', line: '#a5566a', accent: '#ffb454', body: '#fff3e0' },
+  ];
+  let state = 'title';   // title | play | over
+  let speed = 0, time = 0, score = 0, lastPoint = 0, overAt = 0, missLane = -1, flash = 0;
+
+  function resetLane(L) {
+    L.y = 0; L.vy = 0; L.air = false; L.obs = []; L.scroll = 0;
+    L.nextGap = 1.2 + Math.random() * 0.6; // seconds until first obstacle
+    L.gapTimer = 0; L.anim = 0;
+  }
+  lanes.forEach(resetLane);
+
+  function startGame() {
+    lanes.forEach(resetLane);
+    time = 0; score = 0; lastPoint = 0; missLane = -1; flash = 0;
+    lanes[0].nextGap = 1.4; lanes[1].nextGap = 2.1;
+    state = 'play';
+    sfx.start(); startBgm();
+  }
+
+  function jump(i) {
+    if (blocked) return;
+    initAudio();
+    if (state === 'title') { startGame(); return; }
+    if (state === 'over') {
+      if (performance.now() - overAt > 600) startGame();
+      return;
+    }
+    const L = lanes[i];
+    if (!L.air) {
+      L.vy = 1.75; L.air = true;
+      (i === 0 ? sfx.jumpTop : sfx.jumpMid)();
+    }
+  }
+
+  function gameOver(i) {
+    state = 'over'; missLane = i; flash = 1; overAt = performance.now();
+    stopBgm(); sfx.over();
+    if (score > best) { best = score; try { localStorage.setItem('doublerun-best', String(best)); } catch (e) {} }
+  }
+
+  // Units: lane-relative. y and heights in fractions of LH, horizontal in fractions of LH too.
+  const G = 3.4;              // gravity (LH / s^2)
+  const RUN_X = [0.8, 0.2];   // runner x as fraction of W (後ろ寄り = 障害物が見える距離が長い)
+  const RW = 0.16, RH = 0.26; // runner size (LH)
+
+  function update(dt) {
+    if (state !== 'play') { lanes.forEach(L => { L.anim += dt * 6; }); flash = Math.max(0, flash - dt * 2); return; }
+    time += dt;
+    speed = Math.min(1.5 + time * 0.018, 3.0); // LH per second(約83秒で最高速)
+    score = Math.floor(time * 10);
+    if (Math.floor(score / 100) > lastPoint) { lastPoint = Math.floor(score / 100); sfx.point(); }
+
+    lanes.forEach((L, i) => {
+      L.anim += dt * (6 + speed * 3);
+      L.scroll += speed * dt;
+      // physics
+      if (L.air) {
+        L.vy -= G * dt; L.y += L.vy * dt;
+        if (L.y <= 0) { L.y = 0; L.vy = 0; L.air = false; sfx.land(); }
+      }
+      // spawn
+      L.gapTimer += dt;
+      if (L.gapTimer >= L.nextGap) {
+        L.gapTimer = 0;
+        const minGap = 1.15 - Math.min(time * 0.0025, 0.3);
+        L.nextGap = minGap + Math.random() * 1.1;
+        const tall = Math.random() < 0.35;
+        const w = tall ? 0.1 + Math.random() * 0.06 : 0.14 + Math.random() * 0.12;
+        const h = tall ? 0.3 + Math.random() * 0.06 : 0.16 + Math.random() * 0.1;
+        const startX = L.dir === 1 ? W / LH + 0.2 : -0.2 - w; // in LH units
+        L.obs.push({ x: startX, w, h });
+      }
+      // move obstacles (lane dir = runner's facing: 1 → right, obstacles move left)
+      L.obs.forEach(o => { o.x -= L.dir * speed * dt; });
+      L.obs = L.obs.filter(o => o.x > -1 && o.x < W / LH + 1);
+      // collision (slightly forgiving)
+      const rx = RUN_X[i] * W / LH - RW / 2 + 0.03;
+      const rw = RW - 0.06;
+      for (const o of L.obs) {
+        if (rx < o.x + o.w - 0.02 && rx + rw > o.x + 0.02 && L.y < o.h - 0.02) { gameOver(i); break; }
+      }
+    });
+  }
+
+  // ---------- Drawing ----------
+  function drawLane(i) {
+    const L = lanes[i];
+    const top = i * LH;
+    const gy = top + LH * 0.8;
+    const u = LH;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, top, W, LH); ctx.clip();
+
+    ctx.fillStyle = L.sky; ctx.fillRect(0, top, W, LH);
+
+    // far skyline blocks (parallax)
+    ctx.fillStyle = L.far;
+    const sp = L.scroll * u * 0.25 * L.dir;
+    for (let k = -1; k < W / 60 + 2; k++) {
+      const seed = Math.abs(Math.sin((k + Math.floor(sp / 60)) * 12.9898) * 43758.5453) % 1;
+      const bx = k * 60 - (sp % 60);
+      const bh = u * (0.12 + seed * 0.3);
+      ctx.fillRect(Math.round(bx), Math.round(gy - bh), 48, Math.ceil(bh));
+    }
+    // stars / dust
+    ctx.fillStyle = L.line;
+    for (let k = 0; k < 14; k++) {
+      const sx = ((k * 97 - L.scroll * u * 0.08 * L.dir) % W + W) % W;
+      ctx.fillRect(Math.round(sx), Math.round(top + 10 + (k * 37) % (LH * 0.45)), 2, 2);
+    }
+
+    // ground
+    ctx.fillStyle = L.ground; ctx.fillRect(0, gy, W, LH - (gy - top));
+    ctx.fillStyle = L.line; ctx.fillRect(0, gy, W, 3);
+    const tick = u * 0.35, off = (L.scroll * u * L.dir) % tick;
+    for (let x = -off - tick; x < W + tick; x += tick) ctx.fillRect(Math.round(x), gy + 10, tick * 0.4, 3);
+
+    // obstacles
+    L.obs.forEach(o => {
+      const x = o.x * u, w = o.w * u, h = o.h * u;
+      ctx.fillStyle = '#0f1020'; ctx.fillRect(Math.round(x) + 3, Math.round(gy - h) + 3, Math.round(w), Math.round(h));
+      ctx.fillStyle = L.accent; ctx.fillRect(Math.round(x), Math.round(gy - h), Math.round(w), Math.round(h));
+      ctx.fillStyle = 'rgba(15,16,32,.25)';
+      for (let s = 6; s < h; s += 10) ctx.fillRect(Math.round(x), Math.round(gy - h + s), Math.round(w), 3);
+    });
+
+    // runner
+    drawRunner(i, RUN_X[i] * W, gy - L.y * u, u);
+
+    // lane label + direction
+    ctx.fillStyle = L.accent;
+    ctx.font = `${Math.round(Math.max(13, u * 0.07))}px ${FONT}`;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.fillText(L.dir === 1 ? `${L.name}  ▶▶` : `◀◀  ${L.name}`, 14, top + 12);
+
+    // miss flash
+    if (state === 'over' && missLane === i) {
+      ctx.fillStyle = `rgba(255,77,94,${0.25 + flash * 0.4})`;
+      ctx.fillRect(0, top, W, LH);
+    }
+    ctx.restore();
+  }
+
+  function drawRunner(i, cx, footY, u) {
+    const L = lanes[i];
+    const s = u * RH / 13; // 13 "pixels" tall
+    const w = 9 * s;
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(footY));
+    ctx.scale(L.dir, 1); // face direction
+    const px = (x, y, ww, hh, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x * s - w / 2), Math.round(-y * s), Math.ceil(ww * s), Math.ceil(hh * s)); };
+    const frame = L.air ? 2 : ((Math.floor(L.anim) % 4) + 4) % 4;
+    const dead = state === 'over' && missLane === i;
+    // shadow
+    if (L.air) { ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(-w / 2, lanes[i].y * u - 2, w, 3); }
+    // legs
+    const legs = [[[2,4],[5,2]], [[3,3],[4,3]], [[1,3],[6,3]], [[4,2],[3,4]]][frame];
+    px(legs[0][0], legs[0][1], 2, legs[0][1], L.body);
+    px(legs[1][0] + 1, legs[1][1], 2, legs[1][1], L.accent);
+    // body
+    px(1, 9, 7, 5, dead ? '#ff4d5e' : L.accent);
+    // arm swing
+    px(frame % 2 ? 7 : 0, 8, 2, 3, L.body);
+    // head
+    px(2, 13, 6, 4, L.body);
+    // eye (front side)
+    px(6, 12, 1, 1, '#0f1020');
+    // headband tail
+    px(0, 12, 2, 1, dead ? '#ff4d5e' : L.accent);
+    ctx.restore();
+  }
+
+  function centerText(lines, y) {
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let yy = y;
+    lines.forEach(([txt, size, color]) => {
+      ctx.font = `${Math.round(size)}px ${FONT}`;
+      ctx.fillStyle = '#0f1020';
+      ctx.fillText(txt, W / 2 + 3, yy + 3);
+      ctx.fillStyle = color;
+      ctx.fillText(txt, W / 2, yy);
+      yy += size * 0.7 + 18;
+    });
+  }
+
+  function draw() {
+    drawLane(0); drawLane(1);
+    // divider
+    ctx.fillStyle = '#0f1020'; ctx.fillRect(0, LH - 2, W, 4);
+
+    // HUD
+    const hs = Math.max(14, LH * 0.075);
+    if (state === 'play') {
+    ctx.font = `${Math.round(hs)}px ${FONT}`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const label = `${String(score).padStart(5, '0')} m`;
+    const tw = ctx.measureText(label).width + 22;
+    ctx.fillStyle = 'rgba(15,16,32,.85)';
+    ctx.fillRect(W / 2 - tw / 2, LH - hs * 0.9, tw, hs * 1.8);
+    ctx.fillStyle = '#f3eee4'; ctx.fillText(label, W / 2, LH);
+    }
+
+    const big = Math.max(24, Math.min(LH * 0.16, W * 0.11));
+    if (state === 'title') {
+      ctx.fillStyle = 'rgba(15,16,32,.45)'; ctx.fillRect(0, 0, W, H);
+      centerText([
+        ['ダブルラン', big, '#f3eee4'],
+        ['2人とも障害物を跳び越えろ', big * 0.36, '#f3eee4'],
+        ['ボタンを押してスタート', big * 0.36, '#ffb454'],
+      ], LH - big * 0.9);
+      ctx.font = `${Math.round(big * 0.3)}px ${FONT}`;
+      ctx.fillStyle = '#9aa0c8'; ctx.textAlign = 'center';
+      ctx.fillText(`BEST ${best} m`, W / 2, H - big * 0.5);
+    } else if (state === 'over') {
+      ctx.fillStyle = 'rgba(15,16,32,.5)'; ctx.fillRect(0, 0, W, H);
+      const who = missLane === 0 ? '上のランナーがミス' : '下のランナーがミス';
+      const newBest = score >= best && score > 0;
+      centerText([
+        ['GAME OVER', big * 0.9, '#ff4d5e'],
+        [who, big * 0.36, '#f3eee4'],
+        [`${score} m   ${newBest ? 'NEW BEST!' : 'BEST ' + best + ' m'}`, big * 0.36, newBest ? '#ffb454' : '#9aa0c8'],
+        [performance.now() - overAt > 600 ? 'ボタンでもう一度' : '', big * 0.32, '#6fd3ff'],
+      ], LH - big * 1.1);
+    }
+  }
+
+  // ---------- Orientation ----------
+  const rotateEl = document.getElementById('rotate');
+  const portraitPhone = window.matchMedia('(orientation: portrait) and (hover: none) and (pointer: coarse)');
+  let blocked = false;
+  function checkOrientation() {
+    blocked = portraitPhone.matches;
+    rotateEl.hidden = !blocked;
+    if (ac) { if (blocked) ac.suspend(); else if (!document.hidden) ac.resume(); }
+    resize();
+  }
+  if (portraitPhone.addEventListener) portraitPhone.addEventListener('change', checkOrientation);
+  else if (portraitPhone.addListener) portraitPhone.addListener(checkOrientation);
+  window.addEventListener('orientationchange', () => setTimeout(checkOrientation, 250));
+  window.addEventListener('resize', checkOrientation);
+  checkOrientation();
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.max(0, Math.min((now - last) / 1000, 1 / 30));
+    last = now;
+    if (!blocked) update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ---------- Input ----------
+  const btnMid = document.getElementById('btnMid');
+  const btnTop = document.getElementById('btnTop');
+  function bind(btn, lane) {
+    btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('down'); jump(lane); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, () => btn.classList.remove('down')));
+    btn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); } });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  bind(btnMid, 1); bind(btnTop, 0);
+
+  const held = new Set();
+  window.addEventListener('keydown', e => {
+    if (e.repeat) return;
+    const k = e.key.toLowerCase();
+    let lane = -1, btn = null;
+    if (k === 'f' || e.key === 'ArrowLeft') { lane = 1; btn = btnMid; }
+    else if (k === 'j' || e.key === 'ArrowRight') { lane = 0; btn = btnTop; }
+    else if (e.key === ' ' && state !== 'play') { e.preventDefault(); jump(0); return; }
+    if (lane < 0) return;
+    e.preventDefault(); held.add(k); btn.classList.add('down'); jump(lane);
+  });
+  window.addEventListener('keyup', e => {
+    const k = e.key.toLowerCase();
+    if (k === 'f' || e.key === 'ArrowLeft') btnMid.classList.remove('down');
+    if (k === 'j' || e.key === 'ArrowRight') btnTop.classList.remove('down');
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!ac) return;
+    if (document.hidden || blocked) ac.suspend(); else ac.resume();
+  });
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,616 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ねばねば10秒</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --straw:#DCBF6A; --straw-dk:#B99A45; --indigo:#26345E; --indigo-lt:#3C4E86;
+    --bean:#A5621F; --silk:#F6F1E4; --ink:#241C12; --red:#C8321E;
+  }
+  html,body{height:100%}
+  [hidden]{display:none!important}
+  body{
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;
+    background: var(--straw);
+    background-image: repeating-linear-gradient(92deg, rgba(0,0,0,.035) 0 2px, transparent 2px 7px);
+    color: var(--ink);
+    font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+    padding-inline:16px;
+  }
+  .wrap{max-width:460px;margin:0 auto;padding-block:14px 24px;display:flex;flex-direction:column;gap:12px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+  h1{font-family:"Dela Gothic One","M PLUS Rounded 1c",sans-serif;font-weight:400;font-size:clamp(28px,8vw,38px);line-height:1;margin:0;letter-spacing:.02em}
+  h1 small{display:block;font-family:"M PLUS Rounded 1c",sans-serif;font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--indigo);margin-bottom:6px}
+  .best{font-size:12px;text-align:right;font-weight:800;color:var(--indigo)}
+  .best b{display:block;font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .hud{display:grid;grid-template-columns:repeat(3,1fr);background:var(--indigo);color:var(--silk);border-radius:14px;padding:10px 6px}
+  .hud div{text-align:center;display:flex;flex-direction:column;gap:2px}
+  .hud span{font-size:11px;letter-spacing:.12em;opacity:.75}
+  .hud b{font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .hud .t.low b{color:#FFB199}
+  .stage{position:relative;width:100%;aspect-ratio:1/1;max-width:100%}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab;border-radius:50%}
+  canvas:active{cursor:grabbing}
+  canvas.side{border-radius:18px;cursor:default}
+  .snd{display:block;margin:6px 0 0 auto;padding:4px 12px;font-size:12px}
+  .call{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;
+    font-family:"Dela Gothic One",sans-serif;font-size:clamp(48px,16vw,76px);color:var(--silk);letter-spacing:.06em;
+    -webkit-text-stroke:3px var(--ink);paint-order:stroke fill;text-shadow:0 5px 0 var(--ink)}
+  .call.go,.call.record{color:#FFD24A;animation:pop .5s ease-out}
+  .call.record{color:#FF6A4D;font-size:clamp(40px,13vw,64px)}
+  .call.ready{animation:pulse 1s ease-in-out}
+  @keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+  @keyframes pulse{0%{transform:scale(.8);opacity:.3}30%{transform:scale(1);opacity:1}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){ .call{animation:none!important} }
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;pointer-events:none}
+  .overlay > *{pointer-events:auto}
+  .hand{display:flex;align-items:center;gap:4px;background:var(--silk);border:3px solid var(--ink);border-radius:999px;padding:4px}
+  .hand span{font-size:12px;font-weight:800;padding:0 8px 0 10px;color:var(--ink)}
+  .hand button{font:inherit;font-weight:800;font-size:15px;border:0;border-radius:999px;padding:8px 16px;background:transparent;color:var(--ink);cursor:pointer}
+  .hand button[aria-pressed="true"]{background:var(--indigo);color:var(--silk)}
+  .hand button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+  .btn{font:inherit;font-weight:800;font-size:18px;border:0;border-radius:999px;padding:14px 30px;background:var(--red);color:#fff;box-shadow:0 4px 0 #7E1F12;cursor:pointer;letter-spacing:.08em}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #7E1F12}
+  .btn:focus-visible,.ghost:focus-visible{outline:3px solid var(--indigo);outline-offset:3px}
+  .ghost{font:inherit;font-weight:800;font-size:14px;border:2px solid var(--indigo);background:transparent;color:var(--indigo);border-radius:999px;padding:10px 18px;cursor:pointer}
+  .hint{background:rgba(36,28,18,.78);color:var(--silk);font-size:13px;padding:6px 12px;border-radius:999px}
+  .result{background:var(--silk);border:3px solid var(--ink);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .result .row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .score{font-family:"Dela Gothic One",sans-serif;font-size:clamp(44px,14vw,60px);line-height:1;font-variant-numeric:tabular-nums}
+  .score small{font-size:.4em;margin-left:4px}
+  .rank{font-weight:800;background:var(--indigo);color:var(--silk);padding:4px 12px;border-radius:999px;font-size:14px}
+  .stats{display:flex;gap:16px;font-size:13px;flex-wrap:wrap}
+  .stats b{font-variant-numeric:tabular-nums}
+  .meter{height:10px;background:#E4DAC2;border-radius:6px;position:relative;overflow:hidden}
+  .meter i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--bean),var(--red));border-radius:6px;width:0;transition:width .9s ease}
+  .meter-l{display:flex;justify-content:space-between;font-size:11px;color:#6B5B42}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .note{font-size:12px;color:#5B4A2C;line-height:1.7;margin:0}
+  @media (prefers-reduced-motion: reduce){ .meter i{transition:none} }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1><small>10秒かき混ぜ選手権</small>ねばねば10秒</h1>
+    <div class="best"><button class="ghost snd" id="snd" aria-pressed="true">音 ON</button></div>
+  </header>
+
+  <div class="hud" aria-live="polite">
+    <div class="t" id="tBox"><span>のこり</span><b id="time">10.0</b></div>
+    <div><span>回転</span><b id="rot">0</b></div>
+    <div><span>自己ベスト</span><b id="best">—</b></div>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv" aria-label="納豆の鉢。円を描くようにドラッグしてかき混ぜる"></canvas>
+    <div class="call" id="call" aria-live="assertive" hidden></div>
+    <div class="overlay" id="ov">
+      <div class="hand" role="group" aria-label="利き手">
+        <span>利き手</span>
+        <button type="button" data-hand="L" aria-pressed="false">左手</button>
+        <button type="button" data-hand="R" aria-pressed="true">右手</button>
+      </div>
+      <button class="btn" id="start">かき混ぜ開始</button>
+      <div class="hint">鉢の中をぐるぐるドラッグ</div>
+    </div>
+  </div>
+
+  <div class="result" id="result" hidden>
+    <div class="row">
+      <div class="score"><span id="rScore">0.0</span><small>cm</small></div>
+      <div class="rank" id="rRank">—</div>
+    </div>
+    <div class="stats">
+      <div>回転数 <b id="rRot">0</b> 回</div>
+      <div>最長コンボ <b id="rCombo">0.0</b> 秒</div>
+    </div>
+    <div>
+      <div class="meter"><i id="rBar"></i></div>
+      <div class="meter-l"><span>0</span><span>魯山人ライン 150cm</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="again">もう一回</button>
+      <button class="ghost" id="copy">結果をコピー</button>
+    </div>
+  </div>
+
+  <p class="note">同じ向きに回し続けるとコンボで糸が伸びやすくなる(最大2倍)。逆回しするとコンボは切れる。美食家の北大路魯山人は納豆を424回かき混ぜたと伝えられている。</p>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const DUR = 10;
+  let W = 0, dpr = 1;
+  let state = 'ready'; // ready | play | lift | done
+  let beans = [], pairs = [];
+  let t0 = 0, left = DUR, total = 0, len = 0, streak = 0, bestStreak = 0, dir = 0;
+  let spin = 0, spinVel = 0, frameDelta = 0, lastAng = null, lastMoveT = 0;
+  let liftT = 0, c0 = 0, lastQuarter = 0, lastTick = 0, liftEnded = false, prevBest = 0, recordShown = false;
+  const TAU = Math.PI * 2;
+
+  let best = 0;
+  try { best = parseFloat(localStorage.getItem('natto-best')) || 0; } catch(e){}
+  const showBest = () => $('best').textContent = best ? best.toFixed(1) : '—';
+  showBest();
+
+  // ---------- sound (Web Audio synth, no files) ----------
+  let soundOn = true;
+  try { soundOn = localStorage.getItem('natto-sound') !== 'off'; } catch(e){}
+  let ac = null, master = null, stirGain = null, stirFilter = null, liftOsc = null, liftGain = null;
+  function initAudio(){
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ac = new AC();
+    master = ac.createGain(); master.gain.value = soundOn ? 0.8 : 0; master.connect(ac.destination);
+    // looping brown-ish noise for the stirring "shaka-shaka / neba-neba"
+    const buf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < d.length; i++){ last = (last + (Math.random()*2-1) * 0.08) * 0.985; d[i] = last * 3; }
+    const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+    stirFilter = ac.createBiquadFilter(); stirFilter.type = 'bandpass'; stirFilter.Q.value = 1.2; stirFilter.frequency.value = 400;
+    stirGain = ac.createGain(); stirGain.gain.value = 0;
+    src.connect(stirFilter).connect(stirGain).connect(master); src.start();
+  }
+  function tone(freq, dur, { type = 'sine', vol = 0.3, to = null, when = 0, attack = 0.005 } = {}){
+    if (!ac) return;
+    const t = ac.currentTime + when;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.02);
+  }
+  const sfx = {
+    ready(){ tone(523, 0.18, { type:'square', vol:0.12 }); },
+    go(){ tone(1046, 0.35, { type:'square', vol:0.14 }); tone(1568, 0.35, { type:'triangle', vol:0.12 }); },
+    squelch(st){ // sticky "nechu" — lower, longer as it gets stickier
+      const f = 420 - 180*st + Math.random()*80;
+      tone(f, 0.06 + 0.06*st, { type:'sine', vol:0.18 + 0.1*st, to: f*0.45 });
+    },
+    tick(){ tone(1320, 0.07, { type:'square', vol:0.08 }); },
+    record(){ [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.14, { type:'square', vol:0.1, when: i*0.06 })); },
+    whistle(){ tone(1800, 0.12, { type:'triangle', vol:0.2 }); tone(1800, 0.5, { type:'triangle', vol:0.2, when:0.16, to:1500 }); },
+    liftStart(){
+      if (!ac) return;
+      liftOsc = ac.createOscillator(); liftGain = ac.createGain();
+      liftOsc.type = 'triangle'; liftOsc.frequency.value = 180;
+      liftGain.gain.value = 0.0001;
+      liftGain.gain.exponentialRampToValueAtTime(0.1, ac.currentTime + 0.1);
+      liftOsc.connect(liftGain).connect(master); liftOsc.start();
+    },
+    liftUpdate(p){ if (liftOsc) liftOsc.frequency.setTargetAtTime(180 + p * (200 + len*4), ac.currentTime, 0.03); },
+    liftEnd(){
+      if (!liftOsc) return;
+      liftGain.gain.setTargetAtTime(0.0001, ac.currentTime, 0.05);
+      liftOsc.stop(ac.currentTime + 0.3); liftOsc = null;
+    },
+    result(isBest){
+      const notes = isBest ? [523, 659, 784, 1046, 1318] : [523, 659, 784];
+      notes.forEach((f, i) => tone(f, 0.25, { type:'square', vol:0.1, when: i*0.09 }));
+    }
+  };
+  function setSound(on){
+    soundOn = on;
+    $('snd').textContent = on ? '音 ON' : '音 OFF';
+    $('snd').setAttribute('aria-pressed', String(on));
+    if (master) master.gain.setTargetAtTime(on ? 0.8 : 0, ac.currentTime, 0.02);
+    try { localStorage.setItem('natto-sound', on ? 'on' : 'off'); } catch(e){}
+  }
+  setSound(soundOn);
+  $('snd').addEventListener('click', () => { initAudio(); setSound(!soundOn); });
+
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = cv.clientWidth;
+    cv.width = W * dpr; cv.height = W * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function seed(){
+    beans = [];
+    for (let i = 0; i < 90; i++){
+      const r = Math.sqrt(Math.random()) * 0.66;
+      beans.push({ r, a: Math.random()*TAU, s: 0.85 + Math.random()*0.3, rot: Math.random()*TAU, lag: 0.55 + Math.random()*0.45 });
+    }
+    pairs = [];
+    for (let i = 0; i < 160; i++){
+      const a = Math.floor(Math.random()*beans.length);
+      let b = Math.floor(Math.random()*beans.length);
+      if (b === a) b = (a+1) % beans.length;
+      pairs.push([a, b, Math.random()]);
+    }
+  }
+
+  const center = () => ({ x: W/2, y: W/2, R: W*0.46 });
+  const beanPos = (b) => { const c = center(); const a = b.a + spin*b.lag; return { x: c.x + Math.cos(a)*b.r*c.R, y: c.y + Math.sin(a)*b.r*c.R }; };
+  const sticky = () => Math.min(1, total / TAU / 45);
+
+  function drawBowl(){
+    const c = center();
+    ctx.clearRect(0,0,W,W);
+    // rim
+    let g = ctx.createRadialGradient(c.x - c.R*.3, c.y - c.R*.3, c.R*.2, c.x, c.y, c.R*1.08);
+    g.addColorStop(0, '#4A5E9C'); g.addColorStop(1, '#1B2546');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, c.R*1.08, 0, TAU); ctx.fill();
+    // inner glaze
+    g = ctx.createRadialGradient(c.x, c.y, c.R*.1, c.x, c.y, c.R*.9);
+    g.addColorStop(0, '#E9E2CF'); g.addColorStop(1, '#C9BFA6');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, c.R*.9, 0, TAU); ctx.fill();
+    // indigo pattern ring
+    ctx.strokeStyle = 'rgba(38,52,94,.55)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(c.x, c.y, c.R*.84, 0, TAU); ctx.stroke();
+  }
+
+  function drawBeans(){
+    const c = center(), st = sticky();
+    // glossy slime under beans
+    if (st > 0){
+      const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.R*.72);
+      g.addColorStop(0, `rgba(250,245,230,${0.35*st})`); g.addColorStop(1, 'rgba(250,245,230,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, c.R*.72, 0, TAU); ctx.fill();
+    }
+    const bw = W*0.022;
+    for (const b of beans){
+      const p = beanPos(b);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(b.rot + spin*b.lag);
+      ctx.fillStyle = '#6E3E12';
+      ctx.beginPath(); ctx.ellipse(1.5, 2, bw*1.25*b.s, bw*b.s, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#A5621F';
+      ctx.beginPath(); ctx.ellipse(0, 0, bw*1.25*b.s, bw*b.s, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,230,180,.55)';
+      ctx.beginPath(); ctx.ellipse(-bw*.35, -bw*.35, bw*.4*b.s, bw*.25*b.s, -.4, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    // strings
+    const n = Math.floor(pairs.length * st);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++){
+      const [a, b, k] = pairs[i];
+      const p = beanPos(beans[a]), q = beanPos(beans[b]);
+      const mx = (p.x+q.x)/2 + Math.sin(spin*0.7 + k*9)*W*0.04, my = (p.y+q.y)/2 + Math.cos(spin*0.5 + k*7)*W*0.04;
+      ctx.strokeStyle = `rgba(255,252,242,${0.25 + 0.5*k*st})`;
+      ctx.lineWidth = 0.6 + k*1.1;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.quadraticCurveTo(mx, my, q.x, q.y); ctx.stroke();
+    }
+  }
+
+  function drawSide(p){
+    const bowlTop = W*0.72, maxH = W*0.6, cx = W*0.5;
+    const scaleMax = Math.max(150, Math.ceil(len / 50) * 50);
+    const shown = len * p;
+    // backdrop
+    let g = ctx.createLinearGradient(0, 0, 0, W);
+    g.addColorStop(0, '#1B2546'); g.addColorStop(1, '#2F3F72');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, W);
+    // table
+    ctx.fillStyle = '#8A5A2B'; ctx.fillRect(0, W*0.925, W, W*0.075);
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(0, W*0.925, W, 3);
+
+    // ruler
+    const L = hand === 'L', rx = L ? W*0.9 : W*0.1, td = L ? -1 : 1;
+    ctx.strokeStyle = 'rgba(246,241,228,.6)'; ctx.fillStyle = 'rgba(246,241,228,.8)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(rx, bowlTop); ctx.lineTo(rx, bowlTop - maxH); ctx.stroke();
+    ctx.font = `${Math.round(W*0.03)}px "M PLUS Rounded 1c", sans-serif`;
+    ctx.textAlign = L ? 'left' : 'right'; ctx.textBaseline = 'middle';
+    for (let cm = 0; cm <= scaleMax; cm += 10){
+      const y = bowlTop - maxH * cm / scaleMax, major = cm % 50 === 0;
+      ctx.beginPath(); ctx.moveTo(rx, y); ctx.lineTo(rx + td*(major ? 12 : 6), y); ctx.stroke();
+      if (major) ctx.fillText(cm, rx - td*5, y);
+    }
+
+    // strings: from the bean surface up to the chopstick tip
+    const tipY = bowlTop - maxH * (shown / scaleMax) - W*0.01;
+    const tipX = cx + Math.sin(p * 6) * W*0.008 * p;
+    const st = sticky();
+    const n = 14 + Math.floor(26 * st);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++){
+      const k = i / n;
+      const sx = W*0.3 + W*0.4 * ((i * 0.618) % 1), sy = bowlTop - W*0.01;
+      const sway = Math.sin(i * 1.7 + p * 3) * W*0.05 * (1 - p*0.6);
+      ctx.strokeStyle = `rgba(255,252,242,${0.25 + 0.5*((i*0.37)%1)})`;
+      ctx.lineWidth = Math.max(0.5, (1.8 - 1.2*p) * (0.5 + k));
+      ctx.beginPath(); ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo((sx + tipX)/2 + sway, (sy + tipY)/2, tipX, tipY);
+      ctx.stroke();
+    }
+
+    // bowl (side view)
+    const mouthL = W*0.2, mouthR = W*0.8;
+    g = ctx.createLinearGradient(mouthL, 0, mouthR, 0);
+    g.addColorStop(0, '#3C4E86'); g.addColorStop(.45, '#4F64A6'); g.addColorStop(1, '#1E2A50');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(mouthL, bowlTop);
+    ctx.bezierCurveTo(mouthL, W*0.86, W*0.36, W*0.9, W*0.4, W*0.9);
+    ctx.lineTo(W*0.6, W*0.9);
+    ctx.bezierCurveTo(W*0.64, W*0.9, mouthR, W*0.86, mouthR, bowlTop);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#1E2A50'; ctx.fillRect(W*0.41, W*0.895, W*0.18, W*0.03);
+    ctx.strokeStyle = 'rgba(246,241,228,.55)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(W*0.225, W*0.77); ctx.quadraticCurveTo(cx, W*0.8, W*0.775, W*0.77); ctx.stroke();
+    // rim + beans peeking
+    ctx.fillStyle = '#C9BFA6';
+    ctx.beginPath(); ctx.ellipse(cx, bowlTop, (mouthR-mouthL)/2, W*0.03, 0, 0, TAU); ctx.fill();
+    const bw = W*0.022;
+    for (let i = 0; i < 16; i++){
+      const x = W*0.26 + (W*0.48) * (i / 15), y = bowlTop - W*0.008 - Math.sin(i/15*Math.PI) * W*0.015;
+      ctx.fillStyle = '#A5621F';
+      ctx.beginPath(); ctx.ellipse(x, y, bw*1.2, bw*0.9, (i%3)*0.4, 0, TAU); ctx.fill();
+    }
+
+    // beans hanging at the tip
+    for (let i = 0; i < 3; i++){
+      ctx.fillStyle = '#A5621F';
+      ctx.beginPath(); ctx.ellipse(tipX + (i-1)*bw*1.6, tipY + bw*0.6 + (i===1 ? bw*0.8 : 0), bw*1.2, bw*0.9, i*0.5, 0, TAU); ctx.fill();
+    }
+    // chopsticks
+    ctx.strokeStyle = '#B07A3E'; ctx.lineWidth = W*0.016; ctx.lineCap = 'round';
+    const hs = hand === 'R' ? 1 : -1;
+    stick(tipX - 3*hs, tipY, tipX + hs*W*0.18, tipY - W*0.55, W*0.009, W*0.026, '#9C6A34');
+    stick(tipX + 3*hs, tipY, tipX + hs*W*0.26, tipY - W*0.5, W*0.009, W*0.026, '#B98247');
+
+    // guide line to ruler + count-up number
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(246,241,228,.4)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(rx, tipY); ctx.lineTo(tipX - td*W*0.03, tipY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#F6F1E4'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = `${Math.round(W*0.11)}px "Dela Gothic One", sans-serif`;
+    const label = shown.toFixed(1);
+    const lx = L ? W*0.84 - 0 : W*0.16;
+    ctx.font = `${Math.round(W*0.045)}px "Dela Gothic One", sans-serif`;
+    const cmw = ctx.measureText('cm').width;
+    ctx.font = `${Math.round(W*0.11)}px "Dela Gothic One", sans-serif`;
+    const sx0 = L ? lx - cmw - 6 - ctx.measureText(label).width : lx;
+    ctx.fillText(label, sx0, W*0.14);
+    const lw = ctx.measureText(label).width;
+    ctx.font = `${Math.round(W*0.045)}px "Dela Gothic One", sans-serif`;
+    ctx.fillText('cm', sx0 + lw + 6, W*0.14);
+  }
+
+  function hud(){
+    $('time').textContent = left.toFixed(1);
+    $('tBox').classList.toggle('low', state === 'play' && left < 3);
+    $('rot').textContent = state === 'ready' ? 0 : Math.floor(total / TAU);
+  }
+
+  // ---------- chopsticks ----------
+  let hand = 'R';
+  try { if (localStorage.getItem('natto-hand') === 'L') hand = 'L'; } catch(e){}
+  const tip = { x: 0, y: 0 }, tipTarget = { x: 0, y: 0 };
+  let tipInit = false;
+  function setHand(h){
+    hand = h;
+    document.querySelectorAll('.hand button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.hand === h)));
+    try { localStorage.setItem('natto-hand', h); } catch(e){}
+  }
+  setHand(hand);
+  document.querySelectorAll('.hand button').forEach(b => b.addEventListener('click', () => { setHand(b.dataset.hand); }));
+
+  function stick(x0, y0, x1, y1, w0, w1, col){
+    const a = Math.atan2(y1 - y0, x1 - x0), nx = -Math.sin(a), ny = Math.cos(a);
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(x0 + nx*w0/2, y0 + ny*w0/2);
+    ctx.lineTo(x1 + nx*w1/2, y1 + ny*w1/2);
+    ctx.lineTo(x1 - nx*w1/2, y1 - ny*w1/2);
+    ctx.lineTo(x0 - nx*w0/2, y0 - ny*w0/2);
+    ctx.closePath(); ctx.fill();
+  }
+  function drawChopsticks(){
+    const s = hand === 'R' ? 1 : -1;
+    // handle end sits off-canvas toward the hand side
+    const ex = W/2 + s*W*0.62, ey = W*1.12;
+    const dx = ex - tip.x, dy = ey - tip.y, L = Math.hypot(dx, dy) || 1;
+    const nx = -dy / L, ny = dx / L;
+    const gapTip = W*0.008, gapEnd = W*0.05;
+    const tw = W*0.009, ew = W*0.026;
+    const pairs = [[-1, '#9C6A34'], [1, '#B98247']];
+    // shadow
+    ctx.save(); ctx.globalAlpha = 0.22;
+    for (const [k] of pairs) stick(tip.x + k*nx*gapTip + W*0.02, tip.y + k*ny*gapTip + W*0.025, ex + k*nx*gapEnd + W*0.02, ey + k*ny*gapEnd + W*0.025, tw, ew, '#000');
+    ctx.restore();
+    for (const [k, col] of pairs){
+      const x0 = tip.x + k*nx*gapTip, y0 = tip.y + k*ny*gapTip, x1 = ex + k*nx*gapEnd, y1 = ey + k*ny*gapEnd;
+      stick(x0, y0, x1, y1, tw, ew, col);
+      // highlight + painted grip band
+      ctx.save(); ctx.globalAlpha = .35;
+      stick(x0 - nx*tw*0.15, y0 - ny*tw*0.15, x1 - nx*ew*0.15, y1 - ny*ew*0.15, tw*0.3, ew*0.3, '#F3D9A8');
+      ctx.restore();
+      const bx0 = x0 + (x1-x0)*0.62, by0 = y0 + (y1-y0)*0.62, bx1 = x0 + (x1-x0)*0.7, by1 = y0 + (y1-y0)*0.7;
+      stick(bx0, by0, bx1, by1, tw + (ew-tw)*0.62, tw + (ew-tw)*0.7, '#8E2A1C');
+    }
+    // strings clinging to the tips once it gets sticky
+    const st = sticky();
+    if (st > 0.05 && state !== 'lift' && state !== 'done'){
+      ctx.lineCap = 'round';
+      const n = Math.floor(10 * st);
+      for (let i = 0; i < n; i++){
+        const b = beans[(i * 11 + 3) % beans.length], p = beanPos(b);
+        if (Math.hypot(p.x - tip.x, p.y - tip.y) > W*0.3) continue;
+        ctx.strokeStyle = `rgba(255,252,242,${0.25 + 0.4*st})`;
+        ctx.lineWidth = 0.6 + (i % 3) * 0.4;
+        ctx.beginPath(); ctx.moveTo(tip.x, tip.y);
+        ctx.quadraticCurveTo((tip.x + p.x)/2 + Math.sin(spin + i)*10, (tip.y + p.y)/2 - 6, p.x, p.y);
+        ctx.stroke();
+      }
+    }
+  }
+  function setTipFromEvent(e){
+    const r = cv.getBoundingClientRect(), c = center();
+    let x = e.clientX - r.left - c.x, y = e.clientY - r.top - c.y;
+    const d = Math.hypot(x, y), m = c.R * 0.8;
+    if (d > m){ x *= m / d; y *= m / d; }
+    tipTarget.x = c.x + x; tipTarget.y = c.y + y;
+  }
+  function updateTip(now, dt){
+    const c = center();
+    if (!tipInit){ tip.x = tipTarget.x = c.x + (hand === 'R' ? 1 : -1)*c.R*0.3; tip.y = tipTarget.y = c.y + c.R*0.2; tipInit = true; }
+    if (state === 'ready'){
+      // idle demo stir on the title screen
+      const a = now / 700 * (hand === 'R' ? 1 : -1);
+      tipTarget.x = c.x + Math.cos(a) * c.R*0.4; tipTarget.y = c.y + Math.sin(a) * c.R*0.4;
+    }
+    const k = 1 - Math.pow(0.0005, dt);
+    tip.x += (tipTarget.x - tip.x) * k; tip.y += (tipTarget.y - tip.y) * k;
+  }
+
+  function angleAt(e){
+    const r = cv.getBoundingClientRect(), c = center();
+    const x = e.clientX - r.left - c.x, y = e.clientY - r.top - c.y;
+    return { a: Math.atan2(y, x), d: Math.hypot(x, y) };
+  }
+  cv.addEventListener('pointerdown', e => {
+    if (state === 'count' || state === 'play') setTipFromEvent(e);
+    if (state !== 'play') return;
+    cv.setPointerCapture(e.pointerId);
+    const p = angleAt(e); lastAng = p.d > W*0.03 ? p.a : null;
+  });
+  cv.addEventListener('pointermove', e => {
+    if (state === 'count' || state === 'play') setTipFromEvent(e);
+    if (state !== 'play' || !(e.buttons || e.pointerType === 'touch')) return;
+    const p = angleAt(e);
+    if (p.d < W*0.03){ lastAng = null; return; }
+    if (lastAng !== null){
+      let d = p.a - lastAng;
+      if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU;
+      if (Math.abs(d) < 1.2) {
+        const sg = Math.sign(d);
+        if (sg && dir && sg !== dir && Math.abs(d) > 0.02){ streak = 0; }
+        if (sg && Math.abs(d) > 0.02) dir = sg;
+        frameDelta += d;
+        total += Math.abs(d);
+        const q = Math.floor(total / (TAU/4));
+        if (q > lastQuarter){ lastQuarter = q; sfx.squelch(sticky()); }
+        const mult = 1 + Math.min(streak, 3) / 3;
+        len += Math.abs(d) / TAU * 1.5 * mult;
+        lastMoveT = performance.now();
+      }
+    }
+    lastAng = p.a;
+  });
+  const endDrag = () => { lastAng = null; };
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+
+  let prev = performance.now();
+  function loop(now){
+    const dt = Math.min(0.05, (now - prev) / 1000); prev = now;
+    if (state === 'count'){
+      const e = (now - c0) / 1000;
+      if (e >= 1.1){
+        state = 'play'; t0 = now; lastMoveT = 0;
+        call('GO!', 'go'); sfx.go();
+        setTimeout(() => { if (state === 'play') $('call').hidden = true; }, 600);
+      }
+    }
+    if (state === 'play'){
+      left = Math.max(0, DUR - (now - t0) / 1000);
+      const sec = Math.ceil(left);
+      if (sec <= 3 && sec >= 1 && sec !== lastTick){ lastTick = sec; sfx.tick(); }
+      if (now - lastMoveT < 150){ streak += dt; bestStreak = Math.max(bestStreak, streak); }
+      else if (now - lastMoveT > 400) streak = 0;
+      spinVel = spinVel * 0.8 + (frameDelta / Math.max(dt, 0.001)) * 0.2 * 0.9;
+      frameDelta = 0;
+      if (stirGain){
+        const sp = Math.min(1, Math.abs(spinVel) / 25);
+        stirGain.gain.setTargetAtTime(sp * 0.5, ac.currentTime, 0.04);
+        stirFilter.frequency.setTargetAtTime(300 + sp * 900 - sticky() * 150, ac.currentTime, 0.05);
+      }
+      if (left <= 0) finish();
+    } else {
+      spinVel *= 0.92;
+    }
+    spin += spinVel * dt;
+    if (state === 'lift' || state === 'done'){
+      liftT = Math.min(1.25, liftT + dt / 2.8);
+      const x = Math.min(1, liftT);
+      const e = x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2;
+      drawSide(e);
+      if (state === 'lift' && !recordShown && liftT >= 1 && len > prevBest && len > 0){
+        recordShown = true; call('新記録!', 'record'); sfx.record();
+      }
+      if (state === 'lift' && liftT > 0.35/2.8) sfx.liftUpdate(e);
+      if (liftT >= 1 && state === 'lift' && !liftEnded){ liftEnded = true; sfx.liftEnd(); }
+      if (liftT >= 1.25 && state === 'lift') showResult();
+    } else {
+      if (state === 'ready') spinVel = 1.4 * (hand === 'R' ? 1 : -1);
+      updateTip(now, dt);
+      drawBowl(); drawBeans(); drawChopsticks();
+    }
+    hud();
+    requestAnimationFrame(loop);
+  }
+
+  function call(text, cls){
+    const el = $('call');
+    el.hidden = false; el.textContent = text;
+    el.className = 'call'; void el.offsetWidth; el.classList.add(cls);
+  }
+  function start(){
+    initAudio();
+    seed();
+    total = 0; len = 0; streak = 0; bestStreak = 0; dir = 0; left = DUR;
+    spinVel = 0; liftT = 0; lastAng = null; lastQuarter = 0; lastTick = 0; liftEnded = false;
+    $('result').hidden = true;
+    cv.classList.remove('side');
+    $('ov').hidden = true;
+    state = 'count'; c0 = performance.now();
+    call('READY', 'ready'); sfx.ready();
+  }
+  function finish(){
+    state = 'lift'; lastAng = null; cv.classList.add('side');
+    prevBest = best; recordShown = false;
+    if (stirGain) stirGain.gain.setTargetAtTime(0, ac.currentTime, 0.03);
+    sfx.whistle();
+    setTimeout(() => { if (state === 'lift') sfx.liftStart(); }, 350);
+  }
+
+  function rankOf(x){
+    if (x < 20) return 'まだ豆';
+    if (x < 50) return 'ねばり初段';
+    if (x < 90) return '糸引き名人';
+    if (x < 150) return '水戸の匠';
+    return '魯山人級';
+  }
+  function showResult(){
+    state = 'done';
+    const isBest = len > best;
+    if (isBest){ best = len; try { localStorage.setItem('natto-best', String(best)); } catch(e){} showBest(); }
+    $('rScore').textContent = len.toFixed(1);
+    $('rRank').textContent = rankOf(len) + (isBest ? '・新記録!' : '');
+    $('rRot').textContent = Math.floor(total / TAU);
+    $('rCombo').textContent = bestStreak.toFixed(1);
+    $('rBar').style.width = '0';
+    $('result').hidden = false;
+    sfx.result(isBest);
+    requestAnimationFrame(() => requestAnimationFrame(() => { $('rBar').style.width = Math.min(100, len / 150 * 100) + '%'; }));
+    $('again').focus({ preventScroll: true });
+  }
+
+  $('start').addEventListener('click', start);
+  $('again').addEventListener('click', start);
+  $('copy').addEventListener('click', async () => {
+    const txt = `ねばねば10秒:納豆の糸 ${len.toFixed(1)}cm(${Math.floor(total/TAU)}回転・${rankOf(len)})`;
+    const btn = $('copy');
+    try { await navigator.clipboard.writeText(txt); btn.textContent = 'コピーした'; }
+    catch(e){ btn.textContent = txt; }
+    setTimeout(() => btn.textContent = '結果をコピー', 2500);
+  });
+
+  window.addEventListener('resize', resize);
+  resize(); seed();
+  // resting state: a lightly stirred bowl
+  total = TAU * 12; spinVel = 1.2;
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>

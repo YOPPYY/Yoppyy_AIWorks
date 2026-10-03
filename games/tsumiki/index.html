@@ -1,0 +1,406 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ゆうぐれ積み木</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
+<style>
+  :root{
+    color-scheme: dark;
+    --ink:#fff7ee;
+    --ink-dim:rgba(255,247,238,.72);
+    --sky-top:#1d1a3f;
+    --panel:rgba(20,16,44,.62);
+    --line:rgba(255,247,238,.22);
+    --accent:#ffb35c;
+    --accent-ink:#2a1606;
+  }
+  html,body{height:100%}
+  body{
+    background:var(--sky-top);
+    color:var(--ink);
+    font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Meiryo",system-ui,sans-serif;
+    overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #app{position:relative;height:100%;width:100%;max-width:520px;margin:0 auto;touch-action:manipulation}
+  canvas{display:block;width:100%;height:100%;cursor:pointer}
+  .hud{
+    position:absolute;inset:0 16px auto 16px;padding-top:18px;
+    display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;
+  }
+  .hud .label{font-size:11px;letter-spacing:.14em;color:var(--ink-dim);font-weight:800}
+  .hud .val{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:20px;font-variant-numeric:tabular-nums;line-height:1.2}
+  .score{
+    position:absolute;left:0;right:0;top:56px;text-align:center;pointer-events:none;
+    font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:72px;line-height:1;
+    font-variant-numeric:tabular-nums;text-shadow:0 4px 0 rgba(0,0,0,.18);
+    transition:transform .12s ease;
+  }
+  .score.pop{transform:scale(1.12)}
+  .combo{
+    position:absolute;left:0;right:0;top:138px;text-align:center;pointer-events:none;
+    font-weight:800;font-size:15px;letter-spacing:.1em;color:var(--accent);
+    opacity:0;transition:opacity .2s ease;
+  }
+  .combo.show{opacity:1}
+  .overlay{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    padding-inline:16px;pointer-events:none;
+  }
+  .card{
+    pointer-events:auto;width:100%;max-width:320px;text-align:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:22px;
+    padding:26px 22px 22px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .card h1{
+    margin:0;font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-weight:400;
+    font-size:34px;line-height:1.15;text-wrap:balance;letter-spacing:.02em;
+  }
+  .card p{margin:0;font-size:14px;line-height:1.75;color:var(--ink-dim)}
+  .result{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .result div{border:1px solid var(--line);border-radius:14px;padding:10px 6px}
+  .result .n{font-family:"Dela Gothic One",sans-serif;font-size:26px;font-variant-numeric:tabular-nums}
+  .result .k{font-size:11px;letter-spacing:.12em;color:var(--ink-dim);font-weight:800}
+  .new{color:var(--accent);font-weight:800;font-size:13px;letter-spacing:.1em}
+  button{
+    font:inherit;font-weight:800;font-size:17px;letter-spacing:.06em;
+    background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;
+    padding:14px 20px;cursor:pointer;box-shadow:0 5px 0 #c9741f;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  button:active{transform:translateY(4px);box-shadow:0 1px 0 #c9741f}
+  button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+  .hint{font-size:12px;color:var(--ink-dim)}
+  .mute{
+    position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    font-size:12px;padding:8px 12px;background:var(--panel);color:var(--ink);
+    border:1px solid var(--line);box-shadow:none;
+  }
+  .mute:active{transform:none;box-shadow:none}
+  @media (prefers-reduced-motion: reduce){.score{transition:none}}
+</style>
+
+<div id="app">
+  <canvas id="cv" aria-label="積み木ゲームの画面。タップでブロックを落とす"></canvas>
+
+  <div class="hud">
+    <div><div class="label">高さ</div><div class="val" id="height">0.0 m</div></div>
+    <div style="text-align:right"><div class="label">ベスト</div><div class="val" id="best">0</div></div>
+  </div>
+  <div class="score" id="score" hidden>0</div>
+  <div class="combo" id="combo">ぴったり!</div>
+
+  <div class="overlay" id="startOv">
+    <div class="card">
+      <h1>ゆうぐれ積み木</h1>
+      <p>左右に動くブロックを、タップで落として積み上げよう。はみ出た分は切り落とされます。ぴったり3回続けると、ブロックが少し広がります。</p>
+      <button id="startBtn">はじめる</button>
+      <div class="hint">画面タップ / スペースキーで落とす</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overOv" hidden>
+    <div class="card">
+      <h1>くずれた!</h1>
+      <div class="new" id="newBest" hidden>ベスト更新</div>
+      <div class="result">
+        <div><div class="n" id="rScore">0</div><div class="k">段</div></div>
+        <div><div class="n" id="rPerfect">0</div><div class="k">ぴったり</div></div>
+      </div>
+      <p id="rMsg"></p>
+      <button id="againBtn">もう一回</button>
+    </div>
+  </div>
+
+  <button class="mute" id="muteBtn" aria-pressed="false">音 オン</button>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const scoreEl = $('score'), comboEl = $('combo'), heightEl = $('height'), bestEl = $('best');
+
+  const BLOCK_H = 30;          // px per段
+  const METERS_PER = 0.12;     // 1段 = 12cm の積み木
+  const PERFECT = 5;           // px tolerance
+
+  let W = 0, H = 0, dpr = 1;
+  let state = 'ready';
+  let stack = [], cur = null, debris = [], sparks = [];
+  let cam = 0, camTarget = 0;
+  let score = 0, perfects = 0, combo = 0, baseW = 200;
+  let best = 0, muted = false, shake = 0;
+
+  try { best = +localStorage.getItem('tsumiki-best') || 0; } catch (e) {}
+  try { muted = localStorage.getItem('tsumiki-mute') === '1'; } catch (e) {}
+  bestEl.textContent = best;
+  updateMute();
+
+  function resize() {
+    const r = cv.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    baseW = Math.min(W * 0.56, 230);
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- sound ----------
+  let ac = null;
+  function tone(freq, dur = 0.12, type = 'triangle', vol = 0.18) {
+    if (muted) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+      o.connect(g).connect(ac.destination);
+      o.start(); o.stop(ac.currentTime + dur);
+    } catch (e) {}
+  }
+  const SCALE = [523, 587, 659, 784, 880, 1047, 1175, 1319];
+
+  // ---------- game ----------
+  const hueAt = i => (28 + i * 11) % 360;
+  const groundY = () => H - 70;
+  const yOf = i => groundY() - (i + 1) * BLOCK_H + cam;
+
+  function reset() {
+    stack = [{ x: (W - baseW) / 2, w: baseW, hue: hueAt(0) }];
+    debris = []; sparks = [];
+    score = 0; perfects = 0; combo = 0;
+    cam = camTarget = 0;
+    spawn();
+    scoreEl.textContent = '0';
+    heightEl.textContent = '0.0 m';
+  }
+
+  function spawn() {
+    const top = stack[stack.length - 1];
+    const fromLeft = stack.length % 2 === 0;
+    const speed = Math.min(150 + stack.length * 7, 420);
+    cur = { x: fromLeft ? -top.w * 0.4 : W - top.w * 0.6, w: top.w, dir: fromLeft ? 1 : -1, speed, hue: hueAt(stack.length) };
+    const visible = Math.floor((groundY() - 190) / BLOCK_H);
+    camTarget = Math.max(0, (stack.length - visible) * BLOCK_H);
+  }
+
+  function drop() {
+    if (state !== 'play') return;
+    const top = stack[stack.length - 1];
+    const diff = cur.x - top.x;
+    const lvl = stack.length;
+
+    if (Math.abs(diff) <= PERFECT) {
+      combo++; perfects++;
+      let w = top.w;
+      if (combo >= 3) w = Math.min(w + 8, baseW);
+      const x = top.x - (w - top.w) / 2;
+      stack.push({ x, w, hue: cur.hue });
+      burst(x + w / 2, yOf(lvl) + BLOCK_H / 2, cur.hue, w);
+      tone(SCALE[Math.min(combo - 1, SCALE.length - 1)], 0.2, 'sine', 0.22);
+      comboEl.textContent = combo >= 3 ? `ぴったり ×${combo}  ひろがった!` : combo >= 2 ? `ぴったり ×${combo}` : 'ぴったり!';
+      comboEl.classList.add('show');
+      clearTimeout(drop.t); drop.t = setTimeout(() => comboEl.classList.remove('show'), 700);
+    } else {
+      combo = 0;
+      const overlap = top.w - Math.abs(diff);
+      if (overlap <= 0) {
+        debris.push(mkDebris(cur.x, yOf(lvl), cur.w, cur.hue, cur.dir));
+        cur = null;
+        return gameOver();
+      }
+      const nx = diff > 0 ? cur.x : top.x;
+      stack.push({ x: nx, w: overlap, hue: cur.hue });
+      const cutX = diff > 0 ? top.x + top.w : cur.x;
+      debris.push(mkDebris(cutX, yOf(lvl), Math.abs(diff), cur.hue, Math.sign(diff)));
+      tone(220 + Math.min(lvl, 30) * 8, 0.1, 'triangle', 0.16);
+      shake = 4;
+    }
+    score++;
+    scoreEl.textContent = score;
+    scoreEl.classList.add('pop'); setTimeout(() => scoreEl.classList.remove('pop'), 120);
+    heightEl.textContent = (score * METERS_PER).toFixed(1) + ' m';
+    spawn();
+  }
+
+  function mkDebris(x, y, w, hue, dir) {
+    return { x, y: y - cam, w, hue, vx: dir * 40, vy: -60, rot: 0, vr: dir * (1.5 + Math.random() * 2) };
+  }
+  function burst(cx, cy, hue, w) {
+    for (let i = 0; i < 18; i++) {
+      sparks.push({ x: cx + (Math.random() - .5) * w, y: cy - cam, vx: (Math.random() - .5) * 160, vy: -60 - Math.random() * 160, life: 1, hue });
+    }
+  }
+
+  function gameOver() {
+    state = 'over';
+    tone(196, 0.35, 'sawtooth', 0.12); setTimeout(() => tone(147, 0.45, 'sawtooth', 0.1), 140);
+    shake = 10;
+    const isNew = score > best;
+    if (isNew) { best = score; try { localStorage.setItem('tsumiki-best', best); } catch (e) {} bestEl.textContent = best; }
+    $('rScore').textContent = score;
+    $('rPerfect').textContent = perfects;
+    $('newBest').hidden = !isNew || score === 0;
+    const m = (score * METERS_PER).toFixed(1);
+    $('rMsg').textContent = score >= 40 ? `${m} m。もう星に手が届きそう。`
+      : score >= 20 ? `${m} m。夜空まで積み上がった。`
+      : score >= 10 ? `${m} m。いい調子、夕焼けを越えた。`
+      : `${m} m。まずは10段を目指そう。`;
+    setTimeout(() => { $('overOv').hidden = false; $('againBtn').focus(); }, 650);
+  }
+
+  function start() {
+    $('startOv').hidden = true; $('overOv').hidden = true;
+    scoreEl.hidden = false;
+    reset();
+    state = 'play';
+    tone(660, 0.08, 'sine', 0.15);
+  }
+
+  // ---------- drawing ----------
+  const stars = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.4 + .3, t: Math.random() * 6 }));
+
+  function drawSky(t) {
+    // 高く積むほど夕焼け→夜空へ
+    const k = Math.min(cam / (BLOCK_H * 45), 1);
+    const lerp = (a, b) => a + (b - a) * k;
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, `hsl(${lerp(250, 240)} ${lerp(45, 50)}% ${lerp(22, 8)}%)`);
+    g.addColorStop(0.55, `hsl(${lerp(320, 250)} ${lerp(45, 45)}% ${lerp(45, 14)}%)`);
+    g.addColorStop(1, `hsl(${lerp(28, 255)} ${lerp(90, 40)}% ${lerp(66, 20)}%)`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    const sa = 0.25 + k * 0.75;
+    for (const s of stars) {
+      const tw = (Math.sin(t / 700 + s.t) + 1) / 2;
+      ctx.globalAlpha = sa * (0.3 + tw * 0.7) * (1 - s.y * (1 - k));
+      ctx.fillStyle = '#fff';
+      const sy = ((s.y * H + cam * 0.15) % H);
+      ctx.beginPath(); ctx.arc(s.x * W, sy, s.r, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // 地面の丘
+    const gy = groundY() + cam;
+    if (gy < H + 40) {
+      ctx.fillStyle = `hsl(260 35% ${lerp(18, 10)}%)`;
+      ctx.beginPath();
+      ctx.moveTo(0, gy + 18);
+      ctx.quadraticCurveTo(W * 0.25, gy - 6, W * 0.5, gy + 4);
+      ctx.quadraticCurveTo(W * 0.78, gy + 14, W, gy - 2);
+      ctx.lineTo(W, H + 400); ctx.lineTo(0, H + 400); ctx.fill();
+    }
+  }
+
+  function drawBlock(x, y, w, hue, alpha = 1) {
+    ctx.globalAlpha = alpha;
+    const h = BLOCK_H;
+    ctx.fillStyle = `hsl(${hue} 70% 62%)`;
+    roundRect(x, y, w, h, 5); ctx.fill();
+    ctx.fillStyle = `hsl(${hue} 85% 78%)`;
+    roundRect(x, y, w, 7, 5); ctx.fill();
+    ctx.fillStyle = `hsl(${hue} 55% 46%)`;
+    ctx.fillRect(x + 3, y + h - 5, Math.max(w - 6, 0), 3);
+    // 木目
+    ctx.strokeStyle = `hsla(${hue} 50% 40% / .25)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + 8, y + 15); ctx.lineTo(x + w - 8, y + 15);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  function roundRect(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  let last = performance.now();
+  function frame(t) {
+    const dt = Math.min((t - last) / 1000, 0.05); last = t;
+
+    cam += (camTarget - cam) * Math.min(dt * 5, 1);
+    if (state === 'play' && cur) {
+      cur.x += cur.dir * cur.speed * dt;
+      if (cur.x + cur.w > W + cur.w * 0.4 && cur.dir > 0) cur.dir = -1;
+      if (cur.x < -cur.w * 0.4 && cur.dir < 0) cur.dir = 1;
+    }
+    for (const d of debris) { d.vy += 900 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.rot += d.vr * dt; }
+    debris = debris.filter(d => d.y + cam < H + 200);
+    for (const s of sparks) { s.vy += 500 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt * 1.6; }
+    sparks = sparks.filter(s => s.life > 0);
+
+    ctx.save();
+    if (shake > 0) { ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake); shake *= 0.85; if (shake < .3) shake = 0; }
+    drawSky(t);
+
+    // 積み木
+    for (let i = 0; i < stack.length; i++) {
+      const y = yOf(i);
+      if (y > H + BLOCK_H || y < -BLOCK_H) continue;
+      drawBlock(stack[i].x, y, stack[i].w, stack[i].hue);
+    }
+    // 落とす位置のガイド
+    if (state === 'play' && cur) {
+      const top = stack[stack.length - 1];
+      const gyy = yOf(stack.length);
+      ctx.strokeStyle = 'rgba(255,247,238,.28)'; ctx.setLineDash([4, 5]); ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(top.x, gyy); ctx.lineTo(top.x, gyy + BLOCK_H);
+      ctx.moveTo(top.x + top.w, gyy); ctx.lineTo(top.x + top.w, gyy + BLOCK_H);
+      ctx.stroke(); ctx.setLineDash([]);
+      drawBlock(cur.x, gyy - 2, cur.w, cur.hue);
+    }
+    for (const d of debris) {
+      ctx.save();
+      ctx.translate(d.x + d.w / 2, d.y + cam + BLOCK_H / 2);
+      ctx.rotate(d.rot);
+      drawBlock(-d.w / 2, -BLOCK_H / 2, d.w, d.hue, 0.9);
+      ctx.restore();
+    }
+    for (const s of sparks) {
+      ctx.globalAlpha = Math.max(s.life, 0);
+      ctx.fillStyle = `hsl(${s.hue} 100% 82%)`;
+      ctx.fillRect(s.x, s.y + cam, 4, 4);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- input ----------
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); drop(); });
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'Enter') {
+      if (state === 'play') { e.preventDefault(); drop(); }
+      else if (e.target.tagName !== 'BUTTON') { e.preventDefault(); start(); }
+    }
+  });
+  $('startBtn').addEventListener('click', start);
+  $('againBtn').addEventListener('click', start);
+  $('muteBtn').addEventListener('click', () => {
+    muted = !muted;
+    try { localStorage.setItem('tsumiki-mute', muted ? '1' : '0'); } catch (e) {}
+    updateMute();
+  });
+  function updateMute() {
+    const b = $('muteBtn');
+    b.textContent = muted ? '音 オフ' : '音 オン';
+    b.setAttribute('aria-pressed', String(muted));
+  }
+
+  resize();
+  reset();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,426 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>オセロのしくみ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;700&family=M+PLUS+1+Code:wght@400;600&display=swap">
+<style>
+/* layout: 1カラムの読み物。冒頭に触れる盤面、以下はプログラムを組む順に6章 */
+:root{
+  --paper:#f3f1ea; --ink:#1d2421; --sub:#5d6862; --line:#d9d8cf;
+  --felt:#1f6b4a; --felt-deep:#164d36; --grid:#0f3a28;
+  --accent:#c9582b; --code-bg:#e8e7de; --card:#fbfaf6;
+  --good:#2f8f5b; --bad:#b8433a;
+  --f-disp:"Dela Gothic One","Hiragino Sans",sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+  --f-code:"M PLUS 1 Code",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#141917; --ink:#e7ebe6; --sub:#9aa69f; --line:#2c3531;
+  --felt:#1c5c40; --felt-deep:#123d2b; --grid:#0a2a1c;
+  --accent:#e57a4d; --code-bg:#1e2522; --card:#1a201d;
+  --good:#58b884; --bad:#e06a5f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#141917; --ink:#e7ebe6; --sub:#9aa69f; --line:#2c3531;
+  --felt:#1c5c40; --felt-deep:#123d2b; --grid:#0a2a1c;
+  --accent:#e57a4d; --code-bg:#1e2522; --card:#1a201d;
+  --good:#58b884; --bad:#e06a5f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.8;-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:20px 56px}
+h1{font-family:var(--f-disp);font-weight:400;font-size:2.1rem;line-height:1.25;margin:4px 0 6px;text-wrap:balance}
+.lead{color:var(--sub);margin:0 0 18px;font-size:.95rem}
+h2{font-family:var(--f-disp);font-weight:400;font-size:1.35rem;line-height:1.35;margin:0 0 10px;text-wrap:balance;display:flex;gap:10px;align-items:baseline}
+h2 .no{font-family:var(--f-code);font-size:.85rem;color:var(--accent);font-weight:600}
+section{padding-block:30px;border-top:1px solid var(--line)}
+p{margin:0 0 12px}
+code{font-family:var(--f-code);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--f-code);font-size:.8rem;line-height:1.65;background:var(--code-bg);padding:14px;border-radius:8px;overflow-x:auto;margin:6px 0 14px;tab-size:2}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--sub)}
+.kw{color:var(--accent)}
+b{color:var(--ink)}
+.point{font-size:.9rem;color:var(--sub);border-left:3px solid var(--felt);padding:2px 0 2px 12px;margin:0 0 12px}
+
+/* 盤面 */
+.play{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:10px}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--f-code);font-variant-numeric:tabular-nums}
+.side{display:flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:600;padding:4px 10px;border-radius:999px;border:2px solid transparent;transition:border-color .2s}
+.side.turn{border-color:var(--accent)}
+.dot{width:18px;height:18px;border-radius:50%;display:inline-block}
+.dot.b{background:#151515;box-shadow:inset 0 -2px 3px #000,inset 0 2px 2px #444}
+.dot.w{background:#f7f7f2;box-shadow:inset 0 -2px 3px #bbb;outline:1px solid #999}
+.msg{font-family:var(--f-body);font-size:.85rem;color:var(--sub);text-align:center;min-height:1.4em;flex:1}
+.board{aspect-ratio:1/1;width:100%;max-width:100%;background:var(--felt);border:6px solid var(--felt-deep);border-radius:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:2px;background-color:var(--grid);position:relative;touch-action:manipulation}
+.cell{background:var(--felt);border:0;padding:0;position:relative;display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cell:focus-visible{outline:3px solid var(--accent);outline-offset:-3px;z-index:2}
+.cell .hint{width:26%;height:26%;border-radius:50%;background:rgba(255,255,255,.35)}
+.cell.sel{background:#2b8a60}
+.cell .wt{position:absolute;font-family:var(--f-code);font-size:.62rem;font-weight:600;color:#fff;opacity:.9;pointer-events:none;text-shadow:0 1px 2px #000}
+.disc{width:80%;height:80%;border-radius:50%;position:relative;transform-style:preserve-3d;transition:transform .38s cubic-bezier(.4,1.4,.6,1)}
+.disc::before,.disc::after{content:"";position:absolute;inset:0;border-radius:50%;backface-visibility:hidden}
+.disc::before{background:radial-gradient(circle at 35% 30%,#555,#111 60%);box-shadow:0 2px 3px rgba(0,0,0,.5)}
+.disc::after{background:radial-gradient(circle at 35% 30%,#fff,#dcdcd4 65%);transform:rotateY(180deg);box-shadow:0 2px 3px rgba(0,0,0,.4)}
+.disc.white{transform:rotateY(180deg)}
+.disc.pop{animation:pop .22s ease-out}
+@keyframes pop{from{scale:.4}to{scale:1}}
+.cell.will::after{content:"";position:absolute;inset:14%;border-radius:50%;border:3px solid var(--accent);pointer-events:none}
+.cell.last::before{content:"";position:absolute;width:12%;height:12%;border-radius:50%;background:var(--accent);z-index:3;top:6%;right:6%}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font-family:var(--f-body);font-size:.85rem;font-weight:700;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer}
+.btn[aria-pressed="true"]{background:var(--felt);color:#fff;border-color:var(--felt)}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* 静的な図 */
+.mini{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;background:var(--grid);padding:2px;border-radius:6px;max-width:320px;margin:4px auto 14px;aspect-ratio:1/1;width:100%}
+.mini div{display:grid;place-items:center;font-family:var(--f-code);font-size:.7rem;font-weight:600;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.6)}
+.dirs{display:grid;grid-template-columns:repeat(3,52px);gap:4px;justify-content:center;margin:4px 0 14px;font-family:var(--f-code);font-size:.72rem;text-align:center}
+.dirs div{background:var(--code-bg);border-radius:6px;padding:6px 0;line-height:1.3}
+.dirs .me{background:var(--felt);color:#fff;font-weight:600}
+.flow{display:grid;gap:6px;margin:4px 0 14px;font-size:.9rem}
+.flow div{display:flex;gap:10px;align-items:center}
+.flow .k{font-family:var(--f-code);font-size:.75rem;color:#fff;background:var(--felt);border-radius:4px;padding:1px 7px;flex:none}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+.tbl{overflow-x:auto;margin:4px 0 14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;letter-spacing:.06em;color:var(--sub);font-weight:700}
+@media (prefers-reduced-motion:reduce){.disc{transition:none}.disc.pop{animation:none}}
+</style>
+
+<div class="wrap">
+  <h1>オセロのしくみ</h1>
+  <p class="lead">8×8の配列と8方向の探索だけで、オセロは動きます。下の盤で黒を持って試しながら読んでください。</p>
+
+  <div class="play" id="play">
+    <div class="hud">
+      <span class="side turn" id="sB"><span class="dot b"></span><span id="nB">2</span></span>
+      <span class="msg" id="msg">点を1回タップで確認、もう1回で置く</span>
+      <span class="side" id="sW"><span id="nW">2</span><span class="dot w"></span></span>
+    </div>
+    <div class="board" id="board" role="grid" aria-label="オセロ盤"></div>
+    <div class="controls">
+      <button class="btn" id="tHint" aria-pressed="true">合法手</button>
+      <button class="btn" id="tWt" aria-pressed="false">評価マップ</button>
+      <button class="btn" id="tSnd" aria-pressed="true">音</button>
+      <button class="btn" id="reset" style="margin-left:auto">最初から</button>
+    </div>
+  </div>
+
+  <section>
+    <h2><span class="no">01</span>盤面を配列で持つ</h2>
+    <p>盤は8行×8列の2次元配列。マスの中身は数値1つで表します。</p>
+    <pre><code><span class="kw">const</span> EMPTY = 0, BLACK = 1, WHITE = -1;
+<span class="kw">const</span> board = Array.from({length: 8},
+  () => Array(8).fill(EMPTY));
+
+<span class="cm">// 初期配置（中央4マス）</span>
+board[3][3] = WHITE; board[4][4] = WHITE;
+board[3][4] = BLACK; board[4][3] = BLACK;</code></pre>
+    <p class="point">黒を <code>1</code>、白を <code>-1</code> にしておくと、相手の色は <code>-player</code> で求まり、石の数の差は配列の合計で出せます。</p>
+  </section>
+
+  <section>
+    <h2><span class="no">02</span>8方向を調べる</h2>
+    <p>置いたマスから、縦・横・斜めの8方向へ1マスずつ進みます。向きは行と列の増分の組で持ちます。</p>
+    <div class="dirs" aria-hidden="true">
+      <div>-1,-1</div><div>-1, 0</div><div>-1,+1</div>
+      <div>0,-1</div><div class="me">置く</div><div>0,+1</div>
+      <div>+1,-1</div><div>+1, 0</div><div>+1,+1</div>
+    </div>
+    <pre><code><span class="kw">const</span> DIRS = [
+  [-1,-1], [-1,0], [-1,1],
+  [ 0,-1],         [ 0,1],
+  [ 1,-1], [ 1,0], [ 1,1],
+];</code></pre>
+  </section>
+
+  <section>
+    <h2><span class="no">03</span>はさめる石を集める</h2>
+    <p>オセロの心臓部です。1方向ずつ「相手の石が続き、その先に自分の石がある」かを確かめます。</p>
+    <div class="flow">
+      <div><span class="k">1</span>隣が相手の石なら、候補リストに入れて先へ進む</div>
+      <div><span class="k">2</span>自分の石に当たったら、候補は全部ひっくり返せる</div>
+      <div><span class="k">3</span>空きマスか盤の外に出たら、その方向は失敗</div>
+    </div>
+    <pre><code><span class="kw">function</span> getFlips(board, r, c, player) {
+  <span class="kw">if</span> (board[r][c] !== EMPTY) <span class="kw">return</span> [];
+  <span class="kw">const</span> flips = [];
+  <span class="kw">for</span> (<span class="kw">const</span> [dr, dc] <span class="kw">of</span> DIRS) {
+    <span class="kw">const</span> line = [];
+    <span class="kw">let</span> y = r + dr, x = c + dc;
+    <span class="cm">// 相手の石が続く間は進む</span>
+    <span class="kw">while</span> (inBoard(y, x) &amp;&amp; board[y][x] === -player) {
+      line.push([y, x]);
+      y += dr; x += dc;
+    }
+    <span class="cm">// 自分の石で閉じていれば成立</span>
+    <span class="kw">if</span> (line.length &amp;&amp; inBoard(y, x)
+        &amp;&amp; board[y][x] === player) {
+      flips.push(...line);
+    }
+  }
+  <span class="kw">return</span> flips;
+}
+
+<span class="kw">const</span> inBoard = (y, x) =>
+  y >= 0 &amp;&amp; y &lt; 8 &amp;&amp; x >= 0 &amp;&amp; x &lt; 8;</code></pre>
+    <p class="point">上の盤で点を1回タップすると、この関数が返す石がオレンジの輪で表示されます。</p>
+  </section>
+
+  <section>
+    <h2><span class="no">04</span>合法手と石の反転</h2>
+    <p><code>getFlips</code> の結果が1個以上あるマスが合法手です。全64マスを調べれば一覧が出ます。</p>
+    <pre><code><span class="kw">function</span> legalMoves(board, player) {
+  <span class="kw">const</span> moves = [];
+  <span class="kw">for</span> (<span class="kw">let</span> r = 0; r &lt; 8; r++)
+    <span class="kw">for</span> (<span class="kw">let</span> c = 0; c &lt; 8; c++) {
+      <span class="kw">const</span> f = getFlips(board, r, c, player);
+      <span class="kw">if</span> (f.length) moves.push({r, c, flips: f});
+    }
+  <span class="kw">return</span> moves;
+}
+
+<span class="kw">function</span> place(board, move, player) {
+  board[move.r][move.c] = player;
+  <span class="kw">for</span> (<span class="kw">const</span> [y, x] <span class="kw">of</span> move.flips)
+    board[y][x] = player;
+}</code></pre>
+  </section>
+
+  <section>
+    <h2><span class="no">05</span>パスと終局</h2>
+    <p>手番の流れは3通りしかありません。</p>
+    <div class="tbl"><table>
+      <thead><tr><th>状況</th><th>処理</th></tr></thead>
+      <tbody>
+        <tr><td>自分に合法手がある</td><td>打って相手の番へ</td></tr>
+        <tr><td>自分はなし、相手はある</td><td>パスして相手の番へ</td></tr>
+        <tr><td>両者とも合法手なし</td><td>終局。石の数で勝敗</td></tr>
+      </tbody>
+    </table></div>
+    <pre><code><span class="kw">function</span> nextTurn(board, player) {
+  <span class="kw">if</span> (legalMoves(board, -player).length) <span class="kw">return</span> -player;
+  <span class="kw">if</span> (legalMoves(board,  player).length) <span class="kw">return</span>  player; <span class="cm">// 相手がパス</span>
+  <span class="kw">return</span> 0; <span class="cm">// 終局</span>
+}</code></pre>
+    <p class="point">盤が埋まる前でも、両者打てなくなれば終局です。全滅もこの判定で自然に扱えます。</p>
+  </section>
+
+  <section>
+    <h2><span class="no">06</span>CPUに考えさせる</h2>
+    <p>強さの土台は<b>評価マップ</b>です。マスごとに価値を決め、自分の石がある所は足し、相手の石は引きます。</p>
+    <div class="mini" id="heat" aria-label="評価マップ"></div>
+    <p>角（100）は二度と返されないので最も高く、角のななめ隣（-80）は相手に角を渡しやすいので大きくマイナスにしてあります。</p>
+    <pre><code><span class="kw">function</span> evaluate(board, player) {
+  <span class="kw">let</span> s = 0;
+  <span class="kw">for</span> (<span class="kw">let</span> r = 0; r &lt; 8; r++)
+    <span class="kw">for</span> (<span class="kw">let</span> c = 0; c &lt; 8; c++)
+      s += WEIGHT[r][c] * board[r][c] * player;
+  <span class="kw">return</span> s;
+}</code></pre>
+    <p>1手先だけ見ると相手の好手を見逃すので、この盤のCPUは<b>3手先まで読むミニマックス法</b>（αβ枝刈りつき）を使っています。自分の番は最大の評価を、相手の番は相手にとって最大の手を選ぶと仮定して読みます。</p>
+    <pre><code><span class="kw">function</span> search(board, player, depth, a, b) {
+  <span class="kw">const</span> moves = legalMoves(board, player);
+  <span class="kw">if</span> (depth === 0 || !moves.length)
+    <span class="kw">return</span> evaluate(board, player);
+  <span class="kw">for</span> (<span class="kw">const</span> m <span class="kw">of</span> moves) {
+    <span class="kw">const</span> next = board.map(row => row.slice());
+    place(next, m, player);
+    <span class="cm">// 相手視点の値を反転して比べる（ネガマックス）</span>
+    <span class="kw">const</span> v = -search(next, -player, depth - 1, -b, -a);
+    <span class="kw">if</span> (v > a) a = v;
+    <span class="kw">if</span> (a >= b) <span class="kw">break</span>; <span class="cm">// これ以上読んでも選ばれない</span>
+  }
+  <span class="kw">return</span> a;
+}</code></pre>
+    <div class="tbl"><table>
+      <thead><tr><th>強くする方法</th><th>効果</th></tr></thead>
+      <tbody>
+        <tr><td>読む深さを増やす</td><td>素直に強くなるが、1手増えるごとに計算量が数倍</td></tr>
+        <tr><td>着手可能数を評価に足す</td><td>相手の打てる場所を減らす「開放度」の考え方</td></tr>
+        <tr><td>終盤は最後まで読む</td><td>残り10〜14マスなら石数で完全読みできる</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</div>
+
+<script>
+(() => {
+const EMPTY = 0, BLACK = 1, WHITE = -1;
+const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const WEIGHT = [
+  [100,-40, 20,  5,  5, 20,-40,100],
+  [-40,-80, -1, -1, -1, -1,-80,-40],
+  [ 20, -1,  5,  1,  1,  5, -1, 20],
+  [  5, -1,  1,  0,  0,  1, -1,  5],
+  [  5, -1,  1,  0,  0,  1, -1,  5],
+  [ 20, -1,  5,  1,  1,  5, -1, 20],
+  [-40,-80, -1, -1, -1, -1,-80,-40],
+  [100,-40, 20,  5,  5, 20,-40,100],
+];
+const inBoard = (y, x) => y >= 0 && y < 8 && x >= 0 && x < 8;
+function getFlips(b, r, c, p) {
+  if (b[r][c] !== EMPTY) return [];
+  const flips = [];
+  for (const [dr, dc] of DIRS) {
+    const line = []; let y = r + dr, x = c + dc;
+    while (inBoard(y, x) && b[y][x] === -p) { line.push([y, x]); y += dr; x += dc; }
+    if (line.length && inBoard(y, x) && b[y][x] === p) flips.push(...line);
+  }
+  return flips;
+}
+function legalMoves(b, p) {
+  const m = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const f = getFlips(b, r, c, p); if (f.length) m.push({ r, c, flips: f });
+  }
+  return m;
+}
+function place(b, m, p) { b[m.r][m.c] = p; for (const [y, x] of m.flips) b[y][x] = p; }
+function evaluate(b, p) { let s = 0; for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) s += WEIGHT[r][c] * b[r][c] * p; return s; }
+function search(b, p, d, a, be) {
+  const ms = legalMoves(b, p);
+  if (d === 0) return evaluate(b, p);
+  if (!ms.length) {
+    if (!legalMoves(b, -p).length) { let s = 0; for (const row of b) for (const v of row) s += v; return s * p * 1000; }
+    return -search(b, -p, d - 1, -be, -a);
+  }
+  for (const m of ms) {
+    const n = b.map(row => row.slice()); place(n, m, p);
+    const v = -search(n, -p, d - 1, -be, -a);
+    if (v > a) a = v; if (a >= be) break;
+  }
+  return a;
+}
+function cpuMove(b, p) {
+  const ms = legalMoves(b, p); let best = null, bv = -Infinity;
+  for (const m of ms) {
+    const n = b.map(row => row.slice()); place(n, m, p);
+    const v = -search(n, -p, 2, -Infinity, Infinity) + Math.random() * 0.5;
+    if (v > bv) { bv = v; best = m; }
+  }
+  return best;
+}
+
+/* 評価マップの図 */
+const heat = document.getElementById('heat');
+for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+  const v = WEIGHT[r][c], d = document.createElement('div');
+  const t = Math.min(1, Math.abs(v) / 100);
+  d.style.background = v > 0 ? `color-mix(in srgb, var(--good) ${30 + t * 70}%, var(--felt-deep))`
+                    : v < 0 ? `color-mix(in srgb, var(--bad) ${30 + t * 70}%, var(--felt-deep))`
+                    : 'var(--felt-deep)';
+  d.textContent = v; heat.appendChild(d);
+}
+
+/* サウンド */
+let ac = null, soundOn = true;
+function ctx() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state === 'suspended') ac.resume(); return ac; }
+function tone(freq, t0, dur, type = 'sine', vol = .18, slide = 0) {
+  const a = ctx(); if (!a || !soundOn) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + .02);
+}
+function knock(t0 = 0) {
+  const a = ctx(); if (!a || !soundOn) return;
+  const len = a.sampleRate * .06, buf = a.createBuffer(1, len, a.sampleRate), ch = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  f.type = 'lowpass'; f.frequency.value = 1400; g.gain.value = .7;
+  s.buffer = buf; s.connect(f).connect(g).connect(a.destination); s.start(a.currentTime + t0);
+  tone(170, t0, .09, 'triangle', .25, .6);
+}
+const sfx = {
+  select: () => tone(880, 0, .06, 'sine', .08),
+  place: n => { knock(); for (let i = 0; i < n; i++) tone(620 + i * 70, .06 + i * .045, .05, 'triangle', .07); },
+  pass: () => { tone(330, 0, .14, 'square', .06); tone(247, .14, .2, 'square', .06); },
+  win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * .11, .22, 'triangle', .12)),
+  lose: () => [392, 349, 311, 262].forEach((f, i) => tone(f, i * .13, .25, 'sine', .1)),
+};
+
+/* 対局 */
+const boardEl = document.getElementById('board'), msg = document.getElementById('msg');
+let b, turn, sel, last, busy, over, showHint = true, showWt = false;
+const cells = [];
+for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+  const el = document.createElement('button');
+  el.className = 'cell'; el.setAttribute('aria-label', `${r + 1}行${c + 1}列`);
+  el.addEventListener('click', () => tap(r, c));
+  boardEl.appendChild(el); cells.push(el);
+}
+function init() {
+  b = Array.from({ length: 8 }, () => Array(8).fill(EMPTY));
+  b[3][3] = b[4][4] = WHITE; b[3][4] = b[4][3] = BLACK;
+  turn = BLACK; sel = null; last = null; busy = false; over = false;
+  cells.forEach(el => { el.innerHTML = ''; });
+  msg.textContent = '点を1回タップで確認、もう1回で置く';
+  render(true);
+}
+function render(fresh) {
+  const legal = turn === BLACK && !busy ? legalMoves(b, BLACK) : [];
+  const willSet = new Set(sel ? sel.flips.map(([y, x]) => y * 8 + x) : []);
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const i = r * 8 + c, el = cells[i], v = b[r][c];
+    let disc = el.querySelector('.disc');
+    if (v !== EMPTY) {
+      if (!disc) { disc = document.createElement('div'); disc.className = 'disc' + (v === WHITE ? ' white' : '') + (fresh ? '' : ' pop'); el.prepend(disc); }
+      disc.classList.toggle('white', v === WHITE);
+    } else if (disc) disc.remove();
+    let hint = el.querySelector('.hint');
+    const isLegal = showHint && legal.some(m => m.r === r && m.c === c);
+    if (isLegal && !hint) { hint = document.createElement('div'); hint.className = 'hint'; el.appendChild(hint); }
+    if (!isLegal && hint) hint.remove();
+    let wt = el.querySelector('.wt');
+    if (showWt && !wt) { wt = document.createElement('span'); wt.className = 'wt'; wt.textContent = WEIGHT[r][c]; el.appendChild(wt); }
+    if (!showWt && wt) wt.remove();
+    el.classList.toggle('sel', !!sel && sel.r === r && sel.c === c);
+    el.classList.toggle('will', willSet.has(i));
+    el.classList.toggle('last', !!last && last.r === r && last.c === c);
+  }
+  let nb = 0, nw = 0; for (const row of b) for (const v of row) { if (v === BLACK) nb++; else if (v === WHITE) nw++; }
+  document.getElementById('nB').textContent = nb; document.getElementById('nW').textContent = nw;
+  document.getElementById('sB').classList.toggle('turn', !over && turn === BLACK);
+  document.getElementById('sW').classList.toggle('turn', !over && turn === WHITE);
+  return [nb, nw];
+}
+function tap(r, c) {
+  ctx();
+  if (over || busy || turn !== BLACK) return;
+  if (sel && sel.r === r && sel.c === c) { doMove(sel, BLACK); return; }
+  const f = getFlips(b, r, c, BLACK);
+  if (!f.length) { sel = null; render(); return; }
+  sel = { r, c, flips: f }; sfx.select();
+  msg.textContent = `${f.length}枚返せます。もう1回タップで置く`;
+  render();
+}
+function doMove(m, p) {
+  place(b, m, p); last = m; sel = null; sfx.place(m.flips.length);
+  advance(p);
+}
+function advance(p) {
+  const nx = legalMoves(b, -p).length ? -p : legalMoves(b, p).length ? p : 0;
+  if (nx === 0) { over = true; const [nb, nw] = render();
+    msg.textContent = nb > nw ? `${nb}対${nw}で黒の勝ち` : nb < nw ? `${nw}対${nb}で白の勝ち` : '引き分け';
+    setTimeout(() => (nb >= nw ? sfx.win : sfx.lose)(), 350); return; }
+  if (nx === p) { msg.textContent = (p === BLACK ? '白' : 'あなた') + 'はパス'; setTimeout(sfx.pass, 300); }
+  else msg.textContent = nx === BLACK ? 'あなたの番' : '';
+  turn = nx;
+  if (turn === WHITE) {
+    busy = true; render();
+    setTimeout(() => { const m = cpuMove(b, WHITE); busy = false; doMove(m, WHITE); }, 650);
+  } else render();
+}
+function toggle(id, fn) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', () => { const v = el.getAttribute('aria-pressed') !== 'true'; el.setAttribute('aria-pressed', v); fn(v); render(); });
+}
+toggle('tHint', v => showHint = v);
+toggle('tWt', v => showWt = v);
+toggle('tSnd', v => soundOn = v);
+document.getElementById('reset').addEventListener('click', () => { ctx(); init(); });
+init();
+})();
+</script>
+
+</body></html>

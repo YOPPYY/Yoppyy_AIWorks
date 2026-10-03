@@ -1,0 +1,587 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>迷路生成ラボ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  --paper:#ECEFE8; --panel:#F7F8F4; --ink:#1E2733; --muted:#5A6572; --rule:#C7CDC3;
+  --accent:#2F5DA8; --accent-ink:#FFFFFF; --hot:#C98508;
+  --c-void:#D5DAD0; --c-floor:#FBFCF8; --c-stack:#A9C1EA; --c-front:#F1DB9C; --c-hot:#E09A12;
+  --c-wall:#1E2733; --c-wall-faint:#BAC1B6; --c-path:#D0452F; --c-start:#2F5DA8;
+  --set-l:78; --set-s:58;
+  --display:"Dela Gothic One","Zen Kaku Gothic New","Hiragino Sans",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#12161C; --panel:#1A2029; --ink:#E3E8EE; --muted:#96A1AD; --rule:#2C3440;
+    --accent:#86A9EC; --accent-ink:#0F1520; --hot:#F2B233;
+    --c-void:#0C1015; --c-floor:#27303C; --c-stack:#31507F; --c-front:#5C4A1C; --c-hot:#F2B233;
+    --c-wall:#DCE2E9; --c-wall-faint:#232A33; --c-path:#FF6F59; --c-start:#86A9EC;
+    --set-l:42; --set-s:48;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#12161C; --panel:#1A2029; --ink:#E3E8EE; --muted:#96A1AD; --rule:#2C3440;
+  --accent:#86A9EC; --accent-ink:#0F1520; --hot:#F2B233;
+  --c-void:#0C1015; --c-floor:#27303C; --c-stack:#31507F; --c-front:#5C4A1C; --c-hot:#F2B233;
+  --c-wall:#DCE2E9; --c-wall-faint:#232A33; --c-path:#FF6F59; --c-start:#86A9EC;
+  --set-l:42; --set-s:48;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.75;padding-inline:16px;padding-block:28px 72px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{max-width:1180px;margin:0 auto 28px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,7vw,56px);line-height:1.1;margin:0 0 12px;letter-spacing:.02em;text-wrap:balance}
+.lede{max-width:60ch;margin:0;color:var(--muted)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:40px;max-width:1180px;margin:0 auto}
+@media (min-width:920px){
+  .layout{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:48px}
+  .bench{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start}
+}
+
+/* bench */
+.bench{display:flex;flex-direction:column;gap:14px}
+.algos{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:2px solid var(--ink);background:transparent;padding:5px 11px;font-size:13px;font-weight:700;cursor:pointer;line-height:1.3}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.chip:hover:not([aria-pressed="true"]){background:var(--panel)}
+.stage{background:var(--c-void);border:2px solid var(--ink);display:flex;justify-content:center;align-items:center;padding:10px;min-height:200px}
+.stage canvas{display:block;max-width:100%;touch-action:manipulation}
+.status{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.status b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border:1.5px solid var(--ink);display:inline-block}
+.actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.btn{border:2px solid var(--ink);background:var(--panel);padding:9px 6px;font-weight:700;font-size:13.5px;cursor:pointer;line-height:1.25}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.btn:disabled{opacity:.4;cursor:default}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;align-items:end}
+.ctl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);gap:8px}
+.ctl output{font-family:var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.sound{justify-self:start;border:2px solid var(--ink);background:transparent;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer}
+.sound[aria-pressed="false"]{color:var(--muted);border-color:var(--rule)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:0;margin:0;border-top:2px solid var(--ink)}
+.stats div{padding:10px 10px 8px 0;border-bottom:1px solid var(--rule)}
+.stats dt{font-size:11.5px;color:var(--muted);letter-spacing:.04em}
+.stats dd{margin:0;font-family:var(--mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.3}
+.stats dd small{font-size:11px;color:var(--muted);font-weight:400;margin-left:4px}
+.stats.pending dd{opacity:.35}
+.note{font-size:12.5px;color:var(--muted);margin:0}
+
+/* notes */
+.notes{display:flex;flex-direction:column;gap:18px;min-width:0}
+h2{font-family:var(--display);font-weight:400;font-size:24px;margin:10px 0 0;letter-spacing:.02em}
+.notes > p{margin:0;max-width:62ch}
+.algo{border-top:2px solid var(--ink);padding-top:14px;display:flex;flex-direction:column;gap:8px;scroll-margin-top:20px}
+.algo header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.algo h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0;line-height:1.3}
+.algo .en{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:block;letter-spacing:.02em}
+.algo p{margin:0;max-width:62ch}
+.algo h4{font-size:12px;letter-spacing:.1em;color:var(--muted);margin:4px 0 0;font-weight:700}
+.algo ol{margin:0;padding-left:1.4em;max-width:62ch}
+.algo li{margin:2px 0}
+.algo .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--hot);text-transform:uppercase}
+.run{border:2px solid var(--accent);color:var(--accent);background:transparent;padding:4px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.run:hover{background:var(--accent);color:var(--accent-ink)}
+
+.tablewrap{overflow-x:auto;border-top:2px solid var(--ink)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:13px}
+th,td{padding:8px 8px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11.5px;color:var(--muted);font-weight:500}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;position:relative}
+td.num span{position:relative;z-index:1}
+td.num::before{content:"";position:absolute;right:8px;bottom:5px;height:3px;width:calc((100% - 16px) * var(--v,0));background:var(--c-stack)}
+.guide{margin:0;padding:0;list-style:none;border-top:2px solid var(--ink)}
+.guide li{padding:9px 0;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px}
+.guide b{font-weight:700;white-space:nowrap}
+@media (max-width:480px){.guide li{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<header class="top">
+  <p class="eyebrow">Maze generation · 9 algorithms</p>
+  <h1>迷路生成ラボ</h1>
+  <p class="lede">迷路の作り方で、道の性質は大きく変わります。9つの生成方式をアニメーションで動かして、掘り方の違いと、できあがる迷路のクセを見比べられます。</p>
+</header>
+
+<main class="layout">
+  <section class="bench" id="bench" aria-label="生成ビューア">
+    <div class="algos" id="algos"></div>
+    <div class="stage" id="stage"><canvas id="cv" aria-label="迷路"></canvas></div>
+    <div class="status"><span id="st-name"><b>穴掘り法</b></span><span id="st-prog">完成</span></div>
+    <div class="legend" id="legend"></div>
+    <div class="actions">
+      <button class="btn primary" id="b-gen">生成</button>
+      <button class="btn" id="b-pause" disabled>一時停止</button>
+      <button class="btn" id="b-finish" disabled>すぐ完成</button>
+      <button class="btn" id="b-sol" aria-pressed="false">解答ルート</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="r-size">サイズ <output id="o-size">18×18</output></label><input type="range" id="r-size" min="6" max="45" value="18"></div>
+      <div class="ctl"><label for="r-speed">速度 <output id="o-speed">5</output></label><input type="range" id="r-speed" min="1" max="10" value="5"></div>
+      <div class="ctl" id="ctl-p" hidden><label for="r-p">最新を選ぶ確率 <output id="o-p">50%</output></label><input type="range" id="r-p" min="0" max="100" step="5" value="50"></div>
+      <button class="sound" id="b-sound" aria-pressed="true">音 ON</button>
+    </div>
+    <dl class="stats" id="stats">
+      <div><dt>正解ルート</dt><dd id="s-path">–</dd></div>
+      <div><dt>行き止まり</dt><dd id="s-dead">–</dd></div>
+      <div><dt>寄り道の入口</dt><dd id="s-entry">–</dd></div>
+      <div><dt>寄り道の平均の深さ</dt><dd id="s-avg">–</dd></div>
+      <div><dt>最も深い寄り道</dt><dd id="s-max">–</dd></div>
+    </dl>
+    <p class="note">スタートは左上、ゴールは右下。「寄り道」は正解ルートから分かれる枝のことで、深さは本道から何マス入り込めるかを表します。</p>
+  </section>
+
+  <section class="notes">
+    <h2>しくみの共通点</h2>
+    <p>ここにある方式はどれも「完全迷路」を作ります。すべてのマスがつながっていて、ループがなく、どの2マスの間にも道はちょうど1本です。グラフの言葉でいえば、マス目の上の全域木をランダムに1つ選ぶ作業です。方式ごとに「どんな形の木が出やすいか」が違い、それが道の長さや枝分かれのクセになります。</p>
+    <div id="articles" style="display:flex;flex-direction:column;gap:22px"></div>
+
+    <h2>傾向の比較</h2>
+    <p class="note" id="cmp-note">20×20マスで各12回生成した平均です。ページを開いたときに、この場で生成して計算しています。</p>
+    <div class="tablewrap"><table id="cmp">
+      <thead><tr><th>方式</th><th>正解ルート</th><th>行き止まり</th><th>寄り道の入口</th><th>平均の深さ</th><th>最深</th></tr></thead>
+      <tbody><tr><td colspan="6" style="text-align:left;color:var(--muted)">計算中…</td></tr></tbody>
+    </table></div>
+
+    <h2>選び方</h2>
+    <ul class="guide">
+      <li><span>長い一本道をじっくり探索させたい</span><b>穴掘り法</b></li>
+      <li><span>分岐と行き止まりを増やして迷わせたい</span><b>プリム法・クラスカル法</b></li>
+      <li><span>方式のクセがない迷路にしたい</span><b>ウィルソン法</b></li>
+      <li><span>本道と寄り道のバランスを細かく調整したい</span><b>成長木法</b></li>
+      <li><span>壁から組み立てたい、ブロック表示の迷路に素直に載せたい</span><b>壁のばし法</b></li>
+      <li><span>実装を最小限にしたい、わざと偏りを出したい</span><b>棒倒し法・二分木法</b></li>
+      <li><span>1行ずつ作りたい（無限スクロール向き）</span><b>サイドワインダー法</b></li>
+    </ul>
+  </section>
+</main>
+
+<script>
+(() => {
+'use strict';
+const N_=1,E_=2,S_=4,W_=8, DIRS=[1,2,4,8];
+const DX={1:0,2:1,4:0,8:-1}, DY={1:-1,2:0,4:1,8:0}, OPP={1:4,2:8,4:1,8:2};
+const ri = n => Math.random()*n|0;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+function newMaze(w,h){return {w,h,n:w*h,pass:new Uint8Array(w*h),state:new Uint8Array(w*h),cur:-1,mode:null,parent:null,size:null,done:false,vis:true,ev:()=>{}};}
+function nb(M,c,d){const x=c%M.w+DX[d], y=(c/M.w|0)+DY[d]; if(x<0||y<0||x>=M.w||y>=M.h) return -1; return y*M.w+x;}
+function carve(M,c,d){const m=nb(M,c,d); M.pass[c]|=d; M.pass[m]|=OPP[d]; return m;}
+function find(M,c){let r=c; while(M.parent[r]!==r) r=M.parent[r]; while(M.parent[c]!==r){const p=M.parent[c]; M.parent[c]=r; c=p;} return r;}
+
+/* ---------- generators (1 yield = 1 visible step) ---------- */
+function* dfs(M){
+  const s=ri(M.n); M.state[s]=2; const stack=[s]; M.cur=s;
+  while(stack.length){
+    const c=stack[stack.length-1];
+    const opts=DIRS.filter(d=>{const m=nb(M,c,d); return m>=0&&M.state[m]===0;});
+    if(opts.length){const d=opts[ri(opts.length)]; const m=carve(M,c,d); M.state[m]=2; stack.push(m); M.cur=m; M.ev('carve',m);}
+    else {M.state[c]=1; stack.pop(); M.cur=stack.length?stack[stack.length-1]:-1; M.ev('back',c);}
+    yield;
+  }
+}
+function* prim(M){
+  const walls=[]; const s=ri(M.n); M.state[s]=1; M.cur=s;
+  const add=c=>{for(const d of DIRS){const m=nb(M,c,d); if(m>=0&&M.state[m]!==1){walls.push(c*16+d); if(M.state[m]===0) M.state[m]=3;}}};
+  add(s); yield;
+  while(walls.length){
+    const i=ri(walls.length), v=walls[i]; walls[i]=walls[walls.length-1]; walls.pop();
+    const c=v>>4, d=v&15, m=nb(M,c,d);
+    if(M.state[m]!==1){carve(M,c,d); M.state[m]=1; M.cur=m; add(m); M.ev('carve',m); yield;}
+  }
+}
+function* kruskal(M){
+  const {n,w,h}=M; M.parent=new Int32Array(n).map((_,i)=>i); M.size=new Int32Array(n).fill(1); M.mode='sets';
+  const walls=[]; for(let c=0;c<n;c++){const x=c%w,y=c/w|0; if(x<w-1) walls.push(c*16+E_); if(y<h-1) walls.push(c*16+S_);}
+  shuffle(walls);
+  for(const v of walls){
+    const c=v>>4, d=v&15, m=nb(M,c,d); let a=find(M,c), b=find(M,m);
+    if(a!==b){ if(M.size[a]<M.size[b]) [a,b]=[b,a]; M.parent[b]=a; M.size[a]+=M.size[b];
+      carve(M,c,d); M.state[c]=1; M.state[m]=1; M.cur=m; M.ev('merge',m,M.size[a]); yield; }
+  }
+}
+function* wilson(M){
+  const n=M.n, dirs=new Uint8Array(n), order=shuffle([...Array(n).keys()]);
+  M.state[order[0]]=1; M.cur=order[0]; let ptr=1, walk=[]; yield;
+  while(true){
+    while(ptr<n&&M.state[order[ptr]]===1) ptr++;
+    if(ptr>=n) break;
+    const s=order[ptr]; let cur=s;
+    while(M.state[cur]!==1){
+      const opts=DIRS.filter(d=>nb(M,cur,d)>=0); const d=opts[ri(opts.length)];
+      dirs[cur]=d; cur=nb(M,cur,d); M.cur=cur;
+      if(M.vis){
+        for(const c of walk) if(M.state[c]===2) M.state[c]=0;
+        walk=[]; let x=s; while(x!==cur&&walk.length<n){walk.push(x); M.state[x]=2; x=nb(M,x,dirs[x]);}
+      }
+      M.ev('walk',cur); yield;
+    }
+    let x=s;
+    while(M.state[x]!==1){const nx=carve(M,x,dirs[x]); M.state[x]=1; M.cur=x; M.ev('commit',x); yield; x=nx;}
+    walk=[];
+  }
+}
+function* growing(M,o){
+  const p=o.p; const list=[ri(M.n)]; M.state[list[0]]=2; M.cur=list[0];
+  while(list.length){
+    const idx=Math.random()<p?list.length-1:ri(list.length), c=list[idx];
+    const opts=DIRS.filter(d=>{const m=nb(M,c,d); return m>=0&&M.state[m]===0;});
+    if(opts.length){const d=opts[ri(opts.length)]; const m=carve(M,c,d); M.state[m]=2; list.push(m); M.cur=m; M.ev('carve',m);}
+    else {list.splice(idx,1); M.state[c]=1; M.cur=c; M.ev('back',c);}
+    yield;
+  }
+}
+/* wall-based methods: corners (cx,cy) in 0..w × 0..h */
+const CD=[[0,-1],[1,0],[0,1],[-1,0]];
+function openAll(M){const {w,h}=M; for(let c=0;c<M.n;c++){const x=c%w,y=c/w|0; if(x<w-1) carve(M,c,E_); if(y<h-1) carve(M,c,S_);} M.state.fill(1);}
+function segCells(M,ax,ay,bx,by){ if(ay===by) return [(ay-1)*M.w+Math.min(ax,bx), S_]; return [Math.min(ay,by)*M.w+ax-1, E_]; }
+function isWallSeg(M,ax,ay,bx,by){const [c,d]=segCells(M,ax,ay,bx,by); return !(M.pass[c]&d);}
+function setWall(M,ax,ay,bx,by){const [c,d]=segCells(M,ax,ay,bx,by), m=nb(M,c,d); M.pass[c]&=~d; M.pass[m]&=~OPP[d]; return c;}
+const cornerCell=(M,cx,cy)=>Math.min(Math.max(cy,0),M.h-1)*M.w+Math.min(Math.max(cx,0),M.w-1);
+function* boutaoshi(M){
+  openAll(M); M.pillars=true; yield;
+  for(let cy=1;cy<M.h;cy++) for(let cx=1;cx<M.w;cx++){
+    const opts=[];
+    for(let k=0;k<4;k++){ if(k===0&&cy>1) continue; const bx=cx+CD[k][0], by=cy+CD[k][1]; if(!isWallSeg(M,cx,cy,bx,by)) opts.push([bx,by]); }
+    const [bx,by]=opts[ri(opts.length)], c=setWall(M,cx,cy,bx,by);
+    M.hl=[[cx,cy,bx,by]]; M.head=[cx,cy]; M.ev('fall',c); yield;
+  }
+  M.hl=null; M.head=null;
+}
+function* kabenobashi(M){
+  openAll(M); const {w,h}=M, W1=w+1, isWall=new Uint8Array((w+1)*(h+1));
+  for(let y=0;y<=h;y++) for(let x=0;x<=w;x++) if(x===0||y===0||x===w||y===h) isWall[y*W1+x]=1;
+  const cand=[]; for(let y=1;y<h;y++) for(let x=1;x<w;x++) cand.push(y*W1+x); shuffle(cand);
+  yield;
+  for(const s of cand){
+    if(isWall[s]) continue;
+    const inCur=new Set([s]), stack=[s]; M.hl=[]; M.head=[s%W1,s/W1|0];
+    while(true){
+      const p=stack[stack.length-1], px=p%W1, py=p/W1|0, opts=[];
+      for(const [dx,dy] of CD){const nx=px+dx, ny=py+dy; if(nx<0||ny<0||nx>w||ny>h) continue; const q=ny*W1+nx; if(!inCur.has(q)) opts.push(q);}
+      if(!opts.length){ stack.pop(); const t=stack[stack.length-1]; M.head=[t%W1,t/W1|0]; M.ev('back',cornerCell(M,px,py)); yield; continue; }
+      const q=opts[ri(opts.length)], qx=q%W1, qy=q/W1|0, c=setWall(M,px,py,qx,qy);
+      if(M.vis) M.hl.push([px,py,qx,qy]);
+      if(isWall[q]){ for(const t of inCur) isWall[t]=1; M.hl=null; M.head=null; M.ev('join',c); yield; break; }
+      inCur.add(q); stack.push(q); M.head=[qx,qy]; M.ev('wall',c); yield;
+    }
+  }
+}
+function* binary(M){
+  for(let y=0;y<M.h;y++) for(let x=0;x<M.w;x++){
+    const c=y*M.w+x, opts=[]; if(y>0) opts.push(N_); if(x<M.w-1) opts.push(E_);
+    if(opts.length) carve(M,c,opts[ri(opts.length)]);
+    M.state[c]=1; M.cur=c; M.ev('carve',c); yield;
+  }
+}
+function* sidewinder(M){
+  for(let y=0;y<M.h;y++){
+    let run=[];
+    for(let x=0;x<M.w;x++){
+      const c=y*M.w+x; run.push(c); M.state[c]=2; M.cur=c;
+      const close = x===M.w-1 || (y>0 && Math.random()<0.5);
+      if(close){ if(y>0){const r=run[ri(run.length)]; carve(M,r,N_); M.ev('up',r);} else M.ev('carve',c);
+        for(const r of run) M.state[r]=1; run=[]; }
+      else { carve(M,c,E_); M.ev('carve',c); }
+      yield;
+    }
+  }
+}
+
+/* ---------- algorithm catalogue ---------- */
+const L = {floor:['--c-floor','通路'],stack:['--c-stack',''],front:['--c-front',''],hot:['--c-hot','現在地'],void:['--c-void','未到達']};
+const ALGOS = {
+  dfs:{name:'穴掘り法',en:'Recursive Backtracker（深さ優先探索）',gen:dfs,
+    legend:[['--c-floor','完成した通路'],['--c-stack','スタック（戻り道）'],['--c-hot','現在地']],
+    summary:'一筆書きのように1本の道を掘り進め、行き止まったら来た道を戻って、まだ掘れる場所から再開する方式です。',
+    steps:['ランダムなマスから始め、今いるマスをスタックに積む','未訪問の隣マスをランダムに1つ選び、間の壁を壊して移動する','未訪問の隣がなければ、スタックから1マス戻る','スタックが空になったら完成'],
+    result:'長く曲がりくねった通路ができ、分岐は少なめです。正解ルートが長く、迷路の大部分を通ることが多くなります。行き止まりの数はここにある方式の中で最も少ない部類です。',
+    watch:'青いスタックが伸びては縮みます。掘り進む音は高く、戻るときは低い音になります。'},
+  prim:{name:'プリム法',en:"Randomized Prim's（壁リスト版）",gen:prim,
+    legend:[['--c-floor','迷路'],['--c-front','候補マス（リストの壁の先）'],['--c-hot','今つないだマス']],
+    summary:'迷路の外周に面した壁をリストに集め、そこからランダムに選んで少しずつ迷路を広げる方式です。',
+    steps:['1マスを迷路に入れ、その四方の壁をリストに加える','リストから壁をランダムに1つ取り出す','壁の向こうがまだ迷路でなければ壊してつなぎ、新しいマスの壁もリストに加える','リストが空になったら完成'],
+    result:'開始点から全方向へ放射状に広がります。短い行き止まりがとても多く、分岐も多め。正解ルートは比較的短く、まっすぐ気味です。',
+    watch:'黄色い候補マスが波のように外へ広がっていきます。'},
+  kruskal:{name:'クラスカル法',en:"Randomized Kruskal's",gen:kruskal,
+    legend:[['sets','同じ色＝つながったグループ'],['--c-void','まだ孤立したマス'],['--c-hot','今壊した壁の先']],
+    summary:'すべてのマスを別々の部屋として始め、ランダムな順に壁を壊して部屋同士をつないでいく方式です。',
+    steps:['全マスをそれぞれ別のグループにする','すべての壁をシャッフルして並べる','順に壁を見て、両側が別グループなら壊して1つにまとめる。同じグループなら壊さない（ループを作らないため）','全マスが1グループになったら完成'],
+    result:'分岐が迷路全体に均一に散らばります。短い行き止まりが多く、見た目はプリム法に近いですが、始点からの広がり方の偏りはありません。同じグループかどうかの判定には Union-Find（素集合データ構造）を使います。',
+    watch:'小さな色の島があちこちに生まれ、合体しながら大きくなります。1色になったら完成です。'},
+  wilson:{name:'ウィルソン法',en:"Wilson's（ループ消去ランダムウォーク）",gen:wilson,
+    legend:[['--c-floor','迷路'],['--c-stack','歩いている経路'],['--c-hot','先頭']],
+    summary:'迷路の外からランダムに歩き回り、迷路にぶつかったら足跡を通路として確定する方式です。歩いている途中でできたループは消します。',
+    steps:['1マスだけを迷路にする','迷路に入っていないマスからランダムウォークを始める','自分の足跡と交差したら、できたループを消す','迷路にたどり着いたら、残った足跡を通路として確定する','全マスが迷路に入るまで 2〜4 を繰り返す'],
+    result:'ありうるすべての完全迷路が同じ確率で出ます（一様全域木）。方式由来のクセがないので、他の方式を比べる基準になります。',
+    watch:'最初の1本は迷路が1マスしかないので長くさまよいます。迷路が育つほど早くぶつかるので、後半は一気に進みます。'},
+  boutaoshi:{name:'棒倒し法',en:'Stick-falling（日本で定番の古典的な方式）',gen:boutaoshi,
+    legend:[['--c-wall','柱と倒れた棒（壁）'],['--c-hot','今倒した棒']],
+    summary:'1マスおきに立てた柱を、1本ずつランダムな方向に倒して壁にする方式です。',
+    steps:['外周を壁で囲み、内側に1マスおきに柱を立てる','1段目の柱は上下左右のどれかに倒す','2段目以降の柱は上以外（下・左・右）に倒す。すでに壁がある方向には倒さない','すべての柱を倒したら完成'],
+    result:'実装がとても簡単で一瞬で終わります。「2段目以降は上に倒さない」「壁の上には倒さない」の2つのルールで、閉じた部屋もループもできません。その代わり向きの偏りが出やすく、解きやすい迷路になりがちです。',
+    watch:'左上から順に柱が倒れていきます。ブロック表示（奇数×奇数マス）でいう「偶数座標の柱」を、ここではマスの角の点として描いています。'},
+  kabenobashi:{name:'壁のばし法',en:'Wall extending',gen:kabenobashi,
+    legend:[['--c-wall','確定した壁'],['--c-hot','伸ばしている途中の壁']],
+    summary:'外周の壁だけから始め、柱の位置から壁をランダムに伸ばしていき、既存の壁に届いたら確定する方式です。穴掘り法を「壁の側」でやるイメージです。',
+    steps:['外周だけを壁にし、内側の柱の候補（1マスおきの点）をシャッフルする','まだ壁になっていない候補から、ランダムな方向へ壁を1区間ずつ伸ばす','伸ばしている途中の自分の壁には進まない。行き場がなくなったら1つ戻って別の方向を試す','既存の壁に届いたら、伸ばした壁をまとめて確定する','候補がすべて壁になったら完成'],
+    result:'壁全体が外周から枝分かれした1本の木としてつながるので、閉じた部屋やループはできません。棒倒し法より向きの偏りが少なく、自然な見た目になります。',
+    watch:'色の付いた壁がうねりながら伸び、既存の壁に届いた瞬間に確定して黒く変わります。'},
+  binary:{name:'二分木法',en:'Binary Tree',gen:binary,
+    legend:[['--c-floor','通路'],['--c-hot','処理中のマス']],
+    summary:'マスごとに「上」か「右」のどちらかの壁を壊すだけの、いちばん単純な方式です。',
+    steps:['各マスを順番に見る','上と右のうち、壊せる方からランダムに1つ選んで壊す（上端のマスは右だけ、右端のマスは上だけ）','全マスを見終わったら完成'],
+    result:'上端の行と右端の列が一直線の通路になり、どのマスからも右上へ斜めに抜ける道があります。向きの偏りが強く、慣れると解きやすい迷路です。組み合わせる向き（上＋右、下＋右など）を変えると偏る方向も変わります。',
+    watch:'1マスずつ走査するだけで、戻りも待ちもありません。覚えておくのは今のマスだけです。'},
+  sidewinder:{name:'サイドワインダー法',en:'Sidewinder',gen:sidewinder,
+    legend:[['--c-floor','通路'],['--c-stack','今のラン'],['--c-hot','処理中のマス']],
+    summary:'1行ずつ、右へ伸ばした通路（ラン）をランダムに区切り、ランの中の1マスから上へ穴を開ける方式です。',
+    steps:['各行を左から見て、今のマスをランに加える','ランダムに「右へ続ける」か「ここで区切る」かを決める','区切るときは、ランの中から1マス選んで上の壁を壊し、ランを空にする','最上段だけは区切らず、端まで右へつなぐ'],
+    result:'最上段が一直線になり、各ランから上へ抜ける道が1本ずつできます。二分木法より斜めの偏りは弱いですが、縦方向のクセが残ります。',
+    watch:'青いランが右へ伸び、区切られた瞬間に上へ穴が開きます。'},
+  growing:{name:'成長木法',en:'Growing Tree',gen:growing,tag:'おまけ',
+    legend:[['--c-floor','完成した通路'],['--c-stack','候補リスト'],['--c-hot','現在地']],
+    summary:'候補リストから次に掘るマスをどう選ぶかを変えるだけで、穴掘り法とプリム法の間を行き来できる方式です。',
+    steps:['開始マスを候補リストに入れる','リストから1マス選ぶ。「最新を選ぶ確率」の分だけ最後に加えたマスを、それ以外はランダムなマスを選ぶ','選んだマスに未訪問の隣があれば掘って進み、新しいマスをリストに加える。なければリストから外す','リストが空になったら完成'],
+    result:'確率100%なら穴掘り法と同じ、0%ならプリム法に近い迷路になります。本道の長さと寄り道の多さを、1つの数値で調整できます。',
+    watch:'「最新を選ぶ確率」スライダーを動かして見比べると違いがよくわかります。'}
+};
+const ORDER=['dfs','prim','kruskal','wilson','boutaoshi','kabenobashi','binary','sidewinder','growing'];
+
+/* ---------- analysis ---------- */
+function analyze(M){
+  const {n,pass}=M; const prev=new Int32Array(n).fill(-1), q=new Int32Array(n); let qh=0,qt=0;
+  q[qt++]=0; prev[0]=0;
+  while(qh<qt){const c=q[qh++]; for(const d of DIRS) if(pass[c]&d){const m=nb(M,c,d); if(prev[m]<0){prev[m]=c; q[qt++]=m;}}}
+  const path=[]; let x=n-1; while(x!==0){path.push(x); x=prev[x];} path.push(0); path.reverse();
+  const on=new Uint8Array(n); for(const c of path) on[c]=1;
+  let dead=0; const deg=c=>((pass[c]&1)+((pass[c]>>1)&1)+((pass[c]>>2)&1)+((pass[c]>>3)&1));
+  for(let c=0;c<n;c++) if(deg(c)===1) dead++;
+  const dist=new Int32Array(n).fill(-1), root=new Int32Array(n).fill(-1); qh=0; qt=0;
+  for(const c of path){dist[c]=0; q[qt++]=c;}
+  while(qh<qt){const c=q[qh++]; for(const d of DIRS) if(pass[c]&d){const m=nb(M,c,d); if(dist[m]<0){dist[m]=dist[c]+1; root[m]=on[c]?m:root[c]; q[qt++]=m;}}}
+  const maxD=new Int32Array(n); let entries=0,sum=0,mx=0;
+  for(let c=0;c<n;c++) if(!on[c]){const r=root[c]; if(dist[c]>maxD[r]) maxD[r]=dist[c];}
+  for(let c=0;c<n;c++) if(!on[c]&&root[c]===c){entries++; sum+=maxD[c]; if(maxD[c]>mx) mx=maxD[c];}
+  return {path,pathLen:path.length,pathRatio:path.length/n,dead,deadRatio:dead/n,entries,avg:entries?sum/entries:0,max:mx};
+}
+
+/* ---------- audio ---------- */
+const audio={ctx:null,master:null,on:true,last:0,lastTick:0,
+  init(){ if(this.ctx){ if(this.ctx.state==='suspended') this.ctx.resume(); return; }
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    try{ this.ctx=new AC(); const comp=this.ctx.createDynamicsCompressor(); this.master=this.ctx.createGain(); this.master.gain.value=0.55;
+      this.master.connect(comp); comp.connect(this.ctx.destination);}catch(e){this.ctx=null;} },
+  freq(idx){const semis=[0,2,4,7,9]; const o=Math.floor(idx/5), d=((idx%5)+5)%5; return 196*Math.pow(2,(o*12+semis[d])/12);},
+  tone(f,dur,type,vol,delay=0){ const c=this.ctx, t=c.currentTime+delay, o=c.createOscillator(), g=c.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(this.master); o.start(t); o.stop(t+dur+0.03); },
+  ok(){return this.on&&this.ctx&&this.ctx.state==='running';},
+  note(idx,dur=0.08,type='triangle',vol=0.15,force=false){ if(!this.ok()) return; const t=this.ctx.currentTime;
+    if(!force&&t-this.last<0.038) return; this.last=t; this.tone(this.freq(idx),dur,type,vol); },
+  tick(){ if(!this.ok()) return; const t=this.ctx.currentTime; if(t-this.lastTick<0.03) return; this.lastTick=t; this.tone(1400+Math.random()*300,0.018,'square',0.025); },
+  click(){ if(!this.ok()) return; this.tone(880,0.03,'square',0.04); },
+  done(){ if(!this.ok()) return; [0,2,4,5,7,10].forEach((k,i)=>this.tone(this.freq(k+5),0.28,'triangle',0.13,i*0.07)); this.tone(this.freq(5),0.6,'sine',0.08,0.42); }
+};
+
+/* ---------- state & ui ---------- */
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d'), stage=$('stage');
+const SPEEDS=[0.25,0.5,1,2,4,8,16,40,100,400];
+let algo='dfs', M=null, gen=null, running=false, paused=false, acc=0, steps=0, dirty=true;
+let sol=null, solOn=false, solProg=0, solLastCell=-1, cellPx=16;
+
+function onEvent(type,c,extra){
+  if(!audio.ok()) return;
+  const x=c%M.w, y=c/M.w|0, pos=((x/Math.max(1,M.w-1))+(1-y/Math.max(1,M.h-1)))/2, idx=Math.round(pos*14);
+  if(type==='carve') audio.note(idx,0.08,'triangle',0.15);
+  else if(type==='back') audio.note(idx-5,0.06,'sine',0.08);
+  else if(type==='merge') audio.note(Math.round(Math.log2(extra)/Math.log2(M.n)*16),0.09,'triangle',0.14);
+  else if(type==='walk') audio.tick();
+  else if(type==='commit') audio.note(idx+3,0.06,'square',0.05);
+  else if(type==='fall') audio.note(idx,0.09,'triangle',0.15);
+  else if(type==='wall') audio.note(idx+2,0.05,'triangle',0.08);
+  else if(type==='join') audio.note(idx+7,0.14,'triangle',0.16,true);
+  else if(type==='up') audio.note(idx+5,0.1,'triangle',0.15);
+}
+
+function size(){return +$('r-size').value;}
+function start(animate=true){
+  const s=size(); M=newMaze(s,s); gen=ALGOS[algo].gen(M,{p:+$('r-p').value/100}); steps=0; acc=0; sol=null; solProg=0; solLastCell=-1;
+  $('stats').classList.add('pending');
+  if(animate){ M.ev=onEvent; running=true; paused=false; }
+  else { M.vis=false; while(!gen.next().done) steps++; finish(false); }
+  syncButtons(); resize(); dirty=true;
+}
+function finish(sound=true){
+  running=false; paused=false; M.done=true; M.cur=-1; M.mode=null; M.pillars=false; M.hl=null; M.head=null; M.state.fill(1);
+  const a=analyze(M); sol=a.path; solProg=0; solLastCell=-1;
+  const pct=v=>(v*100).toFixed(0)+'%';
+  $('s-path').innerHTML=`${a.pathLen}<small>マス · ${pct(a.pathRatio)}</small>`;
+  $('s-dead').innerHTML=`${a.dead}<small>${pct(a.deadRatio)}</small>`;
+  $('s-entry').innerHTML=`${a.entries}<small>本</small>`;
+  $('s-avg').innerHTML=`${a.avg.toFixed(1)}<small>マス</small>`;
+  $('s-max').innerHTML=`${a.max}<small>マス</small>`;
+  $('stats').classList.remove('pending');
+  if(sound) audio.done();
+  syncButtons(); dirty=true;
+}
+function syncButtons(){
+  $('b-pause').disabled=!running; $('b-finish').disabled=!running;
+  $('b-pause').textContent=paused?'再開':'一時停止';
+  $('st-name').innerHTML=`<b>${ALGOS[algo].name}</b>${algo==='growing'?' · 最新 '+$('r-p').value+'%':''}`;
+}
+function updateStatus(){
+  $('st-prog').textContent = !M ? '' : M.done ? `完成 · ${M.w}×${M.h} · ${steps}手` : `${paused?'一時停止':'生成中'} · ${steps}手`;
+}
+
+function resize(){
+  if(!M) return;
+  const avail=Math.min(stage.clientWidth-24, window.innerWidth>=920 ? window.innerHeight*0.56 : 9999);
+  cellPx=Math.max(4,Math.floor((avail-6)/M.w));
+  const pad=Math.max(2,Math.round(cellPx*0.14)), W=M.w*cellPx+pad*2, H=M.h*cellPx+pad*2, dpr=Math.min(3,window.devicePixelRatio||1);
+  cv.style.width=W+'px'; cv.style.height=H+'px'; cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); cv._pad=pad; cv._dpr=dpr;
+  dirty=true;
+}
+
+function draw(){
+  if(!M) return;
+  const cs=getComputedStyle(document.documentElement), V=k=>cs.getPropertyValue(k).trim();
+  const col={void:V('--c-void'),floor:V('--c-floor'),stack:V('--c-stack'),front:V('--c-front'),hot:V('--c-hot'),wall:V('--c-wall'),faint:V('--c-wall-faint'),path:V('--c-path'),start:V('--c-start')};
+  const setL=+V('--set-l')||70, setS=+V('--set-s')||55;
+  const {w,h,pass,state}=M, s=cellPx, pad=cv._pad, dpr=cv._dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=col.void; ctx.fillRect(0,0,cv.width,cv.height); ctx.translate(pad,pad);
+  for(let c=0;c<M.n;c++){
+    const x=c%w, y=c/w|0; let f;
+    if(M.mode==='sets'){const r=find(M,c); f=M.size[r]>1?`hsl(${(r*137.508)%360} ${setS}% ${setL}%)`:col.void;}
+    else f=state[c]===1?col.floor:state[c]===2?col.stack:state[c]===3?col.front:col.void;
+    if(c===M.cur&&!M.done) f=col.hot;
+    ctx.fillStyle=f; ctx.fillRect(x*s,y*s,s,s);
+  }
+  const lw=Math.max(1.5,s*0.14); ctx.lineWidth=lw; ctx.lineCap='square';
+  const strong=new Path2D(), faint=new Path2D();
+  for(let c=0;c<M.n;c++){
+    const x=c%w, y=c/w|0;
+    if(x<w-1&&!(pass[c]&E_)){const p=(state[c]===0&&state[c+1]===0)?faint:strong; p.moveTo((x+1)*s,y*s); p.lineTo((x+1)*s,(y+1)*s);}
+    if(y<h-1&&!(pass[c]&S_)){const p=(state[c]===0&&state[c+w]===0)?faint:strong; p.moveTo(x*s,(y+1)*s); p.lineTo((x+1)*s,(y+1)*s);}
+  }
+  ctx.strokeStyle=col.faint; ctx.stroke(faint);
+  ctx.strokeStyle=col.wall; ctx.stroke(strong);
+  const B=new Path2D();
+  B.moveTo(0,M.done?s:0); B.lineTo(0,h*s); B.lineTo(w*s,h*s); if(M.done){B.moveTo(w*s,(h-1)*s);} B.lineTo(w*s,0); B.lineTo(0,0);
+  ctx.stroke(B);
+  if(!M.done){
+    if(M.pillars){ctx.fillStyle=col.wall; const d=Math.max(2,lw*1.4); for(let cy=1;cy<h;cy++) for(let cx=1;cx<w;cx++) ctx.fillRect(cx*s-d/2,cy*s-d/2,d,d);}
+    if(M.hl&&M.hl.length){const P=new Path2D(); for(const [a,b,c2,d2] of M.hl){P.moveTo(a*s,b*s); P.lineTo(c2*s,d2*s);} ctx.strokeStyle=col.hot; ctx.lineWidth=lw*1.5; ctx.stroke(P);}
+    if(M.head){ctx.fillStyle=col.hot; const d=Math.max(4,lw*2.6); ctx.fillRect(M.head[0]*s-d/2,M.head[1]*s-d/2,d,d);}
+  }
+  if(M.done){
+    ctx.fillStyle=col.start; ctx.beginPath(); ctx.arc(s/2,s/2,Math.max(2,s*0.26),0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=col.hot; const g=Math.max(3,s*0.46); ctx.fillRect((w-0.5)*s-g/2,(h-0.5)*s-g/2,g,g);
+  }
+  if(M.done&&solOn&&sol&&solProg>0){
+    const k=Math.min(sol.length-1,solProg), whole=Math.floor(k);
+    ctx.strokeStyle=col.path; ctx.lineWidth=Math.max(2,s*0.26); ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath(); const P=i=>[(sol[i]%w+0.5)*s,((sol[i]/w|0)+0.5)*s];
+    let [px,py]=P(0); ctx.moveTo(px,py);
+    for(let i=1;i<=whole;i++){[px,py]=P(i); ctx.lineTo(px,py);}
+    if(whole<sol.length-1){const [ax,ay]=P(whole),[bx,by]=P(whole+1),t=k-whole; ctx.lineTo(ax+(bx-ax)*t,ay+(by-ay)*t);}
+    ctx.stroke();
+  }
+}
+
+function loop(){
+  if(running&&!paused){
+    acc+=SPEEDS[+$('r-speed').value-1]; let k=Math.floor(acc); acc-=k;
+    while(k-- >0){ const r=gen.next(); if(r.done){finish(); break;} steps++; }
+    dirty=true;
+  }
+  if(M&&M.done&&solOn&&sol&&solProg<sol.length-1){
+    solProg=Math.min(sol.length-1,solProg+Math.max(0.35,sol.length/70));
+    const cell=Math.floor(solProg); if(cell!==solLastCell&&cell%2===0){solLastCell=cell; audio.note(Math.round(cell/sol.length*12)+4,0.07,'sine',0.1);}
+    dirty=true;
+  }
+  if(dirty){draw(); updateStatus(); dirty=false;}
+  requestAnimationFrame(loop);
+}
+
+/* ---------- build ui ---------- */
+function renderLegend(){
+  $('legend').innerHTML=ALGOS[algo].legend.map(([v,t])=>{
+    const bg=v==='sets'?'linear-gradient(90deg,hsl(20 60% 65%),hsl(140 50% 55%),hsl(220 60% 65%),hsl(300 50% 60%))':`var(${v})`;
+    return `<span><i style="background:${bg}"></i>${t}</span>`;}).join('')+(algo==='kruskal'?'':'');
+}
+function selectAlgo(k){
+  algo=k;
+  document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k?'true':'false'));
+  $('ctl-p').hidden=k!=='growing'; renderLegend(); syncButtons();
+}
+$('algos').innerHTML=ORDER.map(k=>`<button class="chip" data-k="${k}" aria-pressed="false">${ALGOS[k].name}</button>`).join('');
+$('algos').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b) return; audio.init(); audio.click(); selectAlgo(b.dataset.k); start(true);});
+
+$('articles').innerHTML=ORDER.map(k=>{const a=ALGOS[k]; return `
+  <article class="algo" id="a-${k}">
+    ${a.tag?`<span class="tag">${a.tag}</span>`:''}
+    <header><h3>${a.name}<span class="en">${a.en}</span></h3><button class="run" data-k="${k}">この方式で生成</button></header>
+    <p>${a.summary}</p>
+    <h4>手順</h4><ol>${a.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+    <h4>できる迷路</h4><p>${a.result}</p>
+    <h4>アニメーションの見どころ</h4><p>${a.watch}</p>
+  </article>`;}).join('');
+$('articles').addEventListener('click',e=>{const b=e.target.closest('.run'); if(!b) return; audio.init(); audio.click(); selectAlgo(b.dataset.k);
+  $('bench').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}); start(true);});
+
+$('b-gen').onclick=()=>{audio.init(); audio.click(); start(true);};
+$('b-pause').onclick=()=>{audio.click(); paused=!paused; syncButtons(); dirty=true;};
+$('b-finish').onclick=()=>{ if(!running) return; M.vis=false; while(!gen.next().done) steps++; finish(); };
+$('b-sol').onclick=()=>{audio.init(); solOn=!solOn; $('b-sol').setAttribute('aria-pressed',String(solOn)); solProg=0; solLastCell=-1; dirty=true;};
+$('b-sound').onclick=()=>{audio.init(); audio.on=!audio.on; $('b-sound').setAttribute('aria-pressed',String(audio.on)); $('b-sound').textContent=audio.on?'音 ON':'音 OFF'; audio.click();};
+$('r-size').oninput=()=>{$('o-size').textContent=`${size()}×${size()}`;};
+$('r-size').onchange=()=>{audio.init(); start(true);};
+$('r-speed').oninput=()=>{$('o-speed').textContent=$('r-speed').value;};
+$('r-p').oninput=()=>{$('o-p').textContent=$('r-p').value+'%';};
+$('r-p').onchange=()=>{audio.init(); start(true);};
+document.addEventListener('pointerdown',()=>audio.init(),{passive:true});
+new ResizeObserver(()=>resize()).observe(stage);
+window.addEventListener('resize',resize);
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{dirty=true;});
+new MutationObserver(()=>{dirty=true;}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+selectAlgo('dfs'); start(false); requestAnimationFrame(loop);
+
+/* ---------- comparison table ---------- */
+(function compare(){
+  const RUNS=12, SZ=20, rows=[]; let i=0;
+  const next=()=>{
+    if(i>=ORDER.length){render(); return;}
+    const k=ORDER[i++], t={pathRatio:0,deadRatio:0,entries:0,avg:0,max:0};
+    for(let r=0;r<RUNS;r++){const m=newMaze(SZ,SZ); m.vis=false; const g=ALGOS[k].gen(m,{p:0.5}); while(!g.next().done); const a=analyze(m); for(const key in t) t[key]+=a[key]/RUNS;}
+    rows.push({k,...t}); setTimeout(next,0);
+  };
+  const render=()=>{
+    const mx={}; ['pathRatio','deadRatio','entries','avg','max'].forEach(c=>mx[c]=Math.max(...rows.map(r=>r[c])));
+    const cell=(r,c,txt)=>`<td class="num" style="--v:${(r[c]/mx[c]).toFixed(3)}"><span>${txt}</span></td>`;
+    $('cmp').tBodies[0].innerHTML=rows.map(r=>`<tr><td>${ALGOS[r.k].name}${r.k==='growing'?' <span style="color:var(--muted);font-size:11px">(50%)</span>':''}</td>${
+      cell(r,'pathRatio',(r.pathRatio*100).toFixed(0)+'%')}${cell(r,'deadRatio',(r.deadRatio*100).toFixed(0)+'%')}${
+      cell(r,'entries',r.entries.toFixed(0)+'本')}${cell(r,'avg',r.avg.toFixed(1)+'マス')}${cell(r,'max',r.max.toFixed(0)+'マス')}</tr>`).join('');
+  };
+  setTimeout(next,60);
+})();
+})();
+</script>
+
+</body></html>

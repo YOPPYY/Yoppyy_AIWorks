@@ -1,0 +1,405 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ひとふでタイル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&display=swap">
+<style>
+/* Layout: one-screen app — slim top bar (level stepper + sound), glazed-tile board centered, three icon controls at the bottom. Single committed look: glazed ceramic tiles on deep teal grout. */
+:root{
+  --grout:#0f2e34;
+  --grout-2:#16414a;
+  --glaze:#dbe8e1;
+  --glaze-2:#b9cfc6;
+  --cobalt:#2a4fb8;
+  --cobalt-lite:#6f8fe6;
+  --amber:#e8b44a;
+  --stop:#c7665a;
+  --ink:#e9f1ed;
+  --muted:#7fa3a3;
+  --f-display:"Bricolage Grotesque",ui-rounded,"Hiragino Maru Gothic ProN",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{
+  background:radial-gradient(120% 80% at 50% 35%,var(--grout-2),var(--grout) 70%);
+  background-color:var(--grout);
+  color:var(--ink);
+  font-family:var(--f-display);
+  overflow:hidden;
+  touch-action:none;
+  user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#app{height:100%;display:flex;flex-direction:column;padding-inline:16px;box-sizing:border-box}
+header{display:flex;align-items:center;justify-content:space-between;padding-block:14px 6px}
+.stepper{display:flex;align-items:center;gap:6px}
+#lv{font-weight:800;font-size:34px;min-width:2.2ch;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+button{
+  appearance:none;border:0;background:transparent;color:var(--ink);
+  width:48px;height:48px;border-radius:14px;display:grid;place-items:center;cursor:pointer;
+  transition:background .15s,transform .1s,opacity .2s;
+}
+button:active{transform:scale(.92)}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button:disabled{opacity:.2;pointer-events:none}
+button svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#stage{flex:1;min-height:0;position:relative}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+footer{display:flex;justify-content:center;gap:28px;padding-block:8px 22px}
+footer button{width:64px;height:64px;border-radius:20px;background:color-mix(in oklab,var(--glaze) 10%,transparent)}
+footer button svg{width:28px;height:28px}
+#tap{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+#tap span{
+  font-weight:800;font-size:clamp(56px,18vw,96px);color:var(--amber);
+  opacity:0;transform:scale(.6);transition:opacity .35s,transform .45s cubic-bezier(.2,1.6,.4,1);
+  text-shadow:0 6px 30px rgba(0,0,0,.35)
+}
+#tap.on span{opacity:1;transform:scale(1)}
+#snd.off{opacity:.45}
+#lv{width:auto;height:48px;padding-inline:6px;color:var(--ink);font:inherit;font-weight:800;font-size:34px}
+#sel{position:fixed;inset:0;z-index:5;background:color-mix(in oklab,var(--grout) 94%,transparent);backdrop-filter:blur(6px);
+  display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 16px)}
+#sel .bar{display:flex;justify-content:flex-end}
+#grid{flex:1;min-height:0;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding-block:8px 24px;align-content:start}
+#grid button{width:auto;height:auto;aspect-ratio:1;border-radius:14px;font:inherit;font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;
+  background:color-mix(in oklab,var(--glaze) 88%,transparent);color:var(--grout);box-shadow:0 3px 0 rgba(0,0,0,.3)}
+#grid button.done{background:var(--cobalt-lite);color:#fff}
+#grid button.cur{outline:3px solid var(--amber);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){#tap span{transition:none}}
+</style>
+
+<div id="app">
+  <header>
+    <div class="stepper">
+      <button id="prev" aria-label="前のステージ"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button id="lv" aria-label="ステージ選択">1</button>
+      <button id="next" aria-label="次のステージ"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <button id="snd" aria-label="サウンド切替"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12"/></svg></button>
+  </header>
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="tap"><span>✓</span></div>
+  </div>
+  <div id="sel" hidden>
+    <div class="bar"><button id="selx" aria-label="閉じる"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="grid"></div>
+  </div>
+  <footer>
+    <button id="undo" aria-label="1手戻す"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+    <button id="reset" aria-label="やり直し"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
+    <button id="hint" aria-label="ヒント"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg></button>
+  </footer>
+</div>
+
+<script>
+(()=>{
+/* ---------- storage ---------- */
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- puzzle generation ----------
+   req[i]: how many times tile i must be passed (0 = not a tile, 1 = normal, 2 = two-pass)
+   stop[i]: 1 = no-entry panel (drawn as a tile, never enterable)
+   The solution never reverses onto the tile it just left, since that gesture means "undo". */
+function rngOf(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function sizeFor(lv){
+  const T=[[3,3,3],[6,4,4],[10,4,5],[15,5,5],[22,5,6],[30,6,6],[40,6,7],[55,7,7],[75,7,8]];
+  for(const [m,w,h] of T) if(lv<=m) return [w,h];
+  return [7,9];
+}
+function generate(lv){
+  const r=rngOf(lv*9973+1234);
+  const [w,h]=sizeFor(lv);
+  const N=w*h;
+  const ratio=Math.min(.92,.66+r()*.18+Math.min(lv,60)*.002);
+  const target=Math.max(5,Math.round(N*ratio));
+  const want=lv<5?0:Math.min(6,1+Math.floor((lv-5)/7)+(r()<.4?1:0));
+  const nb=i=>{const x=i%w,y=(i/w)|0,o=[];if(x>0)o.push(i-1);if(x<w-1)o.push(i+1);if(y>0)o.push(i-w);if(y<h-1)o.push(i+w);return o};
+  let best=null,bestScore=-1;
+  for(let t=0;t<800;t++){
+    const cap=new Uint8Array(N).fill(1);
+    for(let k=0;k<want+1;k++)cap[(r()*N)|0]=2;
+    const vis=new Uint8Array(N);let cur=(r()*N)|0,prev=-1;const p=[cur];vis[cur]=1;
+    const free=n=>vis[n]<cap[n];
+    for(;;){
+      const c=nb(cur).filter(n=>n!==prev&&free(n));if(!c.length)break;
+      let pick=-1,ps=1e9;
+      for(const n of c){const s=nb(n).filter(m=>m!==cur&&free(m)).length-(cap[n]>1&&vis[n]>0?1.3:0)+r()*1.6;if(s<ps){ps=s;pick=n}}
+      prev=cur;cur=pick;vis[cur]++;p.push(cur);
+    }
+    const cnt=new Uint8Array(N);let cov=0,multi=0,L=p.length;
+    for(let i=0;i<p.length;i++){const c=p[i];cnt[c]++;if(cnt[c]===1)cov++;if(cnt[c]===2)multi++;if(cov>=target&&multi>=want){L=i+1;break}}
+    const sol=p.slice(0,L);
+    const score=Math.min(cov,target)*10+Math.min(multi,want)*30;
+    if(score>bestScore){bestScore=score;best=sol}
+    if(cov>=target&&multi>=want)break;
+  }
+  const req=new Uint8Array(N);best.forEach(i=>req[i]++);
+  const stop=new Uint8Array(N);
+  return{w,h,req,stop,sol:best,start:best[0]};
+}
+
+/* ---------- audio ---------- */
+const Snd=(()=>{
+  let ac=null,master,sfx,mus,on=store.get('hf_snd',true),timer=null,nextT=0,step=0;
+  const PENTA=[0,2,4,7,9];
+  const hz=n=>440*Math.pow(2,(n-69)/12);
+  function init(){
+    if(ac)return;
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    ac=new AC();
+    master=ac.createGain();master.gain.value=on?1:0;master.connect(ac.destination);
+    const comp=ac.createDynamicsCompressor();comp.connect(master);
+    sfx=ac.createGain();sfx.gain.value=.55;sfx.connect(comp);
+    mus=ac.createGain();mus.gain.value=.16;
+    const dl=ac.createDelay();dl.delayTime.value=.36;const fb=ac.createGain();fb.gain.value=.28;
+    const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;
+    mus.connect(lp);lp.connect(comp);lp.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(comp);
+    startMusic();
+  }
+  function tone(dest,f,t,dur,type,vol,att=.005){
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.05);
+  }
+  function noteFor(k){const deg=k%PENTA.length,oct=Math.floor(k/PENTA.length)%3;return 60+PENTA[deg]+12*oct}
+  // glaze "tink": sine + faint high partial
+  function stepSound(k){
+    if(!ac)return;const t=ac.currentTime,n=noteFor(k);
+    tone(sfx,hz(n),t,.28,'sine',.5);
+    tone(sfx,hz(n)*3.01,t,.08,'sine',.08);
+  }
+  // multi-pass tile: same note with a bell fifth; a lower "clack" while passes remain
+  function multiSound(k,left){
+    if(!ac)return;const t=ac.currentTime,n=noteFor(k);
+    tone(sfx,hz(n),t,.32,'sine',.45);
+    tone(sfx,hz(n+7),t+.03,.4,'sine',.22);
+    if(left>0){tone(sfx,hz(n-12),t,.12,'triangle',.25);tone(sfx,hz(n)*4.2,t,.05,'square',.03)}
+    else tone(sfx,hz(n+12),t+.07,.5,'sine',.18);
+  }
+  function undoSound(){if(!ac)return;const t=ac.currentTime;
+    const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';
+    o.frequency.setValueAtTime(520,t);o.frequency.exponentialRampToValueAtTime(260,t+.1);
+    g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);
+    o.connect(g);g.connect(sfx);o.start(t);o.stop(t+.2)}
+  function bump(){if(!ac)return;const t=ac.currentTime;
+    const o=ac.createOscillator(),g=ac.createGain();o.type='sine';
+    o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(80,t+.12);
+    g.gain.setValueAtTime(.4,t);g.gain.exponentialRampToValueAtTime(.0001,t+.16);
+    o.connect(g);g.connect(sfx);o.start(t);o.stop(t+.2)}
+  // no-entry panel: short low double buzz
+  function stopSound(){if(!ac)return;const t=ac.currentTime;
+    [0,.09].forEach(d=>{const o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();
+      o.type='square';o.frequency.setValueAtTime(110,t+d);f.type='lowpass';f.frequency.value=700;
+      g.gain.setValueAtTime(.0001,t+d);g.gain.linearRampToValueAtTime(.16,t+d+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d+.07);
+      o.connect(f);f.connect(g);g.connect(sfx);o.start(t+d);o.stop(t+d+.1)})}
+  function resetSound(){if(!ac)return;const t=ac.currentTime;
+    [79,74,67,60].forEach((n,i)=>tone(sfx,hz(n),t+i*.045,.15,'triangle',.18))}
+  function hintSound(){if(!ac)return;const t=ac.currentTime;
+    tone(sfx,hz(88),t,.5,'sine',.18);tone(sfx,hz(93),t+.09,.6,'sine',.14)}
+  function clearSound(){if(!ac)return;const t=ac.currentTime;
+    [72,76,79,84,88,91,96].forEach((n,i)=>{tone(sfx,hz(n),t+i*.06,.7,'sine',.32);tone(sfx,hz(n)*2,t+i*.06,.25,'triangle',.05)});
+    [60,67,72].forEach(n=>tone(sfx,hz(n),t+.42,1.6,'triangle',.12,.04));
+  }
+  function navSound(){if(!ac)return;tone(sfx,hz(84),ac.currentTime,.12,'sine',.2)}
+  // BGM: 4-chord pentatonic lullaby, 88 bpm eighths
+  const CH=[[57,64,69],[53,60,65],[48,55,64],[55,62,67]];
+  const MEL=[0,2,1,2, 0,1,2,1, 2,0,1,0, 1,2,0,2];
+  function startMusic(){
+    nextT=ac.currentTime+.1;step=0;
+    timer=setInterval(()=>{
+      while(nextT<ac.currentTime+.25){
+        const e=60/88/2,bar=Math.floor(step/8)%4,ch=CH[bar];
+        if(step%8===0){ch.forEach(n=>tone(mus,hz(n-12),nextT,e*8,'triangle',.22,.25));tone(mus,hz(ch[0]-24),nextT,e*6,'sine',.35,.02)}
+        const pi=MEL[(step+bar*3)%16];
+        if(step%8!==7) tone(mus,hz(ch[pi]+12),nextT,e*1.6,'sine',step%2?.12:.2);
+        nextT+=e;step++;
+      }
+    },40);
+  }
+  function toggle(){on=!on;store.set('hf_snd',on);if(master)master.gain.setTargetAtTime(on?1:0,ac.currentTime,.05);return on}
+  function resume(){init();if(ac&&ac.state==='suspended')ac.resume()}
+  document.addEventListener('visibilitychange',()=>{if(!ac)return;document.hidden?ac.suspend():ac.resume()});
+  return{resume,stepSound,multiSound,undoSound,bump,stopSound,resetSound,hintSound,clearSound,navSound,toggle,get on(){return on}};
+})();
+
+/* ---------- state ---------- */
+const hot=window.claude?.hot;
+let saved=hot?.data||{};
+const MAXLV=100;
+const oldMax=store.get('hf_max',1);
+const cleared=new Set(store.get('hf_clear',null)||Array.from({length:Math.max(0,oldMax-1)},(_,i)=>i+1));
+let lv=Math.min(MAXLV,saved.lv||store.get('hf_lv',1));
+let P,path,hintCells=[],hintUntil=0,clearAt=0,locked=false,flashT=0,flashCell=-1;
+hot?.snapshot?.(()=>({lv}));
+
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d'),stage=$('stage');
+let W=0,H=0,dpr=1,cell=40,ox=0,oy=0;
+
+function load(n){
+  lv=Math.min(MAXLV,Math.max(1,n));P=generate(lv);path=[P.start];hintCells=[];locked=false;clearAt=0;
+  $('lv').textContent=lv;$('prev').disabled=lv<=1;$('next').disabled=lv>=MAXLV;
+  $('tap').classList.remove('on');
+  store.set('hf_lv',lv);layout();
+}
+function layout(){
+  const r=stage.getBoundingClientRect();dpr=Math.min(3,window.devicePixelRatio||1);
+  W=r.width;H=r.height;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  if(!P)return;
+  cell=Math.min((W-4)/P.w,(H-4)/P.h,104);
+  ox=(W-cell*P.w)/2;oy=(H-cell*P.h)/2;
+}
+addEventListener('resize',layout);
+const visits=c=>{let n=0;for(const x of path)if(x===c)n++;return n};
+
+/* ---------- drawing ---------- */
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+const cx=i=>ox+(i%P.w+.5)*cell, cy=i=>oy+(((i/P.w)|0)+.5)*cell;
+function draw(now){
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  if(!P)return;
+  const N=P.w*P.h,cnt=new Uint8Array(N),first=new Int16Array(N).fill(-1);
+  path.forEach((c,k)=>{cnt[c]++;if(first[c]<0)first[c]=k});
+  const g=cell*.07,rad=cell*.16;
+  rr(ox-g,oy-g,cell*P.w+g*2,cell*P.h+g*2,rad*1.4);ctx.fillStyle='rgba(0,0,0,.18)';ctx.fill();
+  for(let i=0;i<N;i++){
+    const x=ox+(i%P.w)*cell+g,y=oy+((i/P.w)|0)*cell+g,s=cell-g*2;
+    if(P.stop[i]){
+      // no-entry panel: sunken dark slate tile with a red cross
+      rr(x,y,s,s,rad);const gs=ctx.createLinearGradient(x,y,x,y+s);gs.addColorStop(0,'#0b2226');gs.addColorStop(1,'#1d4047');
+      ctx.fillStyle=gs;ctx.fill();ctx.strokeStyle='rgba(199,102,90,.35)';ctx.lineWidth=Math.max(1.5,cell*.03);ctx.stroke();
+      const hit=flashCell===i&&now<flashT,a=hit?.6+.4*((flashT-now)/300):1;
+      ctx.strokeStyle=`rgba(199,102,90,${a})`;ctx.lineWidth=cell*.075;ctx.lineCap='round';
+      const m=s*.32;ctx.beginPath();ctx.moveTo(x+m,y+m);ctx.lineTo(x+s-m,y+s-m);ctx.moveTo(x+s-m,y+m);ctx.lineTo(x+m,y+s-m);ctx.stroke();
+      continue;
+    }
+    const req=P.req[i];
+    if(!req){ctx.fillStyle='rgba(255,255,255,.05)';ctx.beginPath();ctx.arc(x+s/2,y+s/2,cell*.05,0,7);ctx.fill();continue}
+    const c=cnt[i],k=first[i];
+    let lift=0;
+    if(clearAt){const d=(now-clearAt)/1000-(k<0?0:k)*.03;if(d>0&&d<.5)lift=Math.sin(d/.5*Math.PI)}
+    rr(x,y+cell*.05,s,s,rad);ctx.fillStyle='rgba(0,0,0,.28)';ctx.fill();
+    const yy=y-lift*cell*.08;
+    rr(x,yy,s,s,rad);
+    const gr=ctx.createLinearGradient(x,yy,x+s,yy+s);
+    if(c>=req){gr.addColorStop(0,'#9fb4ef');gr.addColorStop(1,'#7f98df')}
+    else if(c>0){gr.addColorStop(0,'#d3def6');gr.addColorStop(1,'#b4c5ec')}
+    else if(req>1){gr.addColorStop(0,'#f0ecd9');gr.addColorStop(1,'#d6d0b2')}
+    else{gr.addColorStop(0,'#e8f1ec');gr.addColorStop(1,'#bfd3ca')}
+    ctx.fillStyle=gr;ctx.fill();
+    if(lift>0){ctx.fillStyle=`rgba(232,180,74,${lift*.55})`;ctx.fill()}
+    rr(x+s*.1,yy+s*.08,s*.8,s*.22,rad*.7);ctx.fillStyle='rgba(255,255,255,.28)';ctx.fill();
+    // remaining passes on a multi-pass tile: one inset rim per pass left
+    const left=req-c;
+    if(req>1&&left>0){
+      const base=i===P.start?.24:.12;
+      ctx.strokeStyle='#8a6d2a';ctx.lineWidth=Math.max(2,cell*.045);
+      for(let j=0;j<left;j++){const ins=s*(base+j*.105);rr(x+ins,yy+ins,s-ins*2,s-ins*2,Math.max(2,rad*(1-j*.3)));ctx.stroke()}
+    }
+    if(i===P.start){ctx.strokeStyle='#e8b44a';ctx.lineWidth=Math.max(2.5,cell*.06);rr(x+s*.12,yy+s*.12,s*.76,s*.76,rad*.8);ctx.stroke()}
+  }
+  // hint ghost
+  if(hintCells.length&&now<hintUntil){
+    const a=Math.min(1,(hintUntil-now)/600)*(.55+.25*Math.sin(now/140));
+    ctx.strokeStyle=`rgba(232,180,74,${a})`;ctx.lineWidth=cell*.12;ctx.lineCap='round';ctx.lineJoin='round';ctx.setLineDash([cell*.02,cell*.2]);
+    ctx.beginPath();hintCells.forEach((c,j)=>j?ctx.lineTo(cx(c),cy(c)):ctx.moveTo(cx(c),cy(c)));ctx.stroke();ctx.setLineDash([]);
+  }
+  // ink line
+  if(path.length>1){
+    ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.strokeStyle='rgba(20,40,110,.35)';ctx.lineWidth=cell*.3;
+    ctx.beginPath();path.forEach((c,j)=>j?ctx.lineTo(cx(c),cy(c)+cell*.03):ctx.moveTo(cx(c),cy(c)+cell*.03));ctx.stroke();
+    ctx.strokeStyle=clearAt?'#e8b44a':'#2a4fb8';ctx.lineWidth=cell*.24;
+    ctx.beginPath();path.forEach((c,j)=>j?ctx.lineTo(cx(c),cy(c)):ctx.moveTo(cx(c),cy(c)));ctx.stroke();
+  }
+  // head
+  const hd=path[path.length-1],pulse=1+.08*Math.sin(now/220);
+  ctx.fillStyle=clearAt?'#e8b44a':'#2a4fb8';ctx.beginPath();ctx.arc(cx(hd),cy(hd),cell*.2*pulse,0,7);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.85)';ctx.beginPath();ctx.arc(cx(hd)-cell*.05,cy(hd)-cell*.05,cell*.055,0,7);ctx.fill();
+  if(now<flashT){const a=(flashT-now)/260;ctx.strokeStyle=`rgba(255,120,110,${Math.min(1,a)})`;ctx.lineWidth=cell*.06;ctx.beginPath();ctx.arc(cx(hd),cy(hd),cell*.36,0,7);ctx.stroke()}
+}
+function loop(t){draw(t);requestAnimationFrame(loop)}
+
+/* ---------- input ---------- */
+function cellAt(px,py){
+  const x=Math.floor((px-ox)/cell),y=Math.floor((py-oy)/cell);
+  if(x<0||y<0||x>=P.w||y>=P.h)return -1;return y*P.w+x;
+}
+const adj=(a,b)=>{const ax=a%P.w,ay=(a/P.w)|0,bx=b%P.w,by=(b/P.w)|0;return Math.abs(ax-bx)+Math.abs(ay-by)===1};
+const canEnter=c=>{const hd=path[path.length-1];return adj(c,hd)&&!(path.length>1&&c===path[path.length-2])&&P.req[c]>0&&visits(c)<P.req[c]};
+let dragging=false,lastPt=null,lastBump=-1;
+function blocked(c){
+  if(lastBump===c)return;lastBump=c;flashT=performance.now()+300;flashCell=c;
+  if(P.stop[c]){Snd.stopSound();navigator.vibrate?.([10,30,10])}else{Snd.bump();navigator.vibrate?.(12)}
+}
+function tryCell(c){
+  if(c<0||locked)return;
+  const hd=path[path.length-1];if(c===hd)return;
+  if(path.length>1&&c===path[path.length-2]){path.pop();Snd.undoSound();return}
+  if(!adj(c,hd))return;
+  if(!canEnter(c)){blocked(c);return}
+  lastBump=-1;path.push(c);
+  const req=P.req[c];
+  if(req>1)Snd.multiSound(path.length-2,req-visits(c));else Snd.stepSound(path.length-2);
+  if(path.length===P.sol.length)win();
+}
+function pt(e){const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
+cv.addEventListener('pointerdown',e=>{
+  Snd.resume();if(locked){if(clearAt)advance();return}
+  const [x,y]=pt(e),c=cellAt(x,y);if(c<0)return;
+  const k=path.lastIndexOf(c);
+  if(canEnter(c))tryCell(c);
+  else if(k>=0&&k<path.length-1){path.length=k+1;Snd.undoSound()}
+  else if(k<0)tryCell(c);
+  dragging=true;lastPt=[x,y];cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  const [x,y]=pt(e),[lx,ly]=lastPt,d=Math.hypot(x-lx,y-ly),n=Math.max(1,Math.ceil(d/(cell*.2)));
+  for(let j=1;j<=n;j++){
+    const sx=lx+(x-lx)*j/n,sy=ly+(y-ly)*j/n,c=cellAt(sx,sy);
+    if(c>=0){const ccx=cx(c),ccy=cy(c);if(Math.abs(sx-ccx)<cell*.42&&Math.abs(sy-ccy)<cell*.42)tryCell(c)}
+  }
+  lastPt=[x,y];
+});
+['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,()=>{dragging=false;lastBump=-1}));
+
+/* ---------- flow ---------- */
+function win(){
+  locked=true;dragging=false;clearAt=performance.now();Snd.clearSound();navigator.vibrate?.([20,40,30]);
+  cleared.add(lv);store.set('hf_clear',[...cleared]);
+  setTimeout(()=>$('tap').classList.add('on'),450);
+  setTimeout(()=>{if(clearAt)advance()},2000);
+}
+function advance(){clearAt=0;if(lv<MAXLV)load(lv+1);else load(lv)}
+function openSel(){
+  const gdv=$('grid');gdv.innerHTML='';
+  for(let i=1;i<=MAXLV;i++){const b=document.createElement('button');b.textContent=i;
+    if(cleared.has(i))b.classList.add('done');if(i===lv)b.classList.add('cur');
+    b.onclick=()=>{Snd.navSound();$('sel').hidden=true;load(i)};gdv.appendChild(b)}
+  $('sel').hidden=false;
+  gdv.querySelector('.cur')?.scrollIntoView({block:'center'});
+}
+$('lv').onclick=()=>{Snd.resume();if(clearAt)return;Snd.navSound();openSel()};
+$('selx').onclick=()=>{Snd.navSound();$('sel').hidden=true};
+$('prev').onclick=()=>{Snd.resume();Snd.navSound();load(lv-1)};
+$('next').onclick=()=>{Snd.resume();Snd.navSound();load(lv+1)};
+$('undo').onclick=()=>{Snd.resume();if(locked||path.length<2)return;path.pop();Snd.undoSound()};
+$('reset').onclick=()=>{Snd.resume();if(locked||path.length<2)return;path=[P.start];Snd.resetSound()};
+$('hint').onclick=()=>{
+  Snd.resume();if(locked)return;
+  let k=0;while(k<path.length&&path[k]===P.sol[k])k++;
+  if(k<path.length){path.length=k;Snd.undoSound()}
+  hintCells=P.sol.slice(k-1,k+3);hintUntil=performance.now()+2600;Snd.hintSound();
+};
+const sb=$('snd');const paintSnd=()=>{sb.classList.toggle('off',!Snd.on);sb.querySelector('.w').style.display=Snd.on?'':'none'};
+sb.onclick=()=>{Snd.resume();Snd.toggle();paintSnd()};paintSnd();
+
+function start(){load(lv);requestAnimationFrame(loop)}
+hot?.ready?hot.ready(d=>{if(d?.lv)lv=d.lv;start()}):start();
+})();
+</script>
+
+</body></html>

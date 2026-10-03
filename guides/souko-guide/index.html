@@ -1,0 +1,430 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>夜勤の倉庫番 攻略</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Chakra+Petch:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: single column shift log — sticky stage strip on top, one card per stage with a replay board beside its notes */
+:root{
+  --bg:#15171a;
+  --panel:#1d2024;
+  --panel-2:#24282d;
+  --line:#ffffff14;
+  --hazard:#f2b632;
+  --crate:#b7773c;
+  --done:#57d18a;
+  --fg:#e7e3da;
+  --mute:#979ba2;
+  --display:"Dela Gothic One","Hiragino Sans","Noto Sans JP",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --num:"Chakra Petch","Hiragino Sans",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{scroll-behavior:smooth;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.75}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+a{color:var(--hazard)}
+
+/* hero */
+.hero{padding-block:36px 20px;display:grid;gap:14px}
+.tape{height:10px;border-radius:2px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 12px,#1b1a14 12px 24px);opacity:.9}
+.eyebrow{font-family:var(--num);font-weight:700;font-size:12px;letter-spacing:.18em;color:var(--mute)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(30px,8vw,46px);line-height:1.15;margin:0;text-wrap:balance}
+h1 span{color:var(--hazard)}
+.lead{margin:0;color:#cfcac0;max-width:60ch}
+.play{justify-self:start;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;background:var(--hazard);color:#1a1405;text-decoration:none;font-weight:700}
+
+/* basics */
+.basics{margin-block:8px 28px;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.tip{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.tip b{display:block;font-size:14px;margin-bottom:2px}
+.tip p{margin:0;font-size:13.5px;color:#c9c4ba;line-height:1.65}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0 0 10px;letter-spacing:.02em}
+
+/* stage strip */
+.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:3;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);
+  margin-inline:-16px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;width:38px;height:34px;border-radius:9px;display:grid;place-items:center;text-decoration:none;
+  font-family:var(--num);font-weight:700;font-size:14px;color:var(--fg);background:var(--panel-2);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.chip.on{background:var(--hazard);color:#1a1405;border-color:var(--hazard)}
+
+/* stage card */
+.stage{margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px}
+.sh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.no{font-family:var(--display);font-size:30px;color:var(--hazard);line-height:1;font-variant-numeric:tabular-nums}
+.meta{display:flex;gap:14px;font-family:var(--num);font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.meta b{color:var(--fg);font-size:15px}
+.body{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:620px){.body{grid-template-columns:minmax(0,1fr)}}
+.board{display:grid;gap:10px;justify-items:center;min-width:0}
+.board canvas{display:block;max-width:100%;border-radius:8px;background:#101214}
+.ctrl{display:flex;align-items:center;gap:6px;width:100%}
+.cb{width:40px;height:40px;flex:0 0 auto;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
+.cb:active{transform:scale(.94)}
+.cb svg{width:18px;height:18px;fill:currentColor}
+.cb.pp{background:var(--hazard);color:#1a1405;border-color:var(--hazard)}
+.cb.sp{font-family:var(--num);font-weight:700;font-size:13px;width:44px}
+input[type=range]{flex:1;min-width:0;width:100%;accent-color:var(--hazard)}
+.cnt{font-family:var(--num);font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;align-self:stretch;text-align:center}
+.cb:focus-visible,.step:focus-visible,.chip:focus-visible,.play:focus-visible,summary:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+
+.notes{display:grid;gap:12px;min-width:0}
+.lbl{font-family:var(--num);font-weight:700;font-size:11px;letter-spacing:.16em;color:var(--mute);margin-bottom:2px}
+.point{margin:0;font-size:14.5px}
+details{border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:700;font-size:14px;list-style:none;display:flex;align-items:center;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--hazard);border-bottom:2px solid var(--hazard);transform:rotate(-45deg);transition:transform .15s}
+details[open] summary::before{transform:rotate(45deg)}
+.steps{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.step{width:100%;display:grid;grid-template-columns:26px 30px minmax(0,1fr);align-items:center;gap:8px;text-align:left;cursor:pointer;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;color:var(--fg);font-family:var(--body);font-size:14px}
+.step .n{font-family:var(--num);font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.step .bx{width:26px;height:26px;border-radius:5px;background:var(--crate);color:#2a1606;font-family:var(--num);font-weight:700;display:grid;place-items:center;font-size:14px}
+.step .mv{font-family:var(--num);font-weight:500;letter-spacing:.04em;overflow-wrap:anywhere}
+.step .g{color:var(--done);font-weight:700;margin-left:4px;font-size:12px}
+.step.cur{border-color:var(--hazard);background:#2d2a1f}
+.step.past{opacity:.55}
+.hint-first{font-size:13.5px;color:#c9c4ba;margin:8px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--mute)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+footer{margin-top:40px;color:var(--mute);font-size:12.5px}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="tape"></div>
+    <div class="eyebrow">NIGHT SHIFT WAREHOUSE · 22 STAGES</div>
+    <h1>夜勤の倉庫番 <span>攻略</span></h1>
+    <p class="lead">全22ステージの解き方をまとめました。各ステージのボードは再生ボタンで解答手順どおりに動きます。まずは「ポイント」だけ読んで自力で挑戦し、詰まったら手順を開いてください。</p>
+    <a class="play" href="../../games/souko/" target="_blank" rel="noopener">ゲームで遊ぶ →</a>
+  </header>
+
+  <section aria-labelledby="bh">
+    <h2 id="bh">基本のコツ</h2>
+    <div class="basics">
+      <div class="tip"><b>角に押し込まない</b><p>壁の角に入った箱は二度と動かせません。角がゴールでない限り、そこで詰みです。</p></div>
+      <div class="tip"><b>壁ぎわは要注意</b><p>壁に沿って押した箱は、その壁から離せなくなります。その壁ぞいにゴールがあるときだけ寄せましょう。</p></div>
+      <div class="tip"><b>2×2に固めない</b><p>箱どうし、または箱と壁で2×2の塊ができると全部動かなくなります。</p></div>
+      <div class="tip"><b>奥のゴールから埋める</b><p>袋小路のゴールは奥から順に。手前を先に埋めると奥へ運べません。</p></div>
+    </div>
+    <div class="legend" aria-label="凡例">
+      <span><i style="background:var(--crate)"></i>箱(A・B…は説明用の名前)</span>
+      <span><i style="background:transparent;border:2px solid var(--hazard)"></i>ゴール</span>
+      <span><i style="background:#ff7a1a;border-radius:50%"></i>作業員</span>
+    </div>
+  </section>
+
+  <nav class="strip" aria-label="ステージ一覧"><div class="chips" id="chips"></div></nav>
+  <main id="list"></main>
+  <footer>解答手順は、箱を押す回数が最少になる手順をソルバーで求めたものです。歩く歩数まで含めた最短とは限りません。ゲーム内の手数で上回れたら自慢してください。</footer>
+</div>
+
+<script>
+const LEVELS=["#####\n#. @#\n#  $##\n##   #\n #   #\n #####", "   ####\n####..#\n# $   #\n#   $@#\n#   ###\n#####", "   ####\n####. #\n#     #\n#.$$  #\n# @#  #\n#######", " ######\n #   .#\n##$## #\n#   #.#\n#  $@ #\n###   #\n  #####", "#######\n#   . #\n# $   #\n# ## ##\n#@$ .#\n###  #\n  ####", " ######\n## .  ##\n#      #\n#  #.# #\n#  $@$ #\n#   #  #\n########", " ####\n #  ####\n##  #..#\n#   $@ #\n#  #$  #\n#  #   #\n########", "#######\n# .   #\n#  . $#\n#   #@##\n#.  #$ #\n#  $   #\n#  #   #\n########", "#######\n#     #\n# $$  ##\n# @#   #\n##$   .#\n #  #. #\n #   . #\n #######", "########\n#  .#  #\n# + $  #\n# $# #.#\n## $   #\n #  ####\n #  #\n ####", "########\n#   .  #\n#     $#\n#   # @#\n#    .$#\n##  #  ##\n#   # $ #\n# .##   #\n#########", "########\n#.     #\n# #   $#\n#     @#\n#   # $##\n#.  #   #\n##  #   #\n # $   .#\n ########", " #######\n##    .#\n#   .  #\n#    # #\n# #  # #\n# $ # .#\n#  $@$ #\n#   ####\n#####", "#########\n#  .  . #\n# # #   #\n#       #\n#   ##. #\n#  #### #\n# $ $@$ #\n#    ####\n######", " #######\n #@.   ##\n##$  .  #\n#  ## . #\n#       #\n###  # ##\n #  #  #\n # $$ ##\n #    #\n ######", " ########\n # ..   #\n #$ ##  #\n #@#    #\n##$.   ##\n#    #  #\n# #     #\n# $     #\n#     ###\n#######", "########\n#      #\n#      ##\n#   #   #\n#  ## $ #\n#..###  #\n#  ###$.#\n#####  $#\n    #  @#\n    #####", " ######\n##    ##\n# $$   #\n#   #  #\n###@$ ##\n#### . #\n#.     #\n#     .#\n########", " ########\n #   # .#\n #  $$  #\n ## .#  #\n  #    ##\n  #  #$#\n ##  #@#\n # .  $#\n #.    #\n #######", "   ######\n   #    #\n  ##$   #\n###  #  #\n#  $    #\n#  $   ##\n##$ ##  #\n #+#..  #\n #     .#\n ########", "#########\n#   ##  #\n# #.##  #\n#    ## #\n# . $#  #\n# .$    #\n## #$  ##\n #$# ###\n #+  #\n #####", " ########\n # ..# .#\n##$     #\n# $  #  #\n#  ###  #\n#  $@#  #\n#      ##\n#      #\n########"];
+const SOLS=["DlddrruLdlUUruL", "LLdlluuRRRdldlUluRRdrUdrU", "URurrddlUllluRdrrruulDrdLLLuRdrU", "LulldRRdrruuuulllDDrdRdrUUUddllulldRRRdrU", "RRdrUUUruLLrdddllluuRRurDDullluRR", "LdlUUluRRurrdrddLLuUddLdlUUluRRlddrrrruuluLD", "LLulDlddrUluRRRRddlUrrUlLLulDlddrUluRRRdrU", "DrddlluLullddrUluRdrrdrruLLLUllddrUUUUrurrDDDrdLLLLdlUrurU", "DuluurDRRurDDDDulllUluRRRurDDDllddlUUUluRRRurDDldR", "rRddrruuLLLulldRDDRddlUUUUddrRuurrddLLLdlUUluuRDRRRurDllddllU", "DldddrruLdlUUUrDlddrruLdlUUruLUdLLulDDDuuuuurrrrDDDDlddrruLdlUUruulUruL", "DlddrruLdlUUruLuurDDDulLLLruulldDDrdddRRRRuruLdlUUUUruLLLL", "LdlluRdrUUUUluRdllddRdrUUUrUrrddddLLruruuulldlluRRRurDllddldlddrUUUUluRuRRdrDD", "LdllUUUluRRdldddrruLdlUUUluRdrURRurrddlUUrddddLLLLdlUUUluRRUdRRurD", "DDldRRRRldldlddrUUUdddrruLruruUUruLdlUlllddRRRldldlddrUUUddrruruUUruLuLLdllddRRRldlddrruruU", "DrddddlluRRdrUllluuRRdRUdRdrUUUUruulllllDDDrdddlluuRurRRurUruLLLrrddldlddlUrdrruUUUruLL", "UUUlUUrDulluurDlddrruLddDrddlUUUUlUdrrDuuLuLLLLrrrrddlUruLLLulDDDuuulDDD", "RdrUUruLullDRurDDDDldRuullUdrruuulllDldRuRRurDDDDrDLLLLrruulUluRRurDDD", "UUlluluurDRRlllddrrrUrULLLulDDDDDDrdLrrrUUUUUruLLLulDDDDD", "UURRRurDDDuuuuuullDDlDRRluurrdDDDrdLLdRlllluuuluRRRRluurrdDDDrdLuullLulDD", "UUUluRdRRDrruLLLUUrDldRullldRdddrrUUULrdddlluuUrrdrruLLLuulldRDDDuuuurrDLdRdrruLLL", "LdlluuuRdDldRRRRdrUUUUruLLLullDDDDldRRRRdrUUUUdddllulluuuurrdrRlldLUlDDDldRRRRdrUUUUrULLrddddllulluurrU"];
+const SEGS=[[{"box": "A", "dirs": "d l uu l", "start": 0, "end": 15, "goal": true}], [{"box": "B", "dirs": "ll", "start": 0, "end": 2, "goal": false}, {"box": "A", "dirs": "rrr", "start": 7, "end": 10, "goal": false}, {"box": "B", "dirs": "u rr u", "start": 14, "end": 22, "goal": true}, {"box": "A", "dirs": "u", "start": 24, "end": 25, "goal": true}], [{"box": "A", "dirs": "u", "start": 0, "end": 1, "goal": false}, {"box": "B", "dirs": "r u", "start": 1, "end": 9, "goal": false}, {"box": "A", "dirs": "r", "start": 13, "end": 14, "goal": false}, {"box": "B", "dirs": "d lll", "start": 21, "end": 27, "goal": true}, {"box": "A", "dirs": "r u", "start": 28, "end": 32, "goal": true}], [{"box": "B", "dirs": "l rr", "start": 0, "end": 7, "goal": false}, {"box": "A", "dirs": "dd", "start": 17, "end": 19, "goal": false}, {"box": "B", "dirs": "r uuu", "start": 21, "end": 27, "goal": true}, {"box": "A", "dirs": "rrr u", "start": 35, "end": 41, "goal": true}], [{"box": "B", "dirs": "rr uuu ll", "start": 0, "end": 11, "goal": false}, {"box": "A", "dirs": "rr dd", "start": 20, "end": 26, "goal": true}, {"box": "B", "dirs": "rr", "start": 31, "end": 33, "goal": true}], [{"box": "A", "dirs": "l uu rr", "start": 0, "end": 9, "goal": false}, {"box": "B", "dirs": "ll", "start": 16, "end": 18, "goal": false}, {"box": "A", "dirs": "u", "start": 19, "end": 20, "goal": false}, {"box": "B", "dirs": "l uu rr", "start": 22, "end": 31, "goal": false}, {"box": "A", "dirs": "l", "start": 42, "end": 43, "goal": true}, {"box": "B", "dirs": "d", "start": 43, "end": 44, "goal": true}], [{"box": "A", "dirs": "ll d u rrrr", "start": 0, "end": 16, "goal": false}, {"box": "B", "dirs": "u", "start": 19, "end": 20, "goal": false}, {"box": "A", "dirs": "u", "start": 22, "end": 23, "goal": true}, {"box": "B", "dirs": "ll d u rrr u", "start": 24, "end": 42, "goal": true}], [{"box": "B", "dirs": "d", "start": 0, "end": 1, "goal": false}, {"box": "C", "dirs": "l u r", "start": 7, "end": 18, "goal": false}, {"box": "B", "dirs": "lll", "start": 25, "end": 28, "goal": false}, {"box": "C", "dirs": "u", "start": 28, "end": 29, "goal": false}, {"box": "B", "dirs": "uuuu", "start": 34, "end": 38, "goal": true}, {"box": "A", "dirs": "ddd llll u", "start": 42, "end": 54, "goal": true}, {"box": "C", "dirs": "u", "start": 57, "end": 58, "goal": true}], [{"box": "C", "dirs": "d", "start": 0, "end": 1, "goal": false}, {"box": "A", "dirs": "d", "start": 6, "end": 7, "goal": false}, {"box": "B", "dirs": "rr dddd", "start": 7, "end": 15, "goal": true}, {"box": "A", "dirs": "u rrr ddd", "start": 19, "end": 30, "goal": true}, {"box": "C", "dirs": "uuu rrr dd r", "start": 35, "end": 50, "goal": true}], [{"box": "A", "dirs": "r lll r", "start": 1, "end": 16, "goal": false}, {"box": "B", "dirs": "dd", "start": 16, "end": 18, "goal": false}, {"box": "C", "dirs": "r", "start": 18, "end": 19, "goal": false}, {"box": "B", "dirs": "uuuu", "start": 22, "end": 26, "goal": false}, {"box": "C", "dirs": "r lll uu", "start": 29, "end": 43, "goal": true}, {"box": "B", "dirs": "r", "start": 46, "end": 47, "goal": true}, {"box": "C", "dirs": "d", "start": 47, "end": 48, "goal": false}, {"box": "A", "dirs": "rrr d", "start": 48, "end": 54, "goal": true}, {"box": "C", "dirs": "u", "start": 60, "end": 61, "goal": true}], [{"box": "B", "dirs": "d", "start": 0, "end": 1, "goal": false}, {"box": "C", "dirs": "l uuu", "start": 8, "end": 14, "goal": false}, {"box": "B", "dirs": "d l uu l", "start": 15, "end": 30, "goal": false}, {"box": "C", "dirs": "u", "start": 30, "end": 31, "goal": false}, {"box": "B", "dirs": "ll ddd", "start": 32, "end": 39, "goal": true}, {"box": "A", "dirs": "dddd l uu", "start": 48, "end": 63, "goal": true}, {"box": "C", "dirs": "u l", "start": 67, "end": 71, "goal": true}], [{"box": "B", "dirs": "d l uu l", "start": 0, "end": 15, "goal": false}, {"box": "A", "dirs": "ddd", "start": 18, "end": 21, "goal": false}, {"box": "B", "dirs": "lll dd", "start": 23, "end": 34, "goal": true}, {"box": "C", "dirs": "rrrr", "start": 38, "end": 42, "goal": true}, {"box": "A", "dirs": "l uuuu llll", "start": 45, "end": 58, "goal": true}], [{"box": "B", "dirs": "l r uuuu r", "start": 0, "end": 15, "goal": true}, {"box": "A", "dirs": "r uuu", "start": 20, "end": 26, "goal": false}, {"box": "B", "dirs": "u", "start": 27, "end": 28, "goal": false}, {"box": "C", "dirs": "ll", "start": 34, "end": 36, "goal": false}, {"box": "A", "dirs": "rrr d", "start": 48, "end": 54, "goal": false}, {"box": "C", "dirs": "uuuu r", "start": 64, "end": 71, "goal": true}, {"box": "B", "dirs": "rr", "start": 72, "end": 74, "goal": true}, {"box": "A", "dirs": "dd", "start": 76, "end": 78, "goal": true}], [{"box": "B", "dirs": "l", "start": 0, "end": 1, "goal": false}, {"box": "A", "dirs": "uuu rr", "start": 4, "end": 11, "goal": false}, {"box": "B", "dirs": "l uuu r u", "start": 19, "end": 31, "goal": false}, {"box": "A", "dirs": "rr uu", "start": 31, "end": 41, "goal": true}, {"box": "C", "dirs": "llll uuu rr", "start": 46, "end": 59, "goal": false}, {"box": "B", "dirs": "u", "start": 59, "end": 60, "goal": true}, {"box": "C", "dirs": "rr d", "start": 61, "end": 66, "goal": true}], [{"box": "A", "dirs": "dd rrrr", "start": 0, "end": 8, "goal": false}, {"box": "B", "dirs": "uuu", "start": 16, "end": 19, "goal": false}, {"box": "C", "dirs": "l", "start": 25, "end": 26, "goal": false}, {"box": "A", "dirs": "uu l u", "start": 30, "end": 38, "goal": false}, {"box": "B", "dirs": "rrr", "start": 43, "end": 46, "goal": false}, {"box": "C", "dirs": "uuu", "start": 54, "end": 57, "goal": false}, {"box": "B", "dirs": "uu l", "start": 64, "end": 69, "goal": true}, {"box": "A", "dirs": "ll", "start": 70, "end": 72, "goal": true}, {"box": "C", "dirs": "rrr u", "start": 77, "end": 91, "goal": true}], [{"box": "B", "dirs": "d", "start": 0, "end": 1, "goal": false}, {"box": "C", "dirs": "rr u", "start": 9, "end": 14, "goal": false}, {"box": "B", "dirs": "rr", "start": 19, "end": 21, "goal": false}, {"box": "C", "dirs": "r", "start": 22, "end": 23, "goal": false}, {"box": "B", "dirs": "u", "start": 23, "end": 24, "goal": false}, {"box": "C", "dirs": "r uuuu", "start": 25, "end": 32, "goal": false}, {"box": "A", "dirs": "ddd r", "start": 40, "end": 52, "goal": false}, {"box": "B", "dirs": "rr", "start": 54, "end": 56, "goal": false}, {"box": "C", "dirs": "u lll", "start": 58, "end": 64, "goal": true}, {"box": "A", "dirs": "u", "start": 74, "end": 75, "goal": true}, {"box": "B", "dirs": "uuu ll", "start": 80, "end": 87, "goal": true}], [{"box": "C", "dirs": "uuu", "start": 0, "end": 3, "goal": false}, {"box": "A", "dirs": "uu", "start": 4, "end": 6, "goal": false}, {"box": "C", "dirs": "d", "start": 7, "end": 8, "goal": false}, {"box": "A", "dirs": "d l", "start": 14, "end": 22, "goal": false}, {"box": "B", "dirs": "d uuuu", "start": 24, "end": 33, "goal": false}, {"box": "A", "dirs": "u", "start": 34, "end": 35, "goal": false}, {"box": "C", "dirs": "d", "start": 38, "end": 39, "goal": true}, {"box": "B", "dirs": "l", "start": 41, "end": 42, "goal": false}, {"box": "A", "dirs": "llll", "start": 43, "end": 47, "goal": false}, {"box": "B", "dirs": "u lll ddd", "start": 54, "end": 65, "goal": true}, {"box": "A", "dirs": "ddd", "start": 69, "end": 72, "goal": true}], [{"box": "C", "dirs": "r uu l", "start": 0, "end": 8, "goal": false}, {"box": "B", "dirs": "d", "start": 11, "end": 12, "goal": false}, {"box": "C", "dirs": "r dddd r", "start": 12, "end": 22, "goal": false}, {"box": "B", "dirs": "u", "start": 26, "end": 27, "goal": false}, {"box": "A", "dirs": "d r", "start": 36, "end": 40, "goal": false}, {"box": "B", "dirs": "rr dddd", "start": 41, "end": 49, "goal": false}, {"box": "C", "dirs": "d", "start": 50, "end": 51, "goal": true}, {"box": "B", "dirs": "llll", "start": 51, "end": 55, "goal": true}, {"box": "A", "dirs": "u rr ddd", "start": 60, "end": 70, "goal": true}], [{"box": "C", "dirs": "uu", "start": 0, "end": 2, "goal": false}, {"box": "A", "dirs": "d", "start": 9, "end": 10, "goal": true}, {"box": "B", "dirs": "rr", "start": 10, "end": 12, "goal": false}, {"box": "C", "dirs": "u", "start": 20, "end": 21, "goal": false}, {"box": "B", "dirs": "u", "start": 22, "end": 23, "goal": true}, {"box": "C", "dirs": "lll dddddd l", "start": 23, "end": 37, "goal": true}, {"box": "D", "dirs": "uuuuu lll ddddd", "start": 40, "end": 57, "goal": true}], [{"box": "D", "dirs": "uu", "start": 0, "end": 2, "goal": false}, {"box": "C", "dirs": "rrr ddd", "start": 2, "end": 10, "goal": false}, {"box": "A", "dirs": "dd", "start": 18, "end": 20, "goal": false}, {"box": "B", "dirs": "d", "start": 21, "end": 22, "goal": false}, {"box": "A", "dirs": "rr ddd ll", "start": 22, "end": 37, "goal": true}, {"box": "C", "dirs": "r", "start": 38, "end": 39, "goal": true}, {"box": "D", "dirs": "rrrr ddd l", "start": 48, "end": 64, "goal": true}, {"box": "B", "dirs": "l dd", "start": 68, "end": 73, "goal": true}], [{"box": "D", "dirs": "uuu r", "start": 0, "end": 6, "goal": false}, {"box": "B", "dirs": "rr", "start": 7, "end": 9, "goal": false}, {"box": "C", "dirs": "d", "start": 9, "end": 10, "goal": false}, {"box": "B", "dirs": "lll", "start": 13, "end": 16, "goal": true}, {"box": "D", "dirs": "uu", "start": 16, "end": 18, "goal": true}, {"box": "A", "dirs": "d r", "start": 19, "end": 23, "goal": false}, {"box": "B", "dirs": "r", "start": 28, "end": 29, "goal": false}, {"box": "C", "dirs": "uuu", "start": 34, "end": 37, "goal": false}, {"box": "B", "dirs": "l u", "start": 37, "end": 47, "goal": true}, {"box": "A", "dirs": "lll", "start": 53, "end": 56, "goal": true}, {"box": "B", "dirs": "r", "start": 61, "end": 62, "goal": false}, {"box": "A", "dirs": "ddd", "start": 62, "end": 65, "goal": true}, {"box": "C", "dirs": "d", "start": 71, "end": 72, "goal": false}, {"box": "B", "dirs": "l", "start": 72, "end": 73, "goal": true}, {"box": "C", "dirs": "r lll", "start": 74, "end": 82, "goal": true}], [{"box": "C", "dirs": "l", "start": 0, "end": 1, "goal": false}, {"box": "B", "dirs": "r", "start": 7, "end": 8, "goal": false}, {"box": "C", "dirs": "d rrrr uuuu lll", "start": 9, "end": 27, "goal": false}, {"box": "A", "dirs": "dddd rrrr uuuu r", "start": 30, "end": 63, "goal": false}, {"box": "B", "dirs": "l", "start": 66, "end": 67, "goal": false}, {"box": "C", "dirs": "u", "start": 67, "end": 68, "goal": true}, {"box": "B", "dirs": "ddd rrrr uuuu", "start": 69, "end": 84, "goal": false}, {"box": "A", "dirs": "u", "start": 85, "end": 86, "goal": true}, {"box": "B", "dirs": "ll u", "start": 86, "end": 103, "goal": true}]];
+const TIPS=[
+"Aをそのまま左へ押すと壁に張り付き、上へ運べなくなる。まず下の広場へ落とし、左へ寄せてから下から押し上げる。",
+"Bを左へ2マスどけて通り道を空け、Aを右端の列まで運ぶ。ゴールは上段の2マスなので、どちらも1段下から押し上げて入れる。",
+"横に並んだA・Bはそのままでは動かせない。Aを1マス上げて隙間を作り、Bを下段左のゴールへ。Aは右上のくぼみへ押し上げる。",
+"狭い通路の入口をBがふさいでいる。Bを揺らして空きを作り、Aを下へ落とす。右の縦通路では奥(上)のゴールをBで先に埋め、Aは手前へ。",
+"右の縦通路は1本だけ。先にBを上の部屋まで運んで脇へどけ、空いた通路にAを落として下のゴールへ。最後にBを戻して上のゴールへ。",
+"柱の間のゴールには上からしか入れられない。Aを上段へ運び、Bも上段経由で柱の真上まで回して押し下げる。Aは最後に左上のゴールへ。",
+"ゴールは右上の小部屋で、下からしか押し込めない。箱を一度左の広場へ出し、ぐるっと回って右端の列から押し上げる。奥(右)をAで先に埋める。",
+"Bを左の空間へ運び、左端寄りの列を押し上げて左上のゴールへ。Aは大回りで左のゴールへ。Cは中央ゴールの真下で待たせ、最後に押し上げる。",
+"ゴールは右下の小部屋に3つ。Cを初手で1マス下げて道を空け、一番奥(下)をB、次にAを入れる。Cは最後に右から回り込んで押し込む。",
+"B・Cは左上の2ゴール、Aは右のくぼみのゴールへ。Cは一度ゴールに入れたあと、通り道を作るため下へずらし、Aを運び終えてから戻す。",
+"右端の縦列に3箱が並ぶ。Cを上段へ運び出し、Bは遠回りして左下のゴールへ。Aは中央のゴールへ下ろし、最後にCを上段のゴールへ。",
+"右列のA・Bは左の2ゴールへ、下のCは右下のゴールへ。Bを左の広場へ下ろしてから、Cを右へ4マス。最後にAを左上の角まで運ぶ。",
+"ゴールは右上・中央上・右の縦通路に散らばる。Bを右上の奥へ先に送り、Cは中央上へ。Aは最後に右の縦通路へ押し下げる。",
+"下の通路に3箱が並ぶ。Aを上の広場へ出して右上へ、Bは上段左のゴールへ。Cは右の縦通路を上ってから中段のゴールへ押し下げる。",
+"下の2箱(B・C)は狭い部屋から出すのに手数がかかる。Aを一度下へ動かして道を開け、B・Cを交互に上へ運ぶ。最後にAをスタート横のゴールへ戻す。",
+"左端に縦に並んだ3箱を右へ逃がしながら運ぶ。Cは右の広場から上段左のゴールへ。Aは中央のゴールへ下ろし、Bは最後に上段右のゴールへ。",
+"ゴールは左の袋小路に2つと右下に1つ。右下のCは先に上へどかしておき、A・Bを上の広場から回して左奥へ。袋小路は奥(左)をAで先に埋める。",
+"Cを先に右の通路へ出して道を開け、Bを右回りで左下のゴールへ運ぶ。Cは右下のゴール、Aは最後に右の中段ゴールへ。",
+"Aはすぐ下のゴールへ落とせる。Bは右上へ。C・Dは下の縦通路を下って左下の2ゴールへ運ぶ大仕事で、奥(左下)をCで先に埋める。",
+"左側に4箱が縦に並ぶ。Dを上へどけ、Aを右下の部屋へ先に入れてからC・Dを続ける。Bは最後にスタート地点のゴールへ下ろす。",
+"4箱すべて左側のゴールへ。狭い縦通路を行き来するので順番が大事。Dを上段のゴールへ先に送る。A・Bは一度ゴールに入れても、また動かす場面がある。",
+"ゴールはすべて上段。箱は下の広場から右の縦通路を上がって上段へ運び込む。C→A→Bの順に、同じ周回ルートを使い回す。"
+];
+const DIR={u:[0,-1],r:[1,0],d:[0,1],l:[-1,0]};
+const ARW={u:'↑',r:'→',d:'↓',l:'←'};
+const $=(s,r=document)=>r.querySelector(s);
+
+function parse(str){
+  const rows=str.split('\n'),H=rows.length,W=Math.max(...rows.map(r=>r.length));
+  const walls=new Set(),goals=new Set(),boxes=[];let px=0,py=0;
+  rows.forEach((r,y)=>{for(let x=0;x<W;x++){const c=r[x]||' ',k=y*W+x;
+    if(c==='#')walls.add(k);if('.*+'.includes(c))goals.add(k);if('$*'.includes(c))boxes.push(k);if('@+'.includes(c)){px=x;py=y}}});
+  boxes.sort((a,b)=>a-b); // reading order = A,B,C...
+  const inside=new Set([py*W+px]),st=[py*W+px];
+  while(st.length){const k=st.pop(),x=k%W,y=(k/W)|0;for(const[dx,dy]of Object.values(DIR)){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const n=ny*W+nx;if(!walls.has(n)&&!inside.has(n)){inside.add(n);st.push(n)}}}
+  return {W,H,walls,goals,boxes,px,py,inside};
+}
+function frames(lv,sol){
+  const f=[{boxes:lv.boxes.slice(),px:lv.px,py:lv.py,face:'d',push:-1}];
+  let b=lv.boxes.slice(),x=lv.px,y=lv.py;
+  for(const c of sol){const d=c.toLowerCase(),[dx,dy]=DIR[d];x+=dx;y+=dy;const k=y*lv.W+x;let push=-1;
+    const i=b.indexOf(k);if(i>=0){b=b.slice();b[i]=k+dy*lv.W+dx;push=i}
+    f.push({boxes:b,px:x,py:y,face:d,push})}
+  return f;
+}
+function compress(dirs){
+  return dirs.split(' ').map(part=>{let out=[],j=0;while(j<part.length){let k=j;while(k<part.length&&part[k]===part[j])k++;out.push(ARW[part[j]]+(k-j>1?(k-j):''));j=k}return out.join(' ')}).join(' ／ ');
+}
+
+/* ---------- drawing ---------- */
+function rr(c,x,y,w,h,r){c.beginPath();c.roundRect?c.roundRect(x,y,w,h,r):c.rect(x,y,w,h)}
+function hash(n){n=(n^61)^(n>>>16);n=n+(n<<3);n=n^(n>>>4);n=Math.imul(n,0x27d4eb2d);n=n^(n>>>15);return (n>>>0)/4294967296}
+function buildStatic(){
+  bg=document.createElement('canvas');bg.width=cv.width;bg.height=cv.height;
+  const c=bg.getContext('2d');c.scale(dpr,dpr);const T=tile;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const k=y*W+x,X=x*T,Y=y*T;
+    if(inside.has(k)){
+      c.fillStyle=(x+y)%2?'#2a2d31':'#272a2e';c.fillRect(X,Y,T,T);
+      // concrete speckle
+      for(let i=0;i<5;i++){const h=hash(k*7+i);c.fillStyle=`rgba(255,255,255,${.02+h*.03})`;c.fillRect(X+hash(k*13+i)*T,Y+h*T,1.2,1.2)}
+      c.strokeStyle='#00000030';c.lineWidth=1;c.strokeRect(X+.5,Y+.5,T-1,T-1);
+    }
+  }
+  // goals: hazard-striped pad
+  for(const k of goals){
+    const X=(k%W)*T,Y=((k/W)|0)*T,m=T*.14;
+    c.save();rr(c,X+m,Y+m,T-2*m,T-2*m,T*.08);c.clip();
+    c.fillStyle='#3a3218';c.fillRect(X,Y,T,T);
+    c.strokeStyle='#f2b63255';c.lineWidth=T*.09;
+    for(let i=-T;i<T*2;i+=T*.26){c.beginPath();c.moveTo(X+i,Y);c.lineTo(X+i+T,Y+T);c.stroke()}
+    c.restore();
+    c.strokeStyle='#f2b632';c.lineWidth=Math.max(1.5,T*.05);rr(c,X+m,Y+m,T-2*m,T-2*m,T*.08);c.stroke();
+  }
+  // walls: cinderblock
+  for(const k of walls){
+    const x=k%W,y=(k/W)|0,X=x*T,Y=y*T;
+    let near=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const n=(y+dy)*W+x+dx;if(x+dx>=0&&x+dx<W&&y+dy>=0&&y+dy<H&&inside.has(n))near=true}
+    if(!near)continue;
+    c.fillStyle='#3a3f46';c.fillRect(X,Y,T,T);
+    c.fillStyle='#454b53';
+    const bh=T/2;
+    for(let r=0;r<2;r++){const off=(r+y)%2?T/2:0;for(let b=-1;b<2;b++){const bx=X+b*T/2*2+off-T/2;
+      const x0=Math.max(X,bx+1),x1=Math.min(X+T,bx+T-1);if(x1>x0)c.fillRect(x0,Y+r*bh+1,x1-x0,bh-2)}}
+    c.fillStyle='#ffffff10';c.fillRect(X,Y,T,2);
+    // bottom shadow onto floor
+    const bk=(y+1)*W+x;if(y+1<H&&inside.has(bk)){const g=c.createLinearGradient(0,Y+T,0,Y+T+T*.25);g.addColorStop(0,'#00000066');g.addColorStop(1,'#0000');c.fillStyle=g;c.fillRect(X,Y+T,T,T*.25)}
+  }
+}
+function drawCrate(c,X,Y,T,on,glow,label,match){
+  const m=T*.08,s=T-2*m;
+  c.fillStyle='#00000055';rr(c,X+m+T*.04,Y+m+T*.07,s,s,T*.06);c.fill();
+  const base=on?'#3f9e67':'#b7773c',dk=on?'#276b43':'#7e4f25',hi=on?'#7fe0a6':'#d99857';
+  c.fillStyle=base;rr(c,X+m,Y+m,s,s,T*.06);c.fill();
+  c.strokeStyle=dk;c.lineWidth=T*.07;rr(c,X+m+T*.035,Y+m+T*.035,s-T*.07,s-T*.07,T*.04);c.stroke();
+  // planks
+  c.lineWidth=T*.06;c.beginPath();c.moveTo(X+m+T*.1,Y+m+T*.1);c.lineTo(X+T-m-T*.1,Y+T-m-T*.1);c.stroke();
+  c.strokeStyle=hi;c.lineWidth=Math.max(1,T*.025);c.beginPath();c.moveTo(X+m+1,Y+m+1.5);c.lineTo(X+T-m-1,Y+m+1.5);c.stroke();
+  if(label){c.save();c.font=`700 ${T*.46}px Chakra Petch, sans-serif`;c.textAlign='center';c.textBaseline='middle';
+    c.lineWidth=T*.1;c.strokeStyle=on?'#1d5a37':'#5a3514';c.strokeText(label,X+T/2,Y+T/2+T*.02);
+    c.fillStyle=match?'#eafff2':on?'#ffd9d0':'#fff1dc';c.fillText(label,X+T/2,Y+T/2+T*.02);c.restore()}
+  else if(on){c.fillStyle='#e8fff0';c.font=`700 ${T*.26}px ${getComputedStyle(document.documentElement).getPropertyValue('--ui')}`;
+    c.save();c.translate(X+T/2,Y+T/2);c.rotate(-.18);c.fillStyle='#eafff2dd';c.textAlign='center';c.textBaseline='middle';c.fillText('OK',T*.16,-T*.16);c.restore()}
+  if(glow>0){c.strokeStyle=`rgba(127,224,166,${glow})`;c.lineWidth=T*.06;rr(c,X+m-T*.12*(1-glow),Y+m-T*.12*(1-glow),s+T*.24*(1-glow),s+T*.24*(1-glow),T*.1);c.stroke()}
+}
+function drawWorker(c,X,Y,T,d,walkT){
+  // side-view worker: profile when facing left/right, front view facing down, back view facing up
+  const u=T/100,cx=X+T/2,cy=Y+T/2;
+  const ph=Math.sin(walkT*Math.PI),bob=-Math.abs(ph)*2.5*u,leg=ph*7*u;
+  // floor: headlamp pool in the facing direction + shadow
+  c.save();c.translate(cx,cy);c.rotate([Math.PI,-Math.PI/2,0,Math.PI/2][d]);
+  const bm=c.createLinearGradient(0,T*.2,0,T*1.05);bm.addColorStop(0,'rgba(255,226,140,.30)');bm.addColorStop(1,'rgba(255,226,140,0)');
+  c.fillStyle=bm;c.beginPath();c.moveTo(-T*.12,T*.2);c.lineTo(T*.12,T*.2);c.lineTo(T*.4,T*1.05);c.lineTo(-T*.4,T*1.05);c.closePath();c.fill();
+  c.restore();
+  c.fillStyle='#00000066';c.beginPath();c.ellipse(cx,cy+40*u,26*u,7*u,0,0,7);c.fill();
+  c.save();c.translate(cx,cy+bob);
+  const ORANGE='#ff7a1a',PANTS='#34404d',BOOT='#1c2127',SKIN='#f0c49b',HELM='#f2b632',BRIM='#d49a1c',REFL='#f4f0e2';
+  function round(x,y,w,h,r,col){c.fillStyle=col;rr(c,x,y,w,h,r);c.fill()}
+  if(d===1||d===3){
+    if(d===3)c.scale(-1,1);           // draw facing right, mirror for left
+    // back leg, front leg
+    round(-9*u-leg,14*u,9*u,20*u,3*u,'#2a333d');round(-11*u-leg,31*u,14*u,7*u,3*u,BOOT);
+    round(-3*u+leg,14*u,9*u,20*u,3*u,PANTS);round(-4*u+leg,31*u,15*u,7*u,3*u,BOOT);
+    // backpack
+    round(-21*u,-8*u,9*u,20*u,3*u,'#3b4652');
+    // torso
+    round(-14*u,-10*u,26*u,28*u,7*u,ORANGE);
+    c.fillStyle=REFL;c.fillRect(-14*u,3*u,26*u,3.5*u);
+    // arm reaching forward
+    c.strokeStyle='#e56a12';c.lineWidth=8*u;c.lineCap='round';c.beginPath();c.moveTo(0,-4*u);c.lineTo(16*u,4*u-ph*2*u);c.stroke();
+    c.fillStyle='#2c3a4a';c.beginPath();c.arc(19*u,5*u-ph*2*u,5*u,0,7);c.fill();
+    // head
+    c.fillStyle=SKIN;c.beginPath();c.arc(2*u,-22*u,14*u,0,7);c.fill();
+    c.beginPath();c.arc(15*u,-19*u,3.2*u,0,7);c.fill();              // nose
+    c.fillStyle='#1b1d20';c.beginPath();c.ellipse(9*u,-23*u,2.4*u,3.4*u,0,0,7);c.fill(); // eye
+    c.fillStyle='#e8a57d';c.beginPath();c.arc(-3*u,-21*u,3.5*u,0,7);c.fill();              // ear
+    // helmet with brim to the front
+    c.fillStyle=HELM;c.beginPath();c.arc(1*u,-26*u,15.5*u,Math.PI,0);c.closePath();c.fill();
+    round(-15*u,-29*u,37*u,5*u,2.5*u,BRIM);
+    c.fillStyle='#fff6c9';c.beginPath();c.arc(14*u,-33*u,3.6*u,0,7);c.fill();             // lamp
+    c.fillStyle='#ffffff50';c.beginPath();c.ellipse(-4*u,-36*u,6*u,3*u,-.3,0,7);c.fill();
+  }else{
+    const front=d===2;
+    round(-11*u,14*u+Math.max(0,leg),9*u,20*u-Math.max(0,leg),3*u,PANTS);round(2*u,14*u+Math.max(0,-leg),9*u,20*u-Math.max(0,-leg),3*u,PANTS);
+    round(-13*u,31*u,12*u,7*u,3*u,BOOT);round(1*u,31*u,12*u,7*u,3*u,BOOT);
+    // arms at the sides
+    round(-21*u,-6*u-ph*2*u,8*u,20*u,4*u,'#e56a12');round(13*u,-6*u+ph*2*u,8*u,20*u,4*u,'#e56a12');
+    c.fillStyle='#2c3a4a';c.beginPath();c.arc(-17*u,15*u-ph*2*u,4.5*u,0,7);c.arc(17*u,15*u+ph*2*u,4.5*u,0,7);c.fill();
+    round(-15*u,-10*u,30*u,28*u,7*u,ORANGE);
+    if(front){c.fillStyle=REFL;c.fillRect(-6*u,-10*u,3.5*u,28*u);c.fillRect(2.5*u,-10*u,3.5*u,28*u)}
+    else{c.fillStyle=REFL;c.fillRect(-15*u,1*u,30*u,3.5*u);round(-10*u,-8*u,20*u,19*u,4*u,'#3b4652')}   // back: backpack
+    c.fillStyle=SKIN;c.beginPath();c.arc(0,-22*u,14.5*u,0,7);c.fill();
+    if(front){
+      c.fillStyle='#1b1d20';c.beginPath();c.ellipse(-5.5*u,-20*u,2.4*u,3.4*u,0,0,7);c.ellipse(5.5*u,-20*u,2.4*u,3.4*u,0,0,7);c.fill();
+      c.strokeStyle='#b5714f';c.lineWidth=1.6*u;c.beginPath();c.arc(0,-15*u,3*u,.2*Math.PI,.8*Math.PI);c.stroke();
+      c.fillStyle=HELM;c.beginPath();c.arc(0,-26*u,16*u,Math.PI,0);c.closePath();c.fill();
+      round(-18*u,-29*u,36*u,5*u,2.5*u,BRIM);
+      c.fillStyle='#fff6c9';c.beginPath();c.arc(0,-34*u,4*u,0,7);c.fill();
+    }else{
+      c.fillStyle=HELM;c.beginPath();c.arc(0,-24*u,16*u,Math.PI,0);c.lineTo(16*u,-18*u);c.quadraticCurveTo(0,-12*u,-16*u,-18*u);c.closePath();c.fill();
+      round(-18*u,-29*u,36*u,5*u,2.5*u,BRIM);
+    }
+    c.fillStyle='#ffffff50';c.beginPath();c.ellipse(-5*u,-36*u,6*u,3*u,-.3,0,7);c.fill();
+  }
+  c.restore();
+}
+function drawBoard(c,lv,T){
+  const {W,H,inside,goals,walls}=lv;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const k=y*W+x,X=x*T,Y=y*T;
+    if(inside.has(k)){
+      c.fillStyle=(x+y)%2?'#2a2d31':'#272a2e';c.fillRect(X,Y,T,T);
+      // concrete speckle
+      for(let i=0;i<5;i++){const h=hash(k*7+i);c.fillStyle=`rgba(255,255,255,${.02+h*.03})`;c.fillRect(X+hash(k*13+i)*T,Y+h*T,1.2,1.2)}
+      c.strokeStyle='#00000030';c.lineWidth=1;c.strokeRect(X+.5,Y+.5,T-1,T-1);
+    }
+  }
+  // goals: hazard-striped pad
+  for(const k of goals){
+    const X=(k%W)*T,Y=((k/W)|0)*T,m=T*.14;
+    c.save();rr(c,X+m,Y+m,T-2*m,T-2*m,T*.08);c.clip();
+    c.fillStyle='#3a3218';c.fillRect(X,Y,T,T);
+    c.strokeStyle='#f2b63255';c.lineWidth=T*.09;
+    for(let i=-T;i<T*2;i+=T*.26){c.beginPath();c.moveTo(X+i,Y);c.lineTo(X+i+T,Y+T);c.stroke()}
+    c.restore();
+    c.strokeStyle='#f2b632';c.lineWidth=Math.max(1.5,T*.05);rr(c,X+m,Y+m,T-2*m,T-2*m,T*.08);c.stroke();
+  }
+  // walls: cinderblock
+  for(const k of walls){
+    const x=k%W,y=(k/W)|0,X=x*T,Y=y*T;
+    let near=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const n=(y+dy)*W+x+dx;if(x+dx>=0&&x+dx<W&&y+dy>=0&&y+dy<H&&inside.has(n))near=true}
+    if(!near)continue;
+    c.fillStyle='#3a3f46';c.fillRect(X,Y,T,T);
+    c.fillStyle='#454b53';
+    const bh=T/2;
+    for(let r=0;r<2;r++){const off=(r+y)%2?T/2:0;for(let b=-1;b<2;b++){const bx=X+b*T/2*2+off-T/2;
+      const x0=Math.max(X,bx+1),x1=Math.min(X+T,bx+T-1);if(x1>x0)c.fillRect(x0,Y+r*bh+1,x1-x0,bh-2)}}
+    c.fillStyle='#ffffff10';c.fillRect(X,Y,T,2);
+    // bottom shadow onto floor
+    const bk=(y+1)*W+x;if(y+1<H&&inside.has(bk)){const g=c.createLinearGradient(0,Y+T,0,Y+T+T*.25);g.addColorStop(0,'#00000066');g.addColorStop(1,'#0000');c.fillStyle=g;c.fillRect(X,Y+T,T,T*.25)}
+  }
+}
+function draw(st){
+  const {lv,cv,T}=st,c=cv.getContext('2d'),fr=st.fr[st.i],dpr=st.dpr;
+  c.setTransform(dpr,0,0,dpr,0,0);c.fillStyle='#101214';c.fillRect(0,0,lv.W*T,lv.H*T);
+  drawBoard(c,lv,T);
+  const fin=st.fr[st.fr.length-1].boxes;
+  c.font=`700 ${T*.5}px Chakra Petch, sans-serif`;c.textAlign='center';c.textBaseline='middle';
+  fin.forEach((g,i)=>{if(fr.boxes.includes(g))return;c.fillStyle='#f2b632';c.fillText(String.fromCharCode(65+i),(g%lv.W)*T+T/2,((g/lv.W)|0)*T+T/2+T*.02)});
+  fr.boxes.forEach((k,i)=>{const X=(k%lv.W)*T,Y=((k/lv.W)|0)*T;
+    drawCrate(c,X,Y,T,lv.goals.has(k),0,String.fromCharCode(65+i),fin[i]===k);
+    if(st.hot===i){const m=T*.08,s=T-2*m;c.strokeStyle='#f2b632';c.lineWidth=Math.max(2,T*.07);rr(c,X+m-2,Y+m-2,s+4,s+4,T*.12);c.stroke()}});
+  drawWorker(c,fr.px*T,fr.py*T,T,{u:0,r:1,d:2,l:3}[fr.face],0);
+  // ui sync
+  st.range.value=st.i;st.cnt.textContent=`${st.i} / ${st.fr.length-1} 手`;
+  const seg=st.segs.findIndex(s=>st.i>s.start&&st.i<=s.end);
+  const next=st.segs.findIndex(s=>st.i<=s.start);
+  st.stepEls.forEach((el,j)=>{el.classList.toggle('cur',j===seg||(seg<0&&j===next));el.classList.toggle('past',st.segs[j].end<st.i&&j!==seg)});
+}
+
+/* ---------- build ---------- */
+const svg={
+  first:'<svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM19 5v14l-9-7z"/></svg>',
+  prev:'<svg viewBox="0 0 24 24"><path d="M17 5v14l-9-7z"/></svg>',
+  play:'<svg viewBox="0 0 24 24"><path d="M7 5v14l11-7z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  next:'<svg viewBox="0 0 24 24"><path d="M7 5v14l9-7z"/></svg>',
+};
+const states=[];
+const list=$('#list'),chips=$('#chips');
+LEVELS.forEach((str,li)=>{
+  const lv=parse(str),sol=SOLS[li],segs=SEGS[li];
+  const pushes=[...sol].filter(c=>c===c.toUpperCase()).length;
+  const no=String(li+1).padStart(2,'0');
+  const a=document.createElement('a');a.className='chip';a.href='#s'+no;a.textContent=no;a.id='chip'+li;chips.appendChild(a);
+  const sec=document.createElement('section');sec.className='stage';sec.id='s'+no;
+  sec.innerHTML=`
+    <div class="sh"><div class="no">${no}</div>
+      <div class="meta"><span>箱 <b>${lv.boxes.length}</b></span><span>押す <b>${pushes}</b></span><span>解答 <b>${sol.length}</b> 手</span></div></div>
+    <div class="body">
+      <div class="board">
+        <canvas aria-label="ステージ${li+1}の盤面"></canvas>
+        <div class="ctrl">
+          <button class="cb" data-a="first" aria-label="最初へ">${svg.first}</button>
+          <button class="cb" data-a="prev" aria-label="1手戻す">${svg.prev}</button>
+          <button class="cb pp" data-a="play" aria-label="再生">${svg.play}</button>
+          <button class="cb" data-a="next" aria-label="1手進む">${svg.next}</button>
+          <button class="cb sp" data-a="speed" aria-label="再生速度">1×</button>
+        </div>
+        <input type="range" min="0" max="${sol.length}" value="0" id="rg${li}" aria-label="手順の位置">
+        <div class="cnt"></div>
+      </div>
+      <div class="notes">
+        <div><div class="lbl">POINT</div><p class="point">${TIPS[li]}</p></div>
+        <details id="dt${li}">
+          <summary>手順を見る(${segs.length}ステップ)</summary>
+          <p class="hint-first">タップするとその直前の盤面へ移動します。「／」は途中で回り込み直す区切りです。</p>
+          <ol class="steps">${segs.map((s,j)=>`<li><button class="step" data-j="${j}"><span class="n">${j+1}</span><span class="bx">${s.box}</span><span class="mv">${compress(s.dirs)}${s.goal?'<span class="g">ゴール</span>':''}</span></button></li>`).join('')}</ol>
+        </details>
+      </div>
+    </div>`;
+  list.appendChild(sec);
+  const st={lv,sol,segs,sec,i:0,fr:null,timer:null,speed:1,hot:-1,cv:$('canvas',sec),range:$('input',sec),cnt:$('.cnt',sec),stepEls:[...sec.querySelectorAll('.step')]};
+  st.fr=frames(lv,sol);
+  states.push(st);
+  sec.addEventListener('click',e=>{const b=e.target.closest('[data-a],.step');if(!b)return;
+    if(b.classList.contains('step')){stop(st);const s=segs[+b.dataset.j];go(st,s.start);st.hot=s.box.charCodeAt(0)-65;draw(st);return}
+    const a=b.dataset.a;
+    if(a==='first'){stop(st);go(st,0)}else if(a==='prev'){stop(st);go(st,st.i-1)}else if(a==='next'){stop(st);go(st,st.i+1)}
+    else if(a==='play'){st.timer?stop(st):play(st)}
+    else if(a==='speed'){st.speed=st.speed===1?2:st.speed===2?4:1;b.textContent=st.speed+'×';if(st.timer){stop(st);play(st)}}
+  });
+  st.range.addEventListener('input',()=>{stop(st);go(st,+st.range.value)});
+});
+function size(st){
+  const box=st.cv.parentElement.clientWidth||300;const T=Math.floor(Math.min(box,300)/st.lv.W);
+  st.T=T;st.dpr=Math.min(devicePixelRatio||1,3);st.cv.width=st.lv.W*T*st.dpr;st.cv.height=st.lv.H*T*st.dpr;
+  st.cv.style.width=st.lv.W*T+'px';st.cv.style.height=st.lv.H*T+'px';draw(st);
+}
+function go(st,i){st.i=Math.max(0,Math.min(st.fr.length-1,i));const p=st.fr[st.i].push;st.hot=p;draw(st)}
+function play(st){
+  states.forEach(s=>s!==st&&stop(s));
+  if(st.i>=st.fr.length-1)go(st,0);
+  const btn=$('[data-a=play]',st.sec);btn.innerHTML=svg.pause;btn.setAttribute('aria-label','一時停止');
+  st.timer=setInterval(()=>{if(st.i>=st.fr.length-1){stop(st);return}go(st,st.i+1)},200/st.speed);
+}
+function stop(st){if(!st.timer)return;clearInterval(st.timer);st.timer=null;const btn=$('[data-a=play]',st.sec);btn.innerHTML=svg.play;btn.setAttribute('aria-label','再生')}
+function sizeAll(){states.forEach(size)}
+sizeAll();
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(sizeAll,120)});
+document.fonts&&document.fonts.ready.then(()=>states.forEach(draw));
+
+/* highlight current stage chip */
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){const li=states.findIndex(s=>s.sec===e.target);
+  chips.querySelectorAll('.chip').forEach((c,j)=>c.classList.toggle('on',j===li));
+  const ch=$('#chip'+li);const cr=ch.getBoundingClientRect(),pr=chips.getBoundingClientRect();
+  if(cr.left<pr.left||cr.right>pr.right)chips.scrollBy({left:cr.left-pr.left-pr.width/2+cr.width/2,behavior:'smooth'})}})},{rootMargin:'-40% 0px -55% 0px'});
+states.forEach(s=>io.observe(s.sec));
+</script>
+
+</body></html>

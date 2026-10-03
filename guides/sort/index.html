@@ -1,0 +1,450 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ソート図鑑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: スマホ1画面アプリ。上=アルゴリズム切替、中央=舞台(伸縮)、下=タブパネル、最下=親指で押す操作バー。広い画面では舞台とパネルを左右に並べる */
+:root{
+  --bg:#eceff4; --surface:#ffffff; --ink:#141b26; --muted:#5d6779; --line:#d5dbe4;
+  --bar:#8795ad; --accent:#2f5ee0; --accent-ink:#ffffff;
+  --cmp:#e09a26; --swap:#e0503b; --pivot:#8457e6; --done:#1c9a7c;
+  --code-bg:#f5f7fa; --code-on:#e5ecff;
+  --f-display:"Dela Gothic One","Zen Kaku Gothic New",system-ui,sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e131b; --surface:#161d28; --ink:#e7ecf4; --muted:#95a1b4; --line:#263041;
+  --bar:#56657e; --accent:#6f90f6; --accent-ink:#0e131b;
+  --cmp:#f2b64c; --swap:#f26953; --pivot:#a88bfb; --done:#33c29d;
+  --code-bg:#121821; --code-on:#223055; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e131b; --surface:#161d28; --ink:#e7ecf4; --muted:#95a1b4; --line:#263041;
+  --bar:#56657e; --accent:#6f90f6; --accent-ink:#0e131b;
+  --cmp:#f2b64c; --swap:#f26953; --pivot:#a88bfb; --done:#33c29d;
+  --code-bg:#121821; --code-on:#223055; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65;overflow:hidden;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button,input,.chip{touch-action:manipulation}
+.app{height:100%;max-width:1120px;margin:0 auto;display:grid;
+  grid-template-rows:auto auto minmax(150px,1.15fr) minmax(0,1fr) auto;
+  grid-template-areas:"top" "head" "stage" "panel" "bar";gap:8px;padding-inline:12px;padding-block:8px 0}
+.top{grid-area:top;display:flex;align-items:center;gap:10px;min-width:0}
+h1{flex:none;font-family:var(--f-display);font-weight:400;font-size:1.05rem;margin:0;line-height:1}
+h1 span{color:var(--accent)}
+.chips{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-block:2px;margin-right:-12px;padding-right:12px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 .85rem var(--f-body);padding:7px 13px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:focus-visible,button:focus-visible,input:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.head{grid-area:head;display:flex;align-items:center;gap:10px;min-width:0}
+.head h2{flex:none;font-family:var(--f-display);font-weight:400;font-size:1.1rem;margin:0;line-height:1.2}
+.pills{flex:1;min-width:0;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{flex:none;font:600 .7rem var(--f-mono);padding:2px 7px;border-radius:6px;background:var(--surface);border:1px solid var(--line);color:var(--ink);white-space:nowrap}
+.pill b{font-family:var(--f-body);font-weight:500;color:var(--muted);margin-right:3px}
+.pill.ok{color:var(--done);border-color:color-mix(in srgb,var(--done) 45%,var(--line))}
+.pill.ng{color:var(--swap);border-color:color-mix(in srgb,var(--swap) 45%,var(--line))}
+.stage{grid-area:stage;min-height:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 10px 8px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:6px}
+.stats{display:flex;gap:16px;font:500 .78rem var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.stats b{color:var(--ink);font-weight:600;margin-left:5px}
+.cvbox{position:relative;min-height:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:.7rem;color:var(--muted);line-height:1.4}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.panel{grid-area:panel;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:transparent;color:var(--muted);font:500 .82rem var(--f-body);padding:9px 0 8px;cursor:pointer;box-shadow:inset 0 -2px 0 transparent}
+.tabs button[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.pane{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px 14px 16px}
+ol.code{list-style:none;margin:0;padding:6px 0;font:400 .8rem/1.6 var(--f-mono);background:var(--code-bg);border-radius:10px;overflow-x:auto;counter-reset:ln}
+ol.code li{padding:3px 12px 3px 0;white-space:pre;counter-increment:ln;transition:background .12s}
+ol.code li::before{content:counter(ln);display:inline-block;width:2.2em;text-align:right;margin-right:10px;color:var(--muted);opacity:.6}
+ol.code li.on{background:var(--code-on);box-shadow:inset 3px 0 0 var(--accent)}
+.explain{display:grid;gap:10px;max-width:65ch}
+.explain p{margin:0}
+.explain .lead{font-weight:700}
+.explain .fit{font-size:.86rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.explain .fit b{color:var(--ink)}
+.tbl{overflow-x:auto;margin-inline:-14px;padding-inline:14px}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:420px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:500;color:var(--muted);font-size:.72rem}
+td.m{font-family:var(--f-mono);font-size:.75rem;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr.cur td{background:var(--code-on)}
+tbody tr:last-child td{border-bottom:0}
+.data{display:grid;gap:18px}
+.flab{font-size:.75rem;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);font:500 .82rem var(--f-body);padding:10px 2px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:28px}
+.bar{grid-area:bar;display:flex;align-items:center;gap:10px;padding-block:6px calc(10px + env(safe-area-inset-bottom,0px))}
+.ibtn{flex:none;width:46px;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.ibtn svg{width:20px;height:20px}
+.play{width:60px;height:60px;border-radius:50%;background:var(--accent);color:var(--accent-ink);border:0;box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 35%,transparent)}
+.play svg{width:26px;height:26px}
+.ibtn:active{transform:scale(.94)}
+.speed{flex:1;min-width:0;display:grid;gap:0}
+.speed .lab{font:500 .7rem var(--f-mono);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+@media (min-width:900px){
+  .app{grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto auto minmax(0,1fr) auto;
+    grid-template-areas:"top top" "head head" "stage panel" "bar panel";gap:12px;padding-inline:20px;padding-block:16px}
+  .bar{padding-block:0}
+  h1{font-size:1.3rem}.head h2{font-size:1.35rem}
+}
+@media (prefers-reduced-motion: reduce){ol.code li{transition:none}}
+</style>
+
+<div class="app">
+  <div class="top">
+    <h1>ソート<span>図鑑</span></h1>
+    <nav class="chips" id="chips" aria-label="アルゴリズム"></nav>
+  </div>
+
+  <div class="head">
+    <h2 id="aname"></h2>
+    <div class="pills" id="pills"></div>
+  </div>
+
+  <section class="stage">
+    <div class="stats"><span>比較<b id="scmp">0</b></span><span>交換<b id="sops">0</b></span></div>
+    <div class="cvbox"><canvas id="cv" aria-label="ソートのアニメーション"></canvas></div>
+    <div class="legend">
+      <span><i style="background:var(--cmp)"></i>比較</span>
+      <span><i style="background:var(--swap)"></i>交換</span>
+      <span><i style="background:var(--pivot)"></i>基準</span>
+      <span><i style="background:var(--done)"></i>確定</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-t="code" aria-selected="true">手順</button>
+      <button role="tab" data-t="how" aria-selected="false">しくみ</button>
+      <button role="tab" data-t="cmp" aria-selected="false">比較</button>
+      <button role="tab" data-t="data" aria-selected="false">データ</button>
+    </div>
+    <div class="pane" id="p-code"><ol class="code" id="code"></ol></div>
+    <div class="pane" id="p-how" hidden><div class="explain" id="explain"></div></div>
+    <div class="pane" id="p-cmp" hidden><div class="tbl"><table>
+      <thead><tr><th>アルゴリズム</th><th>最良</th><th>平均</th><th>最悪</th><th>メモリ</th><th>安定</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div></div>
+    <div class="pane" id="p-data" hidden><div class="data">
+      <div><div class="flab"><span>並び</span></div>
+        <div class="seg" id="preset" role="group" aria-label="データの並び">
+          <button data-p="rand" aria-pressed="true">ランダム</button>
+          <button data-p="near" aria-pressed="false">ほぼ整列</button>
+          <button data-p="rev" aria-pressed="false">逆順</button>
+          <button data-p="dup" aria-pressed="false">重複多</button>
+        </div></div>
+      <div><div class="flab"><span>要素数</span><span id="nv"></span></div>
+        <input type="range" id="size" min="8" max="100" value="24" aria-label="要素数"></div>
+    </div></div>
+  </section>
+
+  <div class="bar">
+    <button class="ibtn" id="bNew" aria-label="新しいデータ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg></button>
+    <button class="ibtn" id="bReset" aria-label="最初から"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+    <button class="ibtn play" id="bPlay" aria-label="再生"><svg viewBox="0 0 24 24" fill="currentColor" id="playIcon"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></button>
+    <button class="ibtn" id="bStep" aria-label="1手進める"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 6.2v11.6a1 1 0 0 0 1.5.86l9-5.8a1 1 0 0 0 0-1.72l-9-5.8A1 1 0 0 0 5 6.2z"/><rect x="17" y="5" width="2.6" height="14" rx="1"/></svg></button>
+    <div class="speed"><div class="lab" id="spdv"></div><input type="range" id="spd" min="0" max="100" value="45" aria-label="速さ"></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+const swap=(a,i,j)=>{const t=a[i];a[i]=a[j];a[j]=t};
+
+function* bubble(a){const n=a.length;
+  for(let i=0;i<n-1;i++){let sw=false;
+    for(let j=0;j<n-1-i;j++){
+      yield{t:'cmp',i:j,j:j+1,l:2};
+      if(a[j].v>a[j+1].v){swap(a,j,j+1);sw=true;yield{t:'swap',i:j,j:j+1,l:3};}
+    }
+    yield{t:'done',k:n-1-i,l:4};
+    if(!sw){yield{t:'all',l:5};return;}
+  }
+  yield{t:'done',k:0,l:4};
+}
+function* selection(a){const n=a.length;
+  for(let i=0;i<n-1;i++){let m=i;
+    yield{t:'pivot',p:m,l:1};
+    for(let j=i+1;j<n;j++){
+      yield{t:'cmp',i:j,p:m,l:2};
+      if(a[j].v<a[m].v){m=j;yield{t:'pivot',p:m,l:2};}
+    }
+    if(m!==i){swap(a,i,m);yield{t:'swap',i,j:m,l:3};}
+    yield{t:'done',k:i,l:4};
+  }
+  yield{t:'done',k:n-1,l:4};
+}
+function* insertion(a){
+  for(let i=1;i<a.length;i++){
+    yield{t:'pivot',p:i,l:1};
+    let j=i;
+    while(j>0){
+      yield{t:'cmp',i:j-1,j,l:2};
+      if(a[j-1].v>a[j].v){swap(a,j-1,j);yield{t:'swap',i:j-1,j,l:3};j--;}
+      else break;
+    }
+    yield{t:'pivot',p:j,l:4};
+  }
+}
+function* shell(a){const n=a.length;
+  for(let gap=n>>1;gap>0;gap>>=1){
+    yield{t:'none',l:0};
+    for(let i=gap;i<n;i++){
+      for(let j=i;j>=gap;j-=gap){
+        yield{t:'cmp',i:j-gap,j,l:2};
+        if(a[j-gap].v>a[j].v){swap(a,j-gap,j);yield{t:'swap',i:j-gap,j,l:3};}
+        else break;
+      }
+    }
+  }
+}
+function* merge(a){yield* ms(a,0,a.length-1);}
+function* ms(a,lo,hi){
+  if(hi<=lo)return;
+  const mid=(lo+hi)>>1;
+  yield{t:'range',lo,hi,l:0};
+  yield* ms(a,lo,mid);
+  yield* ms(a,mid+1,hi);
+  yield{t:'range',lo,hi,l:3};
+  let i=lo,m=mid,j=mid+1;
+  while(i<=m&&j<=hi){
+    yield{t:'cmp',i,j,l:3};
+    if(a[i].v<=a[j].v){i++;}
+    else{const o=a[j];for(let k=j;k>i;k--)a[k]=a[k-1];a[i]=o;
+      yield{t:'move',to:i,l:4};i++;m++;j++;}
+  }
+}
+function* quick(a){yield* qs(a,0,a.length-1);}
+function* qs(a,lo,hi){
+  if(lo>hi)return;
+  if(lo===hi){yield{t:'done',k:lo,l:5};return;}
+  yield{t:'range',lo,hi,l:0};
+  const mid=(lo+hi)>>1;
+  if(mid!==hi){swap(a,mid,hi);yield{t:'swap',i:mid,j:hi,p:hi,l:0};}
+  const pv=a[hi].v;let i=lo;
+  for(let j=lo;j<hi;j++){
+    yield{t:'cmp',i:j,p:hi,l:2};
+    if(a[j].v<pv){if(i!==j){swap(a,i,j);yield{t:'swap',i,j,p:hi,l:3};}i++;}
+  }
+  if(i!==hi){swap(a,i,hi);yield{t:'swap',i,j:hi,p:i,l:4};}
+  yield{t:'done',k:i,l:4};
+  yield* qs(a,lo,i-1);
+  yield* qs(a,i+1,hi);
+}
+function* heap(a){const n=a.length;
+  for(let i=(n>>1)-1;i>=0;i--)yield* sift(a,i,n,true);
+  for(let end=n-1;end>0;end--){
+    swap(a,0,end);yield{t:'swap',i:0,j:end,l:2};
+    yield{t:'done',k:end,l:2};
+    yield{t:'range',lo:0,hi:end-1,l:3};
+    yield* sift(a,0,end,false);
+  }
+  yield{t:'done',k:0,l:2};
+}
+function* sift(a,i,n,build){
+  for(;;){let c=2*i+1;if(c>=n)return;
+    if(c+1<n){yield{t:'cmp',i:c,j:c+1,l:build?0:4};if(a[c+1].v>a[c].v)c++;}
+    yield{t:'cmp',i,j:c,l:build?0:4};
+    if(a[c].v<=a[i].v)return;
+    swap(a,i,c);yield{t:'swap',i,j:c,l:build?0:5};i=c;
+  }
+}
+
+const ALGOS=[
+ {id:'bubble',name:'バブルソート',gen:bubble,best:'O(n)',avg:'O(n²)',worst:'O(n²)',mem:'O(1)',stable:true,
+  sum:'隣どうしを比べて、大きい値を右へ押し出していく。',
+  code:['for i ← 0 … n-2','  for j ← 0 … n-2-i','    a[j] と a[j+1] を比べる','    左が大きければ交換','  末尾 a[n-1-i] が確定','  1回も交換がなければ終了'],
+  body:['左から順に隣り合う2つを比べ、左が大きければ入れ替えます。1周すると一番大きい値が右端まで運ばれ、その位置が確定します。泡が水面へ浮かぶように大きい値が上がっていくのが名前の由来です。','確定した右端を除いて同じ作業を繰り返します。1周で一度も交換が起きなければ、その時点で整列済みと判断して終われます。'],
+  fit:'仕組みを学ぶ入門用。実用ではほぼ使われない。'},
+ {id:'selection',name:'選択ソート',gen:selection,best:'O(n²)',avg:'O(n²)',worst:'O(n²)',mem:'O(1)',stable:false,
+  sum:'残りの中から最小値を探し、先頭に置く。',
+  code:['for i ← 0 … n-2','  min ← i','  for j ← i+1 … n-1 : a[j] < a[min] なら min ← j','  a[i] と a[min] を交換','  a[i] が確定'],
+  body:['未整列の部分を端から端まで見て最小値を探し、未整列部分の先頭と入れ替えます。紫のバーが「今までで一番小さい値」の候補です。','比較回数はデータの並びに関係なく常に約 n²/2 回です。一方で交換は最大 n-1 回しか起きないため、書き込みが高くつく場面では利点になります。'],
+  fit:'交換（書き込み）の回数を最小限にしたいとき。'},
+ {id:'insertion',name:'挿入ソート',gen:insertion,best:'O(n)',avg:'O(n²)',worst:'O(n²)',mem:'O(1)',stable:true,
+  sum:'手札を並べるように、1枚ずつ正しい位置へ差し込む。',
+  code:['for i ← 1 … n-1','  x ← a[i] を取り出す','  x と左隣を比べる','  左隣が大きければ交換して左へ','  止まった位置に x が収まる'],
+  body:['左側を「整列済みの手札」とみなし、右から1枚ずつ取って、左隣より小さい間は左へずらしていきます。トランプの手札を並べる動きと同じです。','すでにほぼ整列しているデータではほとんど移動が起きず、ほぼ n 回の比較で終わります。「ほぼ整列」を選んで動きを比べてみてください。'],
+  fit:'要素数が少ないとき、ほぼ整列済みのとき。高速なソートの内部でも小区間用に使われる。'},
+ {id:'shell',name:'シェルソート',gen:shell,best:'O(n log n)',avg:'約 O(n^1.3)',worst:'O(n²)',mem:'O(1)',stable:false,
+  sum:'離れた要素どうしで挿入ソートし、間隔を縮めていく。',
+  code:['gap ← n/2 から始めて毎回半分に','  for i ← gap … n-1','    a[j-gap] と a[j] を比べる','    大きければ交換して j ← j-gap','gap = 1 のとき通常の挿入ソートになる'],
+  body:['挿入ソートの弱点は、遠くにある値を1つずつしか動かせないことです。シェルソートは最初に大きな間隔（gap）で飛び飛びに挿入ソートし、値を大まかな位置へ一気に運びます。','間隔を半分ずつ縮め、最後に間隔1で普通の挿入ソートを行います。その頃にはほぼ整列しているので、挿入ソートの得意な状況になっています。計算量は間隔の選び方で変わります。'],
+  fit:'追加メモリなしで、単純な実装のまま挿入ソートより速くしたいとき。'},
+ {id:'merge',name:'マージソート',gen:merge,best:'O(n log n)',avg:'O(n log n)',worst:'O(n log n)',mem:'O(n)',stable:true,
+  sum:'半分に分けて整列し、2つの列を合体させる。',
+  code:['範囲 [lo, hi] を半分に分ける','  左半分をマージソート','  右半分をマージソート','  左右の先頭どうしを比べる','  小さい方を取り出して並べる'],
+  body:['配列を1要素になるまで半分に分け続け、整列済みの2つの列を先頭から比べながら1本に合わせていきます。明るく表示されている範囲が今合体している区間です。','どんな並びでも n log n の時間で終わり、同じ値の順序も保たれます。通常は合体のために n 個分の作業用配列を使います（このアニメーションでは動きを見やすくするため、その場で要素をずらしています）。'],
+  fit:'最悪時間を保証したいとき、安定ソートが必要なとき、連結リストや外部記憶の整列。'},
+ {id:'quick',name:'クイックソート',gen:quick,best:'O(n log n)',avg:'O(n log n)',worst:'O(n²)',mem:'O(log n)',stable:false,
+  sum:'基準値より小さい組と大きい組に分け、それぞれを繰り返す。',
+  code:['真ん中の値を基準（ピボット）にして末尾へ','  i ← lo','  for j ← lo … hi-1 : a[j] と基準を比べる','    基準より小さければ a[i] と交換, i ← i+1','  基準を a[i] へ移す → 位置が確定','  左右の区間を同じ手順でソート'],
+  body:['基準値（紫）を1つ選び、それより小さい値を左、大きい値を右に振り分けます。振り分けが終わると基準値は最終的な位置に収まります。','あとは左右の区間を同じように分割していきます。平均では最速クラスですが、基準が毎回最大・最小に偏ると n² まで遅くなります。ここでは偏りを避けるため真ん中の値を基準にしています。'],
+  fit:'一般的なデータを高速に並べたいとき。多くの言語の標準ソートの土台。'},
+ {id:'heap',name:'ヒープソート',gen:heap,best:'O(n log n)',avg:'O(n log n)',worst:'O(n log n)',mem:'O(1)',stable:false,
+  sum:'最大値が根に来る木（ヒープ）を作り、根を末尾へ移し続ける。',
+  code:['配列を最大ヒープに組み立てる','for end ← n-1 … 1','  a[0] と a[end] を交換 → a[end] 確定','  a[0] を下へふるい落とす','    2つの子を比べて大きい方を選ぶ','    親より大きければ交換して下へ'],
+  body:['配列を「a[i] の子は a[2i+1] と a[2i+2]」という二分木とみなし、親が常に子以上になるよう整えます（最大ヒープ）。すると先頭 a[0] が最大値になります。','先頭を末尾と交換して確定させ、崩れた根を下へふるい落としてヒープを直す。これを繰り返すと右から大きい順に確定していきます。追加メモリなしで最悪でも n log n です。'],
+  fit:'メモリを増やさずに最悪時間を保証したいとき。優先度付きキューの基礎。'},
+];
+
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');
+
+let algo=ALGOS[0],preset='rand',N=24,base=[];
+const S={arr:[],gen:null,playing:false,finished:false,hl:{},sorted:new Set(),range:null,cmp:0,ops:0,line:-1,sweep:-1,acc:0};
+
+function makeData(){
+  let v=[];
+  if(preset==='dup'){for(let i=0;i<N;i++)v.push(1+Math.floor(Math.random()*5)*(N/5)+N/5);}
+  else{
+    v=Array.from({length:N},(_,i)=>i+1);
+    if(preset==='rand'){for(let i=N-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[v[i],v[j]]=[v[j],v[i]];}}
+    else if(preset==='rev'){v.reverse();}
+    else if(preset==='near'){const k=Math.max(1,Math.round(N/10));for(let t=0;t<k;t++){const i=Math.floor(Math.random()*(N-2));[v[i],v[i+2]]=[v[i+2],v[i]];}}
+  }
+  base=v.map(x=>Math.round(x));
+}
+function reset(){
+  S.arr=base.map((v,i)=>({v,x:i}));
+  S.gen=algo.gen(S.arr);S.finished=false;S.hl={};S.sorted=new Set();S.range=null;
+  S.cmp=0;S.ops=0;S.line=-1;S.sweep=-1;S.acc=0;
+  setPlaying(false);updStats();renderLine();
+}
+function apply(e){
+  S.hl={};S.line=e.l;
+  const idx=[e.i,e.j].filter(x=>x!==undefined&&x>=0);
+  if(e.p!==undefined)S.hl.pivot=e.p;
+  switch(e.t){
+    case 'cmp':S.hl.cmp=idx;S.cmp++;break;
+    case 'swap':S.hl.swap=idx;S.ops++;break;
+    case 'move':S.hl.swap=[e.to];S.ops++;break;
+    case 'done':S.sorted.add(e.k);break;
+    case 'all':for(let i=0;i<S.arr.length;i++)S.sorted.add(i);break;
+    case 'range':S.range=[e.lo,e.hi];break;
+  }
+}
+function step(){
+  if(S.finished)return;
+  if(S.sweep>=0)return;
+  const r=S.gen.next();
+  if(r.done){S.hl={};S.range=null;S.line=-1;S.sweep=0;}
+  else apply(r.value);
+  updStats();renderLine();
+}
+function updStats(){$('scmp').textContent=S.cmp.toLocaleString();$('sops').textContent=S.ops.toLocaleString();}
+
+const PLAY='<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/>';
+const PAUSE='<rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/>';
+function setPlaying(p){S.playing=p;$('playIcon').innerHTML=p?PAUSE:PLAY;$('bPlay').setAttribute('aria-label',p?'一時停止':'再生');}
+
+const sps=()=>Math.max(1,Math.round(Math.pow(10,$('spd').value/100*2.7)));
+function updSpd(){$('spdv').textContent=sps()+' 手/秒';}
+
+function renderLine(){
+  const lis=$('code').children;
+  for(let i=0;i<lis.length;i++)lis[i].classList.toggle('on',i===S.line);
+}
+
+function selectAlgo(a){
+  algo=a;
+  document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.id===a.id));
+  document.querySelectorAll('#tbody tr').forEach(r=>r.classList.toggle('cur',r.dataset.id===a.id));
+  $('aname').textContent=a.name;
+  $('pills').innerHTML=`<span class="pill"><b>最良</b>${a.best}</span><span class="pill"><b>平均</b>${a.avg}</span><span class="pill"><b>最悪</b>${a.worst}</span><span class="pill"><b>メモリ</b>${a.mem}</span><span class="pill ${a.stable?'ok':'ng'}">${a.stable?'安定':'不安定'}</span>`;
+  $('code').innerHTML=a.code.map(l=>`<li>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</li>`).join('');
+  $('explain').innerHTML=`<p class="lead">${a.sum}</p>`+a.body.map(p=>`<p>${p}</p>`).join('')+`<p class="fit"><b>向いている場面</b>　${a.fit}</p>`;
+  const chip=document.querySelector(`.chip[data-id="${a.id}"]`);
+  if(chip)chip.scrollIntoView({block:'nearest',inline:'center',behavior:reduce.matches?'auto':'smooth'});
+  reset();
+}
+
+// build UI
+$('chips').innerHTML=ALGOS.map(a=>`<button class="chip" data-id="${a.id}" aria-pressed="false">${a.name.replace('ソート','')}</button>`).join('');
+$('tbody').innerHTML=ALGOS.map(a=>`<tr data-id="${a.id}" tabindex="0"><td>${a.name}</td><td class="m">${a.best}</td><td class="m">${a.avg}</td><td class="m">${a.worst}</td><td class="m">${a.mem}</td><td>${a.stable?'○':'×'}</td></tr>`).join('');
+$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b)selectAlgo(ALGOS.find(a=>a.id===b.dataset.id));});
+$('tbody').addEventListener('click',e=>{const r=e.target.closest('tr');if(r)selectAlgo(ALGOS.find(a=>a.id===r.dataset.id));});
+$('tbody').addEventListener('keydown',e=>{if(e.key==='Enter'){const r=e.target.closest('tr');if(r)selectAlgo(ALGOS.find(a=>a.id===r.dataset.id));}});
+$('bPlay').onclick=()=>{if(S.finished)reset();setPlaying(!S.playing);};
+$('bStep').onclick=()=>{setPlaying(false);if(S.finished)return;step();};
+$('bReset').onclick=()=>reset();
+$('bNew').onclick=()=>{makeData();reset();};
+$('spd').oninput=updSpd;
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  for(const t of ['code','how','cmp','data'])$('p-'+t).hidden=t!==b.dataset.t;});
+$('size').oninput=()=>{N=+$('size').value;$('nv').textContent=N;makeData();reset();};
+$('preset').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;preset=b.dataset.p;
+  document.querySelectorAll('#preset button').forEach(x=>x.setAttribute('aria-pressed',x===b));makeData();reset();});
+
+// drawing
+let colors={};
+function readColors(){const cs=getComputedStyle(document.documentElement);
+  for(const k of ['bar','cmp','swap','pivot','done','muted','ink','surface'])colors[k]=cs.getPropertyValue('--'+k).trim();}
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readColors);
+new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+function roundTop(x,y,w,h,r){r=Math.min(r,w/2,h);ctx.beginPath();ctx.moveTo(x,y+h);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h);ctx.closePath();ctx.fill();}
+
+function draw(dt){
+  const dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  const a=S.arr,n=a.length;if(!n)return;
+  const gap=n>60?1:n>30?2:3,bw=(W-gap*(n-1))/n;
+  const max=Math.max(...a.map(o=>o.v));
+  const showNum=n<=24&&bw>=11;const top=showNum?18:4;
+  const snap=reduce.matches||sps()>80;
+  const f=snap?1:Math.min(1,dt*16);
+  const hl=S.hl,cmp=new Set(hl.cmp||[]),sw=new Set(hl.swap||[]);
+  ctx.font=`600 11px ${getComputedStyle(document.body).getPropertyValue('--f-mono')||'monospace'}`;
+  ctx.textAlign='center';ctx.textBaseline='bottom';
+  for(let k=0;k<n;k++){
+    const o=a[k];o.x+=(k-o.x)*f;if(Math.abs(k-o.x)<.002)o.x=k;
+    let c=colors.bar;
+    const inSweep=S.sweep>=0&&k<S.sweep;
+    if(sw.has(k))c=colors.swap;else if(cmp.has(k))c=colors.cmp;else if(hl.pivot===k)c=colors.pivot;
+    else if(S.sorted.has(k)||inSweep)c=colors.done;
+    const dim=S.range&&(k<S.range[0]||k>S.range[1]);
+    ctx.globalAlpha=dim?0.28:1;
+    const h=Math.max(3,(o.v/max)*(H-top-2)),x=o.x*(bw+gap),y=H-h;
+    ctx.fillStyle=c;roundTop(x,y,bw,h,Math.min(4,bw/3));
+    if(showNum){ctx.fillStyle=colors.muted;ctx.fillText(o.v,x+bw/2,y-3);}
+  }
+  ctx.globalAlpha=1;
+}
+
+let last=performance.now();
+function loop(t){
+  const dt=Math.min(.1,(t-last)/1000);last=t;
+  if(S.sweep>=0&&!S.finished){
+    S.sweep+=Math.max(1,S.arr.length*dt*2.2);
+    if(S.sweep>=S.arr.length){S.sweep=S.arr.length;for(let i=0;i<S.arr.length;i++)S.sorted.add(i);S.finished=true;setPlaying(false);}
+  }else if(S.playing&&!S.finished){
+    S.acc+=dt*sps();let c=0;
+    while(S.acc>=1&&c<400&&S.sweep<0){step();S.acc-=1;c++;}
+    if(S.sweep>=0)S.acc=0;
+  }
+  draw(dt);requestAnimationFrame(loop);
+}
+
+updSpd();$('nv').textContent=N;makeData();selectAlgo(ALGOS[0]);
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>

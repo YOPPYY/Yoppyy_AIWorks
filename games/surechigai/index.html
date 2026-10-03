@@ -1,0 +1,1550 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>すれ違いストリート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #1f2430;
+    --ink: #232733;
+    --paper: #f6f2e8;
+    --muted: #6b6f7c;
+    --accent: #f2c14e;
+    --accent-ink: #3a2c06;
+    --red: #d9573b;
+    --green: #2f7f6f;
+    --chip: rgba(31, 36, 48, 0.78);
+    --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+    --body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  }
+  [hidden] { display: none !important; }
+  html { height: 100%; box-sizing: border-box; }
+  body {
+    height: 100%;
+    background: var(--page);
+    color: var(--paper);
+    font-family: var(--body);
+    overflow: hidden;
+  }
+  .app {
+    box-sizing: border-box;
+    height: 100%;
+    padding-inline: 16px;
+    padding-block: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stage {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  .hud {
+    position: absolute;
+    top: 10px; left: 10px; right: 94px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .chip {
+    background: var(--chip);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .chip small {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: #b9bccb;
+    font-weight: 500;
+  }
+  .chip b { font-family: var(--display); font-weight: 400; font-size: 18px; color: #fff; }
+  .chip.dist b { color: var(--accent); }
+  .chip b { font-size: 17px; }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(24, 28, 38, 0.5);
+    padding-inline: 14px;
+    overflow-y: auto;
+  }
+  .panel {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 14px;
+    padding: 20px 18px 18px;
+    width: min(300px, 100%);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    margin-block: 12px;
+  }
+  .panel h1, .panel h2 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 400;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+  .panel h1 { font-size: 32px; letter-spacing: 0.02em; }
+  .panel h1 span { display: block; color: var(--red); }
+  .panel h2 { font-size: 28px; color: var(--red); }
+  .panel h2.clear { color: var(--green); }
+  .hud-bar { position: absolute; left: 0; right: -84px; top: 46px; height: 4px; border-radius: 2px; background: rgba(31,36,48,0.55); overflow: hidden; pointer-events: none; }
+  .hud-bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .panel p { margin: 0; font-size: 12.5px; line-height: 1.65; color: #4a4e5b; }
+  .keys {
+    display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap;
+    font-size: 12px; color: var(--muted);
+  }
+  kbd {
+    font-family: var(--body);
+    font-weight: 700;
+    background: #fff;
+    border: 1px solid #d6d0c2;
+    border-bottom-width: 3px;
+    border-radius: 6px;
+    padding: 1px 7px;
+    color: var(--ink);
+  }
+
+  .stages { display: flex; flex-direction: column; gap: 8px; }
+  .stage-btn {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    font-family: var(--body);
+    color: var(--ink);
+    background: #fff;
+    border: 2px solid #e2dccd;
+    border-radius: 12px;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: border-color 0.12s, transform 0.08s;
+  }
+  .stage-btn:hover, .stage-btn.sel { border-color: var(--ink); }
+  .stage-btn:active { transform: translateY(2px); }
+  .stage-btn:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+  .stage-btn .lv {
+    font-family: var(--display);
+    font-size: 13px;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    color: #fff;
+  }
+  .stage-btn .nm { display: flex; flex-direction: column; gap: 1px; }
+  .stage-btn .nm b { font-family: var(--display); font-weight: 400; font-size: 17px; }
+  .stage-btn .nm small { font-size: 11px; color: var(--muted); }
+  .stage-btn .bs {
+    font-size: 11px; color: var(--muted); text-align: right;
+    font-variant-numeric: tabular-nums; line-height: 1.3;
+  }
+  .stage-btn .bs b { display: block; font-size: 14px; color: var(--ink); }
+
+  .result {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .result div {
+    background: #ebe5d7;
+    border-radius: 10px;
+    padding: 8px 6px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .result small { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+  .result b { font-family: var(--display); font-weight: 400; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .over-stage { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; }
+  .record { font-size: 12px; font-weight: 700; color: var(--green); min-height: 1em; }
+  .btns { display: flex; flex-direction: column; gap: 8px; }
+  button.go, button.sub {
+    font-family: var(--display);
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  button.go {
+    font-size: 18px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: 0 4px 0 #c0922a;
+  }
+  button.go:active { transform: translateY(3px); box-shadow: 0 1px 0 #c0922a; }
+  button.sub {
+    font-size: 14px;
+    padding: 9px 14px;
+    background: #e4ddcd;
+    color: var(--ink);
+  }
+  button.go:focus-visible, button.sub:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+  .hint { font-size: 11px; color: var(--muted); }
+  .opts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .opt { position: relative; cursor: pointer; }
+  .opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .opt span {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700;
+    padding: 5px 10px 5px 8px; border-radius: 999px;
+    background: #e4ddcd; color: var(--muted);
+    transition: background 0.12s, color 0.12s;
+  }
+  .opt span::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: #b8b1a1;
+  }
+  .opt input:checked + span { background: var(--ink); color: #fff; }
+  .opt input:checked + span::before { background: var(--accent); }
+  .opt input:focus-visible + span { outline: 3px solid var(--green); outline-offset: 2px; }
+
+  .corner {
+    position: absolute; top: 10px; right: 10px; z-index: 5;
+    display: flex; gap: 6px;
+  }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border: 0; border-radius: 8px;
+    background: var(--chip); color: #fff;
+    display: grid; place-items: center;
+    cursor: pointer; padding: 0;
+  }
+  .icon-btn:hover { background: rgba(31, 36, 48, 0.92); }
+  .icon-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .icon-btn svg { width: 20px; height: 20px; display: block; }
+  .icon-btn.off { color: #8b8fa0; }
+  .opts-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; margin-bottom: -4px; }
+</style>
+
+<div class="app" id="app">
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="歩道のゲーム画面"></canvas>
+    <div class="hud" id="hud" hidden>
+      <div class="chip dist"><small>距離</small><b id="hDist">0 m</b></div>
+      <div class="chip"><small>すれ違い</small><b id="hPass">0</b></div>
+      <div class="chip"><small id="hBestLabel">ベスト</small><b id="hBest">0 m</b></div>
+      <div class="hud-bar"><i id="hBar"></i></div>
+    </div>
+
+    <div class="corner">
+      <button class="icon-btn" id="pauseBtn" type="button" aria-label="ポーズ" hidden>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      </button>
+      <button class="icon-btn" id="soundBtn" type="button" aria-label="サウンド" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/>
+          <g id="sndOn"><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></g>
+          <g id="sndOff" style="display:none"><path d="M16 9.5l5 5M21 9.5l-5 5"/></g>
+        </svg>
+      </button>
+    </div>
+
+    <div class="overlay" id="titleView">
+      <div class="panel">
+        <h1>すれ違い<span>ストリート</span></h1>
+        <p>前から来る人をよけて、500 m 歩ききればクリア。正面の人はこちらに気づくと左右へよけようとします(矢印が合図)。スマホを見ている人はまず気づきません。</p>
+        <div class="stages" id="stageList"></div>
+        <div class="opts" role="group" aria-label="表示オプション" data-opts="t"></div>
+        <div class="keys"><kbd>←</kbd><kbd>→</kbd> または 画面の左右をタップ ・ <kbd>Esc</kbd> ポーズ</div>
+      </div>
+    </div>
+
+    <div class="overlay" id="pauseView" hidden>
+      <div class="panel">
+        <div class="over-stage" id="pStage"></div>
+        <h2 style="color: var(--ink)">ポーズ</h2>
+        <div class="btns">
+          <button class="go" id="resumeBtn" type="button">続ける</button>
+          <button class="sub" id="restartBtn" type="button">やり直す</button>
+          <button class="sub" id="titleBtn" type="button">タイトルへ</button>
+        </div>
+        <div class="opts-label">表示オプション</div>
+        <div class="opts" role="group" aria-label="表示オプション" data-opts="p"></div>
+        <div class="hint">Esc / P でも再開</div>
+      </div>
+    </div>
+
+    <div class="overlay" id="overView" hidden>
+      <div class="panel">
+        <div class="over-stage" id="rStage"></div>
+        <h2 id="rTitle">ぶつかった！</h2>
+        <div class="result">
+          <div><small id="rLabel">歩いた距離</small><b id="rDist">0 m</b></div>
+          <div><small>すれ違い</small><b id="rPass">0</b></div>
+        </div>
+        <div class="record" id="rRecord"></div>
+        <div class="btns">
+          <button class="go" id="retryBtn" type="button">もう一度</button>
+          <button class="sub" id="menuBtn" type="button">ステージをえらぶ</button>
+        </div>
+        <div class="hint">Space / Enter で再スタート、Esc でステージ選択</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const W = 360, H = 640;
+  const LANES = [100, 180, 260];
+  const PY = 530;
+  const PX_PER_M = 40;
+  const MIN_REACT_GAP = 120;
+  const GOAL_M = 500;
+
+  const app = document.getElementById('app');
+  const stage = document.getElementById('stage');
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const hud = document.getElementById('hud');
+  const titleView = document.getElementById('titleView');
+  const overView = document.getElementById('overView');
+  const hDist = document.getElementById('hDist');
+  const hPass = document.getElementById('hPass');
+  const hBest = document.getElementById('hBest');
+  const hBestLabel = document.getElementById('hBestLabel');
+  const hBar = document.getElementById('hBar');
+
+  // ---------- display options ----------
+  const opts = { lines: true, warn: true, lane: false, sound: true };
+  try { Object.assign(opts, JSON.parse(localStorage.getItem('surechigai-opts') || '{}')); } catch (e) {}
+  const saveOpts = () => { try { localStorage.setItem('surechigai-opts', JSON.stringify(opts)); } catch (e) {} };
+  const OPT_DEFS = [['lines', '境界線'], ['warn', '警告の矢印'], ['lane', '自分のレーン']];
+  const optInputs = [];
+  for (const box of document.querySelectorAll('[data-opts]')) {
+    for (const [key, label] of OPT_DEFS) {
+      const l = document.createElement('label');
+      l.className = 'opt';
+      const inp = document.createElement('input');
+      inp.type = 'checkbox';
+      inp.id = 'opt-' + box.dataset.opts + '-' + key;
+      inp.checked = !!opts[key];
+      inp.dataset.key = key;
+      const sp = document.createElement('span');
+      sp.textContent = label;
+      l.append(inp, sp);
+      box.appendChild(l);
+      optInputs.push(inp);
+      inp.addEventListener('change', () => {
+        opts[key] = inp.checked;
+        for (const o of optInputs) if (o.dataset.key === key) o.checked = inp.checked;
+        saveOpts();
+      });
+    }
+  }
+
+  const soundBtn = document.getElementById('soundBtn');
+  function renderSound() {
+    soundBtn.classList.toggle('off', !opts.sound);
+    soundBtn.setAttribute('aria-pressed', String(!!opts.sound));
+    soundBtn.setAttribute('aria-label', opts.sound ? 'サウンドをオフにする' : 'サウンドをオンにする');
+    document.getElementById('sndOn').style.display = opts.sound ? '' : 'none';
+    document.getElementById('sndOff').style.display = opts.sound ? 'none' : '';
+  }
+  function toggleSound() {
+    opts.sound = !opts.sound;
+    saveOpts();
+    renderSound();
+    if (!opts.sound) sfx.stopBgm();
+    else if (state === 'play') sfx.bgm(S.id);
+  }
+  renderSound();
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- helpers ----------
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = arr => arr[(Math.random() * arr.length) | 0];
+  const hash = (a, b) => {
+    let h = (a * 374761393 + b * 668265263) | 0;
+    h = (h ^ (h >>> 13)) * 1274126177;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+  };
+  function ell(x, y, rx, ry) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
+
+  const COATS = ['#4a6fa5', '#2f7f6f', '#8a4f7d', '#5b5f6b', '#b5652f', '#3d4a3f', '#a33d3d', '#6d7fa8', '#c9a86a', '#2e3445'];
+  const KID_COATS = ['#e86a5a', '#4aa3d9', '#7cc36a', '#f0a640', '#b07ad6', '#f2f0ea', '#5a7fd6'];
+  const SUITS = ['#2e3445', '#3a3f4a', '#23272f', '#4a4d57', '#5b5f6b', '#5a4b3e', '#3b4a5e'];
+  const HAIRS = ['#1d1a18', '#2b2320', '#4a3426', '#6b4a2f', '#9a9a9a', '#1d1a18', '#c79a5a'];
+  const SKINS = ['#f1d3b8', '#e6bf9b', '#d6a57f', '#b98060'];
+  const SHOES = ['#1f1f24', '#3b2f28', '#e8e4dc', '#4a4d57'];
+  const UMBS = ['#d9573b', '#2f7f6f', '#4a6fa5', '#e2a93b', '#8a4f7d'];
+  const RANDOSERU = ['#c8322f', '#1f1f24', '#7a4b2f', '#d76b9a', '#3d5fa8', '#8a2b3a'];
+  const AWNINGS = ['#d9573b', '#2f7f6f', '#e2a93b', '#4a6fa5', '#8a4f7d', '#3d4a3f'];
+  const WALLS = ['#e9e4d8', '#d8cfbf', '#c7d0d4', '#e4d6c3', '#cfd6c6'];
+  const ROOFS = ['#5a6470', '#7a4b3a', '#3f5566', '#6b6258', '#4f5a47'];
+
+  const playerLook = { coat: '#f2c14e', hair: '#2b2320', skin: '#f1d3b8', shoe: '#e8e4dc', cap: '#d9573b', bag: '#2e3445' };
+
+  function baseLook() {
+    return {
+      kind: 'plain',
+      coat: pick(COATS), hair: pick(HAIRS), skin: pick(SKINS), shoe: pick(SHOES),
+      umb: pick(UMBS), bag: pick(['#3b2f28', '#1f1f24', '#c9a86a', '#6b4a2f']),
+      bagSide: Math.random() < 0.5 ? -1 : 1,
+      small: false,
+    };
+  }
+
+  // ---------- sound (Web Audio, synthesized) ----------
+  const sfx = (() => {
+    let ac = null, master = null, noiseBuf = null;
+    function unlock() {
+      if (!ac) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        ac = new AC();
+        master = ac.createGain();
+        master.gain.value = 0.7;
+        master.connect(ac.destination);
+        noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (ac.state === 'suspended') ac.resume();
+    }
+    const ok = () => opts.sound && ac && ac.state === 'running';
+    function tone(f, dur, { type = 'sine', vol = 0.15, to = null, at = 0, attack = 0.005 } = {}) {
+      if (!ok()) return;
+      const t0 = ac.currentTime + at;
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t0);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g).connect(master);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    }
+    function noise(dur, { vol = 0.1, freq = 1000, q = 0.7, type = 'lowpass', to = null, at = 0, attack = 0.003 } = {}) {
+      if (!ok()) return;
+      const t0 = ac.currentTime + at;
+      const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = noiseBuf;
+      src.loop = dur > 1;
+      f.type = type; f.Q.value = q;
+      f.frequency.setValueAtTime(freq, t0);
+      if (to) f.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(f).connect(g).connect(master);
+      src.start(t0, Math.random() * 0.5); src.stop(t0 + dur + 0.02);
+    }
+
+    // ----- BGM: 8分音符 32ステップ(4小節)のループ -----
+    const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+    const _ = null;
+    const SONGS = {
+      // 通学路: のんびり明るい ハ長調 C - Am - F - G
+      school: {
+        bpm: 116, root: 72, lead: 'triangle', leadVol: 0.07, bassVol: 0.09, drums: 0.5,
+        chords: [0, 9, 5, 7],
+        mel: [0,_,4,_,7,_,4,_,  9,_,7,_,4,_,0,_,  5,_,9,_,12,_,9,7,  7,_,2,_,4,2,0,_],
+      },
+      // 商店街: はずむ ヘ長調 F - Dm - B♭ - C
+      shop: {
+        bpm: 132, root: 65, lead: 'square', leadVol: 0.035, bassVol: 0.1, drums: 0.8,
+        chords: [0, 9, 5, 7],
+        mel: [12,16,19,16,21,19,16,_,  14,17,21,17,19,17,14,_,  17,21,24,21,22,21,17,_,  19,_,23,_,26,_,24,_],
+      },
+      // 駅のホーム: 急ぎ足 イ短調 Am - F - G - E
+      station: {
+        bpm: 152, root: 69, lead: 'sawtooth', leadVol: 0.028, bassVol: 0.11, drums: 1,
+        chords: [0, 8, 10, 7],
+        mel: [0,3,7,3,12,7,3,7,  8,_,12,_,15,12,8,_,  10,_,14,_,17,14,10,_,  11,_,14,_,19,_,14,11],
+      },
+    };
+    let bgmTimer = null, bgmGain = null, bgmStep = 0, bgmNext = 0, song = null;
+    function noteAt(freq, t, dur, type, vol, dest) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(dest);
+      o.start(t); o.stop(t + dur + 0.02);
+    }
+    function drumAt(kind, t, vol, dest) {
+      if (kind === 'kick') {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.setValueAtTime(140, t);
+        o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+        g.gain.setValueAtTime(0.25 * vol, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+        o.connect(g).connect(dest);
+        o.start(t); o.stop(t + 0.17);
+      } else {
+        const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+        src.buffer = noiseBuf;
+        f.type = 'highpass'; f.frequency.value = 7000;
+        g.gain.setValueAtTime(0.05 * vol, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+        src.connect(f).connect(g).connect(dest);
+        src.start(t, Math.random() * 0.5); src.stop(t + 0.05);
+      }
+    }
+    function playStep(i, t) {
+      const e = 60 / song.bpm / 2;
+      const bar = Math.floor(i / 8), k = i % 8;
+      const m = song.mel[i];
+      if (m != null) {
+        let len = 1;
+        while (len < 4 && song.mel[(i + len) % 32] == null && (i + len) % 8 !== 0) len++;
+        noteAt(mtof(song.root + m), t, e * len * 0.95, song.lead, song.leadVol, bgmGain);
+      }
+      const bassRoot = song.root - 24 + song.chords[bar];
+      if (k % 2 === 0 || song.drums >= 1) {
+        const up = (k % 4 === 2) ? 12 : (k % 4 === 3 ? 7 : 0);
+        noteAt(mtof(bassRoot + up), t, e * 0.9, 'triangle', song.bassVol, bgmGain);
+      }
+      if (k === 0 || k === 4) drumAt('kick', t, song.drums, bgmGain);
+      if (k % 2 === 1) drumAt('hat', t, song.drums, bgmGain);
+    }
+    function schedule() {
+      if (!ac || !song) return;
+      while (bgmNext < ac.currentTime + 0.15) {
+        playStep(bgmStep, bgmNext);
+        bgmNext += 60 / song.bpm / 2;
+        bgmStep = (bgmStep + 1) % 32;
+      }
+    }
+    function stopBgm() {
+      if (bgmTimer) { clearInterval(bgmTimer); bgmTimer = null; }
+      if (bgmGain && ac) {
+        const g = bgmGain;
+        g.gain.setTargetAtTime(0.0001, ac.currentTime, 0.05);
+        setTimeout(() => g.disconnect(), 400);
+      }
+      bgmGain = null; song = null;
+    }
+    function startBgm(id) {
+      stopBgm();
+      if (!ac || !opts.sound || !SONGS[id]) return;
+      song = SONGS[id];
+      bgmGain = ac.createGain();
+      bgmGain.gain.value = 0.9;
+      bgmGain.connect(master);
+      bgmStep = 0;
+      bgmNext = ac.currentTime + 0.08;
+      schedule();
+      bgmTimer = setInterval(schedule, 25);
+    }
+
+    return {
+      unlock,
+      bgm: startBgm,
+      stopBgm,
+      step: () => noise(0.05, { vol: 0.05, freq: 700 + Math.random() * 200, type: 'lowpass' }),
+      move: () => noise(0.12, { vol: 0.09, freq: 600, to: 2400, type: 'bandpass', q: 1.2, attack: 0.02 }),
+      warn: () => { tone(1046, 0.06, { type: 'square', vol: 0.035 }); tone(1046, 0.06, { type: 'square', vol: 0.035, at: 0.09 }); },
+      near: () => { tone(988, 0.12, { type: 'triangle', vol: 0.12 }); tone(1480, 0.2, { type: 'triangle', vol: 0.12, at: 0.08 }); },
+      crash: () => {
+        stopBgm();
+        noise(0.35, { vol: 0.5, freq: 900, to: 120, type: 'lowpass' });
+        tone(150, 0.3, { type: 'sine', vol: 0.4, to: 45 });
+        // ミスのジングル: しょんぼり下がっていく
+        const miss = [[76, 0.18], [75, 0.18], [74, 0.18], [73, 0.7]];
+        let at = 0.4;
+        for (const [m, d] of miss) {
+          tone(mtof(m), d, { type: 'square', vol: 0.05, at });
+          tone(mtof(m - 12), d, { type: 'triangle', vol: 0.09, at });
+          at += d === 0.7 ? 0 : 0.2;
+        }
+        tone(mtof(49), 0.8, { type: 'triangle', vol: 0.1, at: at, to: mtof(42) });
+      },
+      clear: () => {
+        stopBgm();
+        // クリアのファンファーレ
+        const fan = [[67, 0.1], [72, 0.1], [76, 0.1], [79, 0.3], [76, 0.12], [79, 0.9]];
+        let at = 0;
+        for (const [m, d] of fan) {
+          tone(mtof(m), d + 0.05, { type: 'square', vol: 0.05, at });
+          tone(mtof(m), d + 0.05, { type: 'triangle', vol: 0.12, at });
+          at += d;
+        }
+        const end = at - 0.9;
+        for (const m of [60, 64, 67, 72]) tone(mtof(m), 1.1, { type: 'triangle', vol: 0.07, at: end });
+        tone(mtof(48), 1.1, { type: 'triangle', vol: 0.12, at: end });
+        tone(mtof(84), 0.9, { type: 'sine', vol: 0.05, at: end + 0.1 });
+      },
+      train: () => {
+        noise(2.6, { vol: 0.16, freq: 160, to: 380, type: 'lowpass', attack: 0.9 });
+        for (let i = 0; i < 8; i++) noise(0.06, { vol: 0.09, freq: 500, type: 'bandpass', q: 2, at: 0.5 + i * 0.22 });
+      },
+      click: () => tone(720, 0.05, { type: 'triangle', vol: 0.08 }),
+      start: () => { tone(587, 0.08, { type: 'triangle', vol: 0.12 }); tone(880, 0.12, { type: 'triangle', vol: 0.12, at: 0.08 }); },
+    };
+  })();
+  addEventListener('pointerdown', () => sfx.unlock(), true);
+  addEventListener('keydown', () => sfx.unlock(), true);
+  soundBtn.addEventListener('click', () => { sfx.unlock(); toggleSound(); sfx.click(); soundBtn.blur(); });
+
+  // ---------- stages ----------
+  const STAGES = [
+    {
+      id: 'school', lv: 1, name: '通学路', sub: 'ランドセルの子どもたち', color: '#2f7f6f',
+      baseSpeed: 120, maxSpeed: 250, accel: 3,
+      spawnBase: 1.15, spawnMin: 0.55, spawnRamp: 0.008,
+      attentive: [0.6, 0.9],
+      look() {
+        const L = baseLook();
+        const r = Math.random();
+        if (r < 0.72) {
+          L.kind = 'kid'; L.small = true;
+          L.coat = pick(KID_COATS);
+          L.randoseru = pick(RANDOSERU);
+          L.shoe = pick(['#f2f0ea', '#4aa3d9', '#e86a5a', '#1f1f24']);
+        } else if (r < 0.8) {
+          L.kind = 'phone';
+        } else if (r < 0.9) {
+          L.kind = 'bag';
+        }
+        return L;
+      },
+    },
+    {
+      id: 'shop', lv: 2, name: '商店街', sub: '買い物客と傘の人', color: '#d98a2b',
+      baseSpeed: 150, maxSpeed: 320, accel: 5,
+      spawnBase: 0.95, spawnMin: 0.4, spawnRamp: 0.011,
+      attentive: [0.55, 0.9],
+      look() {
+        const L = baseLook();
+        const r = Math.random();
+        L.kind = r < 0.2 ? 'phone' : r < 0.32 ? 'umbrella' : r < 0.62 ? 'bag' : 'plain';
+        return L;
+      },
+    },
+    {
+      id: 'station', lv: 3, name: '駅のホーム', sub: '急ぐ通勤客とスーツケース', color: '#c8322f',
+      baseSpeed: 180, maxSpeed: 380, accel: 6,
+      spawnBase: 0.78, spawnMin: 0.3, spawnRamp: 0.013,
+      attentive: [0.45, 0.8],
+      look() {
+        const L = baseLook();
+        L.coat = pick(SUITS);
+        const r = Math.random();
+        if (r < 0.35) L.kind = 'phone';
+        else if (r < 0.55) { L.kind = 'suitcase'; L.case = pick(['#4a6fa5', '#c8322f', '#3d4a3f', '#c9a86a', '#8a8f99']); }
+        else if (r < 0.75) { L.kind = 'bag'; L.bag = pick(['#1f1f24', '#3b2f28']); }
+        return L;
+      },
+    },
+  ];
+  let stageIdx = 0;
+  let S = STAGES[0];
+
+  const bestKey = st => 'surechigai-best-' + st.id;
+  const best = {};
+  for (const st of STAGES) {
+    best[st.id] = 0;
+    try { best[st.id] = Number(localStorage.getItem(bestKey(st))) || 0; } catch (e) {}
+  }
+  const saveBest = st => { try { localStorage.setItem(bestKey(st), String(best[st.id])); } catch (e) {} };
+  // 以前のタイム記録は使わないので消しておく
+  for (const st of STAGES) { try { localStorage.removeItem('surechigai-time-' + st.id); } catch (e) {} }
+  const bestText = st => best[st.id] + ' m';
+  try { const s = Number(localStorage.getItem('surechigai-stage')); if (s >= 0 && s < 3) stageIdx = s; } catch (e) {}
+  S = STAGES[stageIdx];
+
+  // ---------- stage menu ----------
+  const stageList = document.getElementById('stageList');
+  const stageBtns = STAGES.map((st, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'stage-btn';
+    b.id = 'stage-' + st.id;
+    b.innerHTML = `<span class="lv" style="background:${st.color}">Lv${st.lv}</span>
+      <span class="nm"><b>${st.name}</b><small>${st.sub}</small></span>
+      <span class="bs">ベスト<b></b></span>`;
+    b.addEventListener('click', () => start(i));
+    b.addEventListener('pointerenter', () => preview(i));
+    b.addEventListener('focus', () => preview(i));
+    stageList.appendChild(b);
+    return b;
+  });
+  function refreshMenu() {
+    stageBtns.forEach((b, i) => {
+      b.querySelector('.bs b').textContent = bestText(STAGES[i]);
+      b.classList.toggle('sel', i === stageIdx);
+    });
+  }
+  function preview(i) {
+    if (state !== 'title') return;
+    if (i !== stageIdx) { stageIdx = i; S = STAGES[i]; peds = []; train = null; }
+    refreshMenu();
+  }
+
+  // ---------- sizing ----------
+  let scale = 1;
+  function fit() {
+    const cs = getComputedStyle(app);
+    const aw = app.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const ah = app.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    let w = Math.min(aw, ah * 9 / 16);
+    w = Math.max(200, w);
+    const h = w * 16 / 9;
+    stage.style.width = w + 'px';
+    stage.style.height = h + 'px';
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    scale = cv.width / W;
+  }
+  addEventListener('resize', fit);
+  fit();
+
+  // ---------- state ----------
+  let state = 'title';
+  let scroll = 0, speed = 60, t = 0;
+  let peds = [], popups = [];
+  let spawnT = 0, passes = 0, dist = 0;
+  let crashT = 0, shake = 0;
+  let bonus = 0, nears = 0, clearT = 0;
+  let train = null, trainT = 4;
+  const player = { lane: 1, x: LANES[1], y: PY, phase: 0 };
+
+  function reset() {
+    scroll = 0; t = 0; speed = S.baseSpeed;
+    peds = []; popups = [];
+    spawnT = 0.8; passes = 0; dist = 0;
+    crashT = 0; shake = 0;
+    train = null; trainT = rand(3, 6);
+    player.lane = 1; player.x = LANES[1]; player.y = PY; player.phase = 0;
+    bonus = 0; nears = 0; clearT = 0;
+  }
+
+  function lanesNear(y, exclude, range) {
+    const s = new Set();
+    for (const q of peds) {
+      if (q === exclude) continue;
+      if (Math.abs(q.y - y) < range) {
+        s.add(q.lane);
+        if (q.pending != null) s.add(q.pending);
+      }
+    }
+    return s;
+  }
+
+  function trySpawn() {
+    const order = [0, 1, 2].sort(() => Math.random() - 0.5);
+    const y = -30;
+    for (const lane of order) {
+      if (peds.some(q => q.lane === lane && q.y < 70)) continue;
+      const band = lanesNear(y, null, 120);
+      band.add(lane);
+      if (band.size >= 3) continue;
+      const look = S.look();
+      peds.push({
+        lane, x: LANES[lane], y, look,
+        walk: look.small ? rand(15, 45) : rand(25, 60),
+        phase: Math.random() * 6,
+        shift: rand(5, 8),
+        // スマホを見ている人はほとんど気づかない。子どもは気まぐれ
+        attentive: look.kind === 'phone' ? 0.12 : look.kind === 'kid' ? rand(0.35, 0.75) : rand(S.attentive[0], S.attentive[1]),
+        noticeDist: rand(200, 330),
+        noticed: false,
+        cooldown: 0, dodges: 0,
+        warn: 0, pending: null, passed: false,
+      });
+      return;
+    }
+  }
+
+  function canMove(p, lane) {
+    if (lane < 0 || lane > 2) return false;
+    if (peds.some(q => q !== p && (q.lane === lane || q.pending === lane) && Math.abs(q.y - p.y) < 85)) return false;
+    const band = lanesNear(p.y, p, 120);
+    band.add(lane);
+    return band.size < 3;
+  }
+
+  // プレイヤーと同じレーンにいる人だけが、左右どちらかへランダムによける
+  function planDodge(p, delay) {
+    if (p.warn > 0 || p.cooldown > 0 || p.dodges >= 3) return;
+    if (p.lane !== player.lane) return;
+    const dirs = p.lane === 0 ? [1] : p.lane === 2 ? [-1] : (Math.random() < 0.5 ? [-1, 1] : [1, -1]);
+    const target = dirs.map(d => p.lane + d).find(l => canMove(p, l));
+    if (target == null) return;
+    p.pending = target;
+    p.warn = delay;
+    if (opts.warn && state === 'play') sfx.warn();
+  }
+
+  // 足音: 足が入れ替わるたびに鳴らす
+  function stepPhase(d) {
+    const before = Math.sin(player.phase) >= 0;
+    player.phase += d;
+    if ((Math.sin(player.phase) >= 0) !== before) sfx.step();
+  }
+
+  function move(d) {
+    if (state !== 'play') return;
+    const next = Math.max(0, Math.min(2, player.lane + d));
+    if (next === player.lane) return;
+    player.lane = next;
+    sfx.move();
+    // 先に動いたプレイヤーに、前方の同じレーンの人が反応する
+    for (const p of peds) {
+      const gap = PY - p.y;
+      if (p.lane !== next || gap < MIN_REACT_GAP || gap > 400) continue;
+      p.noticed = true;
+      if (Math.random() < p.attentive * 0.85) planDodge(p, rand(0.2, 0.4));
+    }
+  }
+
+  function updateTrain(dt, scrollSpeed) {
+    if (S.id !== 'station') return;
+    if (train) {
+      train.y += (train.v + scrollSpeed) * dt;
+      if (train.y > H + 40) { train = null; trainT = rand(5, 10); }
+    } else {
+      trainT -= dt;
+      if (trainT <= 0) {
+        train = { y: -760, len: 720, v: rand(420, 620) };
+        if (state === 'play' || state === 'clear') sfx.train();
+      }
+    }
+  }
+
+  function update(dt) {
+    if (state === 'title') {
+      scroll += 60 * dt;
+      player.phase += dt * 7;
+      updateTrain(dt, 60);
+      return;
+    }
+    if (state === 'crash') {
+      crashT += dt;
+      shake = Math.max(0, shake - dt * 30);
+      for (const pp of popups) { pp.y -= 20 * dt; pp.life -= dt; }
+      if (crashT > 0.7) showOver();
+      return;
+    }
+    if (state === 'clear') { updateClear(dt); return; }
+    if (state !== 'play') return;
+
+    t += dt;
+    speed = Math.min(S.maxSpeed, S.baseSpeed + t * S.accel);
+    scroll += speed * dt;
+    dist = Math.min(GOAL_M, Math.floor(scroll / PX_PER_M) + bonus);
+    updateTrain(dt, speed);
+
+    player.x += (LANES[player.lane] - player.x) * Math.min(1, dt * 16);
+    stepPhase(dt * (6 + speed / 45));
+
+    spawnT -= dt;
+    if (spawnT <= 0) {
+      trySpawn();
+      const base = Math.max(S.spawnMin, S.spawnBase - t * S.spawnRamp);
+      spawnT = base * rand(0.8, 1.3);
+    }
+
+    for (const p of peds) {
+      p.y += (speed + p.walk) * dt;
+      p.phase += dt * (5 + p.walk / 12);
+      p.x += (LANES[p.lane] - p.x) * Math.min(1, dt * p.shift);
+      if (p.cooldown > 0) p.cooldown -= dt;
+
+      const gap = PY - p.y;
+
+      // 正面にプレイヤーがいると気づいたら、よけるかどうか決める
+      if (p.lane === player.lane && !p.noticed && gap < p.noticeDist) {
+        p.noticed = true;
+        if (gap > MIN_REACT_GAP && Math.random() < p.attentive) {
+          planDodge(p, rand(0.15, 0.35));
+        }
+      }
+
+      if (p.warn > 0) {
+        p.warn -= dt;
+        if (p.warn <= 0) {
+          const target = p.pending;
+          p.pending = null;
+          // 相手が先によけていたら、見てやめる人もいれば、そのまま踏み出す人もいる
+          const stillFacing = p.lane === player.lane;
+          const go = stillFacing || Math.random() < 0.45;
+          if (go && canMove(p, target)) {
+            p.lane = target;
+            p.dodges++;
+            p.cooldown = 0.45;
+          }
+        }
+      }
+
+      const r = p.look.small ? 20 : 23;
+      const dx = (p.x - player.x) / r, dy = (p.y - PY) / 17;
+      if (dx * dx + dy * dy < 1) { crash(p); return; }
+
+      if (!p.passed && p.y > PY + 22) {
+        p.passed = true;
+        passes++;
+        if (Math.abs(p.x - player.x) < 58) {
+          nears++;
+          sfx.near();
+          popups.push({ text: 'すれすれ！', x: Math.max(70, Math.min(290, (p.x + player.x) / 2)), y: PY - 34, life: 0.9 });
+        }
+      }
+    }
+    peds = peds.filter(p => p.y < H + 50);
+    for (const pp of popups) { pp.y -= 30 * dt; pp.life -= dt; }
+    popups = popups.filter(pp => pp.life > 0);
+
+    dist = Math.min(GOAL_M, Math.floor(scroll / PX_PER_M) + bonus);
+    hDist.textContent = dist + ' m';
+    hPass.textContent = passes;
+    hBar.style.width = (dist / GOAL_M * 100) + '%';
+    if (dist >= GOAL_M) startClear();
+  }
+
+  function startClear() {
+    pauseBtn.hidden = true;
+    sfx.clear();
+    state = 'clear';
+    clearT = 0;
+    popups.push({ text: 'クリア！', x: 180, y: PY - 70, life: 1.6, big: true });
+    // 前方で同じレーンにいる人は道をあける
+    for (const p of peds) {
+      p.warn = 0; p.pending = null;
+      if (p.y < PY && p.lane === player.lane) p.lane = player.lane === 1 ? pick([0, 2]) : 1;
+    }
+  }
+
+  function updateClear(dt) {
+    clearT += dt;
+    speed = Math.max(0, speed - speed * Math.min(1, dt * 4));
+    scroll += speed * dt;
+    updateTrain(dt, speed);
+    player.x += (LANES[player.lane] - player.x) * Math.min(1, dt * 16);
+    player.y -= Math.min(220, 60 + clearT * 160) * dt;
+    stepPhase(dt * 11);
+    for (const p of peds) {
+      p.y += (speed + p.walk) * dt;
+      p.phase += dt * (5 + p.walk / 12);
+      p.x += (LANES[p.lane] - p.x) * Math.min(1, dt * p.shift);
+    }
+    peds = peds.filter(p => p.y < H + 50);
+    for (const pp of popups) { pp.y -= 20 * dt; pp.life -= dt; }
+    popups = popups.filter(pp => pp.life > 0);
+    if (player.y < -40) showClear();
+  }
+
+  function showClear() {
+    state = 'over';
+    const isNew = best[S.id] < GOAL_M;
+    if (isNew) { best[S.id] = GOAL_M; saveBest(S); }
+    const h = document.getElementById('rTitle');
+    h.textContent = 'クリア！';
+    h.classList.add('clear');
+    document.getElementById('rStage').textContent = `Lv${S.lv} ${S.name}`;
+    document.getElementById('rLabel').textContent = '歩いた距離';
+    document.getElementById('rDist').textContent = GOAL_M + ' m';
+    document.getElementById('rPass').textContent = passes;
+    document.getElementById('rRecord').textContent =
+      (nears ? `すれすれ ${nears} 回  ` : '') + (isNew ? 'ベスト記録を更新！' : `ベスト ${bestText(S)}`);
+    hud.hidden = true;
+    overView.hidden = false;
+    document.getElementById('retryBtn').focus({ preventScroll: true });
+  }
+
+  function crash(p) {
+    pauseBtn.hidden = true;
+    sfx.crash();
+    state = 'crash';
+    crashT = 0;
+    shake = reduceMotion ? 0 : 8;
+    popups.push({ text: 'ドン！', x: (p.x + player.x) / 2, y: (p.y + PY) / 2 - 10, life: 1 });
+  }
+
+  function showOver() {
+    state = 'over';
+    const isNew = dist > best[S.id];
+    if (isNew) { best[S.id] = dist; saveBest(S); }
+    const h = document.getElementById('rTitle');
+    h.textContent = 'ぶつかった！';
+    h.classList.remove('clear');
+    document.getElementById('rStage').textContent = `Lv${S.lv} ${S.name}`;
+    document.getElementById('rLabel').textContent = '歩いた距離';
+    document.getElementById('rDist').textContent = dist + ' m';
+    document.getElementById('rPass').textContent = passes;
+    document.getElementById('rRecord').textContent = (nears ? `すれすれ ${nears} 回  ` : '') + (isNew ? 'ベスト記録を更新！' : `ベスト ${bestText(S)}`);
+    overView.hidden = false;
+    document.getElementById('retryBtn').focus({ preventScroll: true });
+  }
+
+  function start(i = stageIdx) {
+    sfx.unlock();
+    sfx.start();
+    sfx.bgm(S.id);
+    stageIdx = i;
+    S = STAGES[i];
+    try { localStorage.setItem('surechigai-stage', String(i)); } catch (e) {}
+    reset();
+    state = 'play';
+    titleView.hidden = true;
+    overView.hidden = true;
+    pauseView.hidden = true;
+    pauseBtn.hidden = false;
+    hud.hidden = false;
+    hBestLabel.textContent = S.name + 'ベスト';
+    hBest.textContent = bestText(S);
+    hDist.textContent = '0 m';
+    hBar.style.width = '0%';
+    hPass.textContent = '0';
+    document.activeElement?.blur?.();
+  }
+
+  const pauseView = document.getElementById('pauseView');
+  const pauseBtn = document.getElementById('pauseBtn');
+  function pauseGame() {
+    if (state !== 'play') return;
+    state = 'paused';
+    sfx.stopBgm();
+    sfx.click();
+    document.getElementById('pStage').textContent = `Lv${S.lv} ${S.name}`;
+    pauseView.hidden = false;
+    pauseBtn.hidden = true;
+    document.getElementById('resumeBtn').focus({ preventScroll: true });
+  }
+  function resumeGame() {
+    if (state !== 'paused') return;
+    state = 'play';
+    sfx.click();
+    sfx.bgm(S.id);
+    pauseView.hidden = true;
+    pauseBtn.hidden = false;
+    last = performance.now();
+    document.activeElement?.blur?.();
+  }
+
+  function toMenu() {
+    sfx.stopBgm();
+    state = 'title';
+    overView.hidden = true;
+    pauseView.hidden = true;
+    pauseBtn.hidden = true;
+    train = null;
+    hud.hidden = true;
+    titleView.hidden = false;
+    peds = []; popups = [];
+    player.lane = 1; player.x = LANES[1];
+    refreshMenu();
+    stageBtns[stageIdx].focus({ preventScroll: true });
+  }
+
+  // ---------- drawing: shared walkway ----------
+  function drawWalkway() {
+    // 3 lanes of grey square tiles
+    const T = 40;
+    const rowBase = Math.floor(scroll / T);
+    const tOff = scroll % T;
+    for (let i = -1; i < H / T + 1; i++) {
+      const y = i * T + tOff;
+      const row = rowBase - i;
+      for (let c = 0; c < 6; c++) {
+        const v = hash(row, c);
+        const g = 182 + Math.floor(v * 12);
+        ctx.fillStyle = `rgb(${g},${g + 1},${g + 4})`;
+        ctx.fillRect(60 + c * T, y, T, T);
+      }
+    }
+    ctx.fillStyle = 'rgba(70,74,82,0.35)';
+    for (let i = -1; i < H / T + 1; i++) ctx.fillRect(60, i * T + tOff, 240, 1);
+    for (const c of [1, 3, 5]) ctx.fillRect(60 + c * T, 0, 1, H);
+
+    // lane dividers
+    if (opts.lines) {
+      for (const dx of [140, 220]) {
+        ctx.fillStyle = 'rgba(0,0,0,0.12)';
+        ctx.fillRect(dx - 1, 0, 3, H);
+        ctx.fillStyle = '#f7f7f4';
+        ctx.fillRect(dx - 1.5, 0, 3, H);
+      }
+    }
+
+    // 自分のレーン: 前方がほんのり明るくなる
+    if (opts.lane && state !== 'title') {
+      const hl = ctx.createLinearGradient(0, PY + 40, 0, 0);
+      hl.addColorStop(0, 'rgba(255,248,220,0.32)');
+      hl.addColorStop(1, 'rgba(255,248,220,0)');
+      ctx.fillStyle = hl;
+      ctx.fillRect(player.x - 37, 0, 74, PY + 40);
+    }
+  }
+
+  // scrolling helper: calls fn(y, index) for each segment of length L
+  function eachSeg(L, fn) {
+    const base = Math.floor(scroll / L);
+    const off = scroll % L;
+    for (let i = -1; i < H / L + 1; i++) fn(i * L + off, base - i);
+  }
+
+  // ---------- stage 1: 通学路 ----------
+  function drawSchool() {
+    // road with green belt (グリーンベルト)
+    ctx.fillStyle = '#3b4250';
+    ctx.fillRect(0, 0, 50, H);
+    ctx.fillStyle = '#e8e4dc';
+    eachSeg(70, y => ctx.fillRect(10, y, 3, 36));
+    ctx.fillStyle = '#3f9b5a';
+    ctx.fillRect(32, 0, 18, H);
+    ctx.fillStyle = '#f2f0ea';
+    ctx.fillRect(30, 0, 2, H);
+    // curb
+    ctx.fillStyle = '#d6d6d2';
+    ctx.fillRect(50, 0, 10, H);
+    ctx.fillStyle = '#b4b5b2';
+    eachSeg(32, y => ctx.fillRect(50, y, 10, 1.5));
+
+    // right side: block wall and houses
+    eachSeg(200, (y, b) => {
+      const yard = hash(b, 5) < 0.5;
+      ctx.fillStyle = yard ? '#86b36a' : '#c9c2b4';
+      ctx.fillRect(312, y, 48, 200);
+      if (yard) {
+        ctx.fillStyle = '#5f9a4f';
+        for (let k = 0; k < 4; k++) ell(334 + (k % 2) * 12, y + 30 + k * 44, 13, 13);
+      } else {
+        ctx.fillStyle = ROOFS[Math.floor(hash(b, 9) * ROOFS.length)];
+        ctx.fillRect(322, y + 20, 38, 160);
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        for (let k = 0; k < 160; k += 10) ctx.fillRect(322, y + 20 + k, 38, 1);
+      }
+    });
+    // ブロック塀
+    ctx.fillStyle = '#bdb7ab';
+    ctx.fillRect(300, 0, 12, H);
+    ctx.fillStyle = 'rgba(80,76,70,0.35)';
+    eachSeg(20, y => ctx.fillRect(300, y, 12, 1));
+    // 電柱 + 通学路の標識
+    eachSeg(260, (y, b) => {
+      ctx.fillStyle = 'rgba(30,30,40,0.2)';
+      ell(304, y + 5, 9, 6);
+      ctx.fillStyle = '#9a958c';
+      ell(301, y, 7, 7);
+      ctx.fillStyle = '#b8b3a8';
+      ell(300, y - 1, 3.5, 3.5);
+      if (hash(b, 2) < 0.6) {
+        ctx.save();
+        ctx.translate(55, y + 120);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = '#f2c14e';
+        ctx.fillRect(-6, -6, 12, 12);
+        ctx.strokeStyle = '#232733';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-6, -6, 12, 12);
+        ctx.restore();
+      }
+    });
+  }
+
+  // ---------- stage 2: 商店街 ----------
+  function drawShopRow(x0, side) {
+    // side: 1 = shops on the right (awning on their left edge), -1 = on the left
+    eachSeg(180, (y, b) => {
+      const aw = AWNINGS[Math.floor(hash(b, 7 + side) * AWNINGS.length)];
+      const wall = WALLS[Math.floor(hash(b, 3 + side) * WALLS.length)];
+      ctx.fillStyle = wall;
+      ctx.fillRect(x0, y, 60, 180);
+      const winX = side > 0 ? x0 + 22 : x0 + 8;
+      ctx.fillStyle = '#8fa6b6';
+      ctx.fillRect(winX, y + 18, 30, 60);
+      ctx.fillRect(winX, y + 100, 30, 60);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(winX + 2, y + 20, 4, 56);
+      ctx.fillRect(winX + 2, y + 102, 4, 56);
+      const awX = side > 0 ? x0 : x0 + 44;
+      for (let k = 0; k < 180; k += 12) {
+        ctx.fillStyle = (k / 12) % 2 === 0 ? aw : '#f3efe6';
+        ctx.fillRect(awX, y + k, 16, 12);
+      }
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(x0, y, 60, 3);
+      // のぼり旗
+      if (hash(b, 11 + side) < 0.55) {
+        const fx = side > 0 ? x0 - 2 : x0 + 62;
+        ctx.fillStyle = 'rgba(30,30,40,0.2)';
+        ell(fx + 2, y + 92, 6, 4);
+        ctx.fillStyle = ['#d9573b', '#2f7f6f', '#e2a93b'][Math.floor(hash(b, 13) * 3)];
+        ctx.fillRect(fx - 2, y + 70, 4, 22);
+      }
+    });
+  }
+  function drawShop() {
+    drawShopRow(0, -1);
+    drawShopRow(300, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.fillRect(296, 0, 4, H);
+    ctx.fillRect(60, 0, 4, H);
+    // アーケードの梁
+    eachSeg(120, y => {
+      ctx.fillStyle = 'rgba(40,44,54,0.10)';
+      ctx.fillRect(0, y, W, 8);
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      ctx.fillRect(0, y + 8, W, 2);
+    });
+  }
+
+  // ---------- stage 3: 駅のホーム ----------
+  function drawStation() {
+    // tracks
+    ctx.fillStyle = '#6b665e';
+    ctx.fillRect(0, 0, 42, H);
+    eachSeg(8, (y, b) => {
+      for (let k = 0; k < 4; k++) {
+        const v = hash(b, k + 40);
+        ctx.fillStyle = v < 0.5 ? '#7a746b' : '#5a554e';
+        ctx.fillRect(v * 40, y + (k * 2), 2.5, 2);
+      }
+    });
+    ctx.fillStyle = '#4e463e';
+    eachSeg(16, y => ctx.fillRect(2, y, 38, 6));
+    ctx.fillStyle = '#b9bcc2';
+    ctx.fillRect(8, 0, 3, H);
+    ctx.fillRect(31, 0, 3, H);
+
+    if (train) {
+      const ty = train.y;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.fillRect(4, ty + 4, 38, train.len);
+      for (let c = 0; c < train.len; c += 180) {
+        const ch = Math.min(176, train.len - c);
+        ctx.fillStyle = '#e8ecef';
+        ctx.fillRect(2, ty + c, 38, ch);
+        ctx.fillStyle = '#2f9b5a';
+        ctx.fillRect(2, ty + c, 4, ch);
+        ctx.fillRect(36, ty + c, 4, ch);
+        ctx.fillStyle = '#9aa4ad';
+        ctx.fillRect(10, ty + c + 20, 22, ch - 40);
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillRect(10, ty + c + 20, 22, 2);
+      }
+    }
+
+    // platform edge: white concrete + yellow tactile strip (警告ブロック)
+    ctx.fillStyle = '#e6e6e2';
+    ctx.fillRect(42, 0, 6, H);
+    ctx.fillStyle = '#e8b930';
+    ctx.fillRect(48, 0, 12, H);
+    ctx.fillStyle = '#f6cf55';
+    eachSeg(12, y => {
+      ell(51, y + 3, 1.6, 1.6); ell(57, y + 3, 1.6, 1.6);
+      ell(54, y + 9, 1.6, 1.6);
+    });
+
+    // right side: wall, pillars, benches, vending machines
+    ctx.fillStyle = '#cfd2d7';
+    ctx.fillRect(300, 0, 60, H);
+    eachSeg(240, (y, b) => {
+      // pillar
+      ctx.fillStyle = 'rgba(30,30,40,0.18)';
+      ctx.fillRect(298, y + 4, 24, 24);
+      ctx.fillStyle = '#9da2ab';
+      ctx.fillRect(300, y, 22, 22);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(300, y, 22, 3);
+      const kind = hash(b, 21);
+      if (kind < 0.45) {
+        // bench
+        ctx.fillStyle = '#4a6fa5';
+        for (let k = 0; k < 4; k++) ctx.fillRect(308, y + 50 + k * 24, 18, 20);
+        ctx.fillStyle = '#6f7680';
+        ctx.fillRect(326, y + 48, 3, 100);
+      } else if (kind < 0.8) {
+        // vending machines
+        ctx.fillStyle = '#c8322f';
+        ctx.fillRect(330, y + 50, 26, 40);
+        ctx.fillStyle = '#2f6fb5';
+        ctx.fillRect(330, y + 94, 26, 40);
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillRect(330, y + 54, 4, 32);
+        ctx.fillRect(330, y + 98, 4, 32);
+      } else {
+        // station name board
+        ctx.fillStyle = '#f6f6f2';
+        ctx.fillRect(330, y + 60, 24, 90);
+        ctx.fillStyle = '#2f9b5a';
+        ctx.fillRect(330, y + 100, 24, 8);
+      }
+    });
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.fillRect(296, 0, 4, H);
+  }
+
+  function drawBackground() {
+    drawWalkway();
+    if (state === 'play' || state === 'clear' || state === 'crash' || state === 'over') drawGoal();
+    if (S.id === 'school') drawSchool();
+    else if (S.id === 'shop') drawShop();
+    else drawStation();
+  }
+
+  // ゴールライン(残り距離に合わせて前方に現れる)
+  function drawGoal() {
+    const walked = scroll / PX_PER_M + bonus;
+    const gy = PY - 17 - (GOAL_M - walked) * PX_PER_M;
+    if (gy < -40 || gy > H + 40) return;
+    const sq = 10;
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 24; c++) {
+        ctx.fillStyle = (r + c) % 2 ? '#232733' : '#f6f2e8';
+        ctx.fillRect(60 + c * sq, gy - sq * 2 + r * sq, sq, sq);
+      }
+    }
+    ctx.textAlign = 'center';
+    ctx.font = '400 22px "Dela Gothic One", sans-serif';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#232733';
+    ctx.strokeText('GOAL 500m', 180, gy - 30);
+    ctx.fillStyle = '#f2c14e';
+    ctx.fillText('GOAL 500m', 180, gy - 30);
+  }
+
+  // ---------- drawing: people ----------
+  function drawPerson(x, y, dir, phase, look, isPlayer) {
+    const s = Math.sin(phase);
+    ctx.save();
+    ctx.translate(x, y);
+    if (look.small) ctx.scale(0.82, 0.82);
+
+    ctx.fillStyle = 'rgba(40,36,30,0.2)';
+    ell(3, 5, 17, 12);
+
+    // suitcase trails behind
+    if (look.kind === 'suitcase') {
+      ctx.strokeStyle = '#2b2b30';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(14, -dir * 16); ctx.stroke();
+      ctx.fillStyle = 'rgba(30,30,40,0.2)';
+      ctx.fillRect(9, -dir * 16 - (dir > 0 ? 18 : 0) + 3, 14, 18);
+      ctx.fillStyle = look.case;
+      ctx.fillRect(7, -dir * 16 - (dir > 0 ? 18 : 0), 14, 18);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillRect(9, -dir * 16 - (dir > 0 ? 18 : 0) + 2, 2, 14);
+    }
+
+    // feet
+    ctx.fillStyle = look.shoe;
+    ell(-5, dir * s * 7, 3.6, 5);
+    ell(5, -dir * s * 7, 3.6, 5);
+
+    if (look.kind === 'umbrella') {
+      ctx.fillStyle = look.umb;
+      ell(0, 0, 19, 19);
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1;
+      for (let k = 0; k < 8; k++) {
+        const a = k * Math.PI / 4;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 19, Math.sin(a) * 19); ctx.stroke();
+      }
+      ctx.fillStyle = '#2e3445';
+      ell(0, 0, 2, 2);
+      ctx.restore();
+      return;
+    }
+
+    // arms swing opposite to legs
+    const isPhone = look.kind === 'phone';
+    const armSwing = isPhone ? 0 : s * 5;
+    ctx.fillStyle = look.coat;
+    ell(-13, -dir * armSwing + (isPhone ? dir * 4 : 0), 3.8, 5.5);
+    ell(13, dir * armSwing + (isPhone ? dir * 4 : 0), 3.8, 5.5);
+    ctx.fillStyle = look.skin;
+    if (isPhone) {
+      ell(-5, dir * 10, 2.6, 2.6);
+      ell(5, dir * 10, 2.6, 2.6);
+    } else {
+      ell(-13, -dir * armSwing + dir * 5, 2.6, 2.6);
+      ell(13, dir * armSwing + dir * 5, 2.6, 2.6);
+    }
+
+    // ランドセル (behind the body)
+    if (look.kind === 'kid') {
+      ctx.fillStyle = look.randoseru;
+      ctx.fillRect(-9, dir > 0 ? -13 : 4, 18, 10);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillRect(-9, dir > 0 ? -13 : 4, 18, 2);
+    }
+
+    // body
+    ctx.fillStyle = look.coat;
+    ell(0, 0, 13, 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ell(0, -dir * 2.5, 12, 4);
+
+    if (look.kind === 'bag' || isPlayer) {
+      ctx.fillStyle = look.bag;
+      if (isPlayer) ctx.fillRect(-8, 3, 16, 8);
+      else ctx.fillRect(look.bagSide * 15 - 3, -5, 7, 11);
+    }
+
+    if (isPhone) {
+      ctx.fillStyle = '#1f1f24';
+      ctx.fillRect(-3.5, dir * 10 - 2.5, 7, 5);
+      ctx.fillStyle = '#9fd3ff';
+      ctx.fillRect(-2.5, dir * 10 - 1.5, 5, 3);
+    }
+
+    // head
+    ctx.fillStyle = look.hair;
+    ell(0, dir * 1, 7.5, 7.5);
+    if (dir > 0 && look.kind !== 'kid') {
+      ctx.fillStyle = look.skin;
+      ell(0, 5, 5.2, 3.4);
+    }
+    if (look.kind === 'kid') {
+      // 黄色い通学帽
+      ctx.fillStyle = '#f5d33a';
+      ell(0, dir * 6, 6.5, 3.4);
+      ell(0, 0, 7.8, 7.8);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ell(-2, -2, 2, 2);
+    }
+    if (isPlayer) {
+      ctx.fillStyle = look.cap;
+      ell(0, 0, 7.8, 7.8);
+      ell(0, -7, 5.5, 3.2);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ell(-2, 2, 2, 2);
+    }
+    ctx.restore();
+  }
+
+  function drawWarn(p) {
+    const side = p.pending > p.lane ? 1 : -1;
+    const blink = Math.floor(p.warn * 16) % 2 === 0;
+    if (!blink) return;
+    const x = p.x + side * 29, y = p.y - 2;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(side, 1);
+    ctx.beginPath();
+    ctx.moveTo(-7, -11); ctx.lineTo(7, 0); ctx.lineTo(-7, 11); ctx.lineTo(-2, 0); ctx.closePath();
+    ctx.fillStyle = '#f2c14e';
+    ctx.strokeStyle = '#232733';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    if (shake > 0) ctx.translate(rand(-shake, shake), rand(-shake, shake));
+    drawBackground();
+
+    for (const p of peds) drawPerson(p.x, p.y, 1, p.phase, p.look, false);
+    if (opts.warn) for (const p of peds) if (p.warn > 0) drawWarn(p);
+    drawPerson(player.x, player.y, -1, player.phase, playerLook, true);
+
+    // depth haze at top
+    const g = ctx.createLinearGradient(0, 0, 0, 120);
+    g.addColorStop(0, 'rgba(31,36,48,0.35)');
+    g.addColorStop(1, 'rgba(31,36,48,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(-10, -10, W + 20, 130);
+
+    ctx.textAlign = 'center';
+    ctx.font = '400 20px "Dela Gothic One", sans-serif';
+    for (const pp of popups) {
+      ctx.globalAlpha = Math.max(0, Math.min(1, pp.life * 2));
+      ctx.strokeStyle = '#232733';
+      ctx.font = pp.big ? '400 34px "Dela Gothic One", sans-serif' : '400 20px "Dela Gothic One", sans-serif';
+      ctx.lineWidth = pp.big ? 7 : 5;
+      ctx.strokeText(pp.text, pp.x, pp.y);
+      ctx.fillStyle = pp.text === 'ドン！' ? '#ff7a5c' : pp.big ? '#7fd6a8' : '#f2c14e';
+      ctx.fillText(pp.text, pp.x, pp.y);
+    }
+    ctx.globalAlpha = 1;
+
+    if (state === 'crash') {
+      ctx.fillStyle = `rgba(217,87,59,${Math.max(0, 0.35 - crashT * 0.5)})`;
+      ctx.fillRect(-10, -10, W + 20, H + 20);
+    }
+  }
+
+  // ---------- loop ----------
+  let last = performance.now();
+  let paused = false;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (!paused) update(dt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange', () => {
+    paused = document.hidden;
+    if (document.hidden && state === 'play') pauseGame();
+    last = performance.now();
+  });
+
+  // ---------- input ----------
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+      if (state === 'play') { move(-1); e.preventDefault(); }
+    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+      if (state === 'play') { move(1); e.preventDefault(); }
+    } else if (state === 'title' && ['1', '2', '3'].includes(e.key)) {
+      start(Number(e.key) - 1);
+    } else if (state === 'over' && (e.key === ' ' || e.key === 'Enter')) {
+      e.preventDefault();
+      start();
+    } else if (e.key === 'm' || e.key === 'M') {
+      toggleSound();
+    } else if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+      if (state === 'play') { pauseGame(); e.preventDefault(); }
+      else if (state === 'paused') { resumeGame(); e.preventDefault(); }
+      else if (state === 'over' && e.key === 'Escape') toMenu();
+    } else if (state === 'over' && e.key === 'Escape') {
+      toMenu();
+    }
+  });
+  cv.addEventListener('pointerdown', e => {
+    if (state !== 'play') return;
+    const r = cv.getBoundingClientRect();
+    move(e.clientX - r.left < r.width / 2 ? -1 : 1);
+    e.preventDefault();
+  });
+  document.getElementById('retryBtn').addEventListener('click', () => start());
+  pauseBtn.addEventListener('click', pauseGame);
+  document.getElementById('resumeBtn').addEventListener('click', resumeGame);
+  document.getElementById('restartBtn').addEventListener('click', () => start());
+  document.getElementById('titleBtn').addEventListener('click', () => { sfx.click(); toMenu(); });
+  document.getElementById('menuBtn').addEventListener('click', () => { sfx.click(); toMenu(); });
+  refreshMenu();
+})();
+</script>
+
+</body></html>

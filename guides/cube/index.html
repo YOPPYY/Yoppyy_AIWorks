@@ -1,0 +1,787 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>キューブ完全攻略</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --surface-2:#F5F7F9; --ink:#131820; --muted:#5A6573; --line:#D2D8DF;
+  --accent:#0A4DB5; --accent-ink:#FFFFFF; --accent-soft:#DCE6F7;
+  --good:#0E8A4F; --warn:#C8102E;
+  --body:#16191E; --mask:#8E97A2;
+  --st-W:#F4F5F0; --st-Y:#FFD21F; --st-R:#C8102E; --st-O:#FF6A13; --st-B:#0A4DB5; --st-G:#00A05A;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1115; --surface:#161A20; --surface-2:#1C2129; --ink:#E6E9EE; --muted:#98A2AF; --line:#2A313B;
+    --accent:#5B8CFF; --accent-ink:#0E1115; --accent-soft:#1B2A48;
+    --good:#3CCB85; --warn:#FF6B7F;
+    --body:#050608; --mask:#4A525D;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1115; --surface:#161A20; --surface-2:#1C2129; --ink:#E6E9EE; --muted:#98A2AF; --line:#2A313B;
+  --accent:#5B8CFF; --accent-ink:#0E1115; --accent-soft:#1B2A48;
+  --good:#3CCB85; --warn:#FF6B7F;
+  --body:#050608; --mask:#4A525D;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.75;padding-inline:16px;}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.3}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,.mono{font-family:var(--mono)}
+.wrap{max-width:1200px;margin-inline:auto}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;align-items:center;padding-block:40px 28px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--muted);font-weight:700}
+.hero h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,7vw,76px);letter-spacing:.01em;margin-top:8px}
+.hero h1 .dot{display:inline-block;width:.28em;height:.28em;border-radius:.05em;margin-left:.12em;vertical-align:.12em;background:var(--st-R)}
+.lead{margin-top:14px;max-width:34em;color:var(--muted);font-size:16px}
+.facts{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:24px}
+.fact b{display:block;font-family:var(--display);font-weight:400;font-size:26px;line-height:1.2}
+.fact span{font-size:12px;color:var(--muted)}
+.hero-cube{display:flex;flex-direction:column;align-items:center;gap:8px}
+.hero-cube svg{width:min(320px,80vw);height:auto}
+.hero-move{font-family:var(--mono);font-size:13px;color:var(--muted);min-height:1.5em}
+.hero-move b{color:var(--ink);font-size:16px}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-block:1px solid var(--line);margin-inline:-16px;padding-inline:16px}
+.nav .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.nav a{flex:none;padding:12px 12px;color:var(--muted);text-decoration:none;font-weight:700;font-size:14px;border-bottom:2px solid transparent}
+.nav a:hover{color:var(--ink)}
+.nav a.on{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;padding-block:32px;align-items:start}
+main{display:flex;flex-direction:column;gap:56px;min-width:0}
+section{scroll-margin-top:64px}
+.sec-head{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
+.sec-head h2{font-family:var(--display);font-weight:400;font-size:clamp(26px,3.6vw,34px)}
+.sec-head p{color:var(--muted);max-width:40em}
+
+/* notation */
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:16px;font-size:14px}
+.legend code{font-weight:700;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1px 7px;margin-right:6px}
+.moves{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mv{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.mv:hover{border-color:var(--accent)}
+.mv svg{width:62px;height:auto}
+.mv b{font-family:var(--mono);font-size:22px;line-height:1.1;display:block}
+.mv span{font-size:12px;color:var(--muted);line-height:1.5;display:block}
+.mv i{font-style:normal;font-size:10px;letter-spacing:.1em;color:var(--accent);font-weight:700}
+.note{font-size:13px;color:var(--muted);margin-top:12px}
+
+/* steps */
+.steps{display:flex;flex-direction:column;gap:14px}
+.step{display:grid;grid-template-columns:132px minmax(0,1fr);gap:20px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.step-fig svg{width:132px;height:auto}
+.step-fig figcaption{font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
+.step-fig{margin:0}
+.step-no{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+.step h3{font-size:20px;font-weight:700;margin:2px 0 8px}
+.step-body{display:flex;flex-direction:column;gap:10px;min-width:0}
+.step-body p{max-width:40em}
+.step ul{margin:0;padding-left:1.2em}
+.step li{margin-block:2px}
+.flip{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:14px}
+.algs{display:flex;flex-direction:column;gap:6px}
+.alg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:8px 10px;background:var(--surface-2);border-radius:8px}
+.alg .lbl{font-size:13px;color:var(--muted);min-width:7.5em}
+.alg code{font-weight:700;font-size:15px;flex:1 1 12em;word-spacing:.15em}
+.try{border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:999px;padding:2px 12px;font-size:13px;font-weight:700}
+.try:hover{background:var(--accent);color:var(--accent-ink)}
+
+/* advanced */
+.stages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:24px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.stage b{font-family:var(--mono);font-size:18px;display:block}
+.stage span{font-size:13px;color:var(--muted);display:block;line-height:1.6}
+.group-title{font-size:16px;font-weight:700;margin:22px 0 10px}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+th{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.06em;background:var(--surface-2)}
+td code{font-weight:700;white-space:nowrap;word-spacing:.12em}
+td.num{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.tips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:24px}
+.tip{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;font-size:14px}
+.tip b{display:block;margin-bottom:4px}
+
+/* simulator */
+aside#sim{position:sticky;top:calc(env(safe-area-inset-top,0px) + 60px);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-margin-top:64px}
+.sim-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sim-top h2{font-size:17px;font-weight:700}
+.pill{font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--surface-2);color:var(--muted)}
+.pill.ok{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.sim-view{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center}
+.sim-view svg{width:100%;height:auto;display:block}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:3px 10px;font-size:12px;color:var(--muted)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.viewbar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+.case{background:var(--surface-2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.case-name{font-size:12px;color:var(--muted);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:4px;font-family:var(--mono);font-size:14px;font-weight:700}
+.chips span{padding:1px 6px;border-radius:5px;color:var(--muted)}
+.chips span.done{color:var(--ink)}
+.chips span.cur{background:var(--accent);color:var(--accent-ink)}
+.ctrl{display:flex;gap:6px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700}
+.btn:hover{border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default;border-color:var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ctrl .btn{flex:1}
+.pad{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.pad button{font-family:var(--mono);font-weight:700;font-size:13px;padding:6px 0;border:1px solid var(--line);background:var(--surface-2);border-radius:6px}
+.pad button:hover{border-color:var(--accent);color:var(--accent)}
+.inrow{display:flex;gap:6px}
+.inrow input{flex:1;min-width:0;font-family:var(--mono);font-size:14px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.row-btns{display:flex;flex-wrap:wrap;gap:6px}
+.row-btns .btn{flex:1 1 auto}
+.err{font-size:12px;color:var(--warn);min-height:0}
+
+/* timer */
+#timer{padding-block:24px 56px;border-top:1px solid var(--line)}
+.timer-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px}
+.scr{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:16px;align-items:center}
+.scr code{font-size:17px;font-weight:700;word-spacing:.25em;line-height:1.7}
+.scr svg{width:132px;height:auto}
+.tpad{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:36px 16px;text-align:center;user-select:none;-webkit-user-select:none;touch-action:none;cursor:pointer}
+.tpad .clock{font-family:var(--mono);font-weight:700;font-size:clamp(56px,11vw,112px);line-height:1;font-variant-numeric:tabular-nums;transition:color .1s}
+.tpad.hold .clock{color:var(--warn)}
+.tpad.ready .clock{color:var(--good)}
+.tpad .hint{font-size:13px;color:var(--muted);margin-top:12px}
+.tstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.tstats div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.tstats span{font-size:11px;color:var(--muted);display:block;letter-spacing:.06em}
+.tstats b{font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
+.tlist{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);max-height:300px;overflow:auto}
+.tlist .empty{padding:18px;color:var(--muted);font-size:14px}
+.tlist .t{display:grid;grid-template-columns:3em 1fr auto;gap:10px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tlist .t:last-child{border-bottom:0}
+.tlist .t .n{color:var(--muted);font-family:var(--mono);font-size:12px}
+.tlist .t b{font-family:var(--mono)}
+.tlist .t button{border:0;background:transparent;color:var(--muted);font-size:12px}
+.tlist .t button:hover{color:var(--warn)}
+.tactions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+footer{border-top:1px solid var(--line);padding-block:20px 32px;font-size:12px;color:var(--muted)}
+
+@media (max-width:980px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  aside#sim{position:static;order:-1}
+  .timer-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:720px){
+  .hero{grid-template-columns:minmax(0,1fr);padding-block:28px 16px}
+  .hero-cube{order:-1}
+  .hero-cube svg{width:min(220px,60vw)}
+  .stages{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tips{grid-template-columns:minmax(0,1fr)}
+  .step{grid-template-columns:minmax(0,1fr)}
+  .step-fig{display:flex;align-items:center;gap:12px}
+  .step-fig svg{width:96px}
+  .scr{grid-template-columns:minmax(0,1fr)}
+  .tstats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">3×3×3 ルービックキューブ</p>
+      <h1>キューブ完全攻略<span class="dot" aria-hidden="true"></span></h1>
+      <p class="lead">記号の読み方から、初めてでも6面そろう7ステップの解法、タイム短縮のためのCFOPまで。どの手順もシミュレーターで動かして確かめられます。</p>
+      <div class="facts">
+        <div class="fact"><b>7</b><span>初心者法のステップ数</span></div>
+        <div class="fact"><b>約100手</b><span>初心者法で完成までの手数</span></div>
+        <div class="fact"><b>4325京</b><span>ありうる配色パターン数</span></div>
+        <div class="fact"><b>20手</b><span>どの状態も解ける最短手数の上限</span></div>
+      </div>
+    </div>
+    <div class="hero-cube">
+      <div id="heroCube"></div>
+      <p class="hero-move" id="heroMove" aria-live="off"></p>
+    </div>
+  </header>
+</div>
+
+<nav class="nav" aria-label="ページ内">
+  <div class="wrap">
+    <a href="#notation">回転記号</a>
+    <a href="#beginner">初心者の解法</a>
+    <a href="#advanced">CFOP・上級</a>
+    <a href="#sim">シミュレーター</a>
+    <a href="#timer">タイマー</a>
+  </div>
+</nav>
+
+<div class="wrap layout">
+  <main>
+    <section id="notation">
+      <div class="sec-head">
+        <p class="eyebrow">BASICS</p>
+        <h2>回転記号を読む</h2>
+        <p>手順はアルファベットで書かれます。面の頭文字がその面を「正面から見て時計回り」に90°回すことを表します。カードを押すと回す前と後を切り替えられます。</p>
+      </div>
+      <div class="legend">
+        <span><code>R</code>時計回りに90°</span>
+        <span><code>R'</code>反時計回りに90°（プライム）</span>
+        <span><code>R2</code>180°（向きはどちらでも可）</span>
+      </div>
+      <div class="moves" id="moveCards"></div>
+      <p class="note">白が上、緑が前、赤が右の持ち方を基準にしています。小文字の <code>r</code> や <code>Rw</code> は「右2列をまとめて」回す記号です。</p>
+    </section>
+
+    <section id="beginner">
+      <div class="sec-head">
+        <p class="eyebrow">BEGINNER · LAYER BY LAYER</p>
+        <h2>初心者の解法 7ステップ</h2>
+        <p>下の段から1段ずつそろえる「LBL法」です。覚える手順は6つだけ。図の灰色は、そのステップではまだ気にしなくてよい部分です。</p>
+      </div>
+      <div class="steps">
+        <article class="step">
+          <figure class="step-fig"><div data-fig="1"></div><figcaption>白を上に</figcaption></figure>
+          <div class="step-body">
+            <p class="step-no">STEP 1</p>
+            <h3>白い十字をつくる</h3>
+            <p>白い中心のまわりに、白を含む辺キューブ4つを集めます。ただ十字をつくるだけでなく、各辺の側面の色を隣の中心の色とそろえるのがポイントです。</p>
+            <ul>
+              <li>中心キューブは動きません。赤の中心がある面が「赤の面」です。</li>
+              <li>まず黄色の中心のまわりに白い辺を4つ集め（デイジー）、側面の色が合った辺から <code>F2</code> などで白側へ運ぶと迷いにくくなります。</li>
+              <li>このステップは手順を覚えず、目で見て考えて解きます。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="step">
+          <figure class="step-fig"><div data-fig="2"></div><figcaption>白を下に・下から見た図</figcaption></figure>
+          <div class="step-body">
+            <p class="step-no">STEP 2</p>
+            <h3>白い面を完成させる（1段目）</h3>
+            <p class="flip">ここでキューブを持ち替え、白を下にします。以降のステップはすべて白が下です。</p>
+            <p>白を含む角キューブを、入れたい場所の真上（右前上）に <code>U</code> で移動させます。あとは下の手順を、その角がそろうまで繰り返します（最大5回）。</p>
+            <div class="algs">
+              <div class="alg"><span class="lbl">繰り返す手順</span><code>R U R' U'</code><button class="try" data-alg="R U R' U' R U R' U'" data-base="yellow" data-name="STEP 2 · 角を入れる">試す</button></div>
+              <div class="alg"><span class="lbl">白が右向き</span><code>R U R'</code><button class="try" data-alg="R U R'" data-base="yellow" data-name="STEP 2 · 白が右向き">試す</button></div>
+              <div class="alg"><span class="lbl">白が前向き</span><code>F' U' F</code><button class="try" data-alg="F' U' F" data-base="yellow" data-name="STEP 2 · 白が前向き">試す</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="step">
+          <figure class="step-fig"><div data-fig="3"></div><figcaption>2段目まで完成</figcaption></figure>
+          <div class="step-body">
+            <p class="step-no">STEP 3</p>
+            <h3>2段目の辺を入れる</h3>
+            <p>上段にある、黄色を含まない辺を探します。前面の色が中心と合うように <code>U</code> で回し、上面の色が右の中心と同じなら右へ、左の中心と同じなら左へ入れます。</p>
+            <div class="algs">
+              <div class="alg"><span class="lbl">右へ入れる</span><code>U R U' R' U' F' U F</code><button class="try" data-alg="U R U' R' U' F' U F" data-base="yellow" data-name="STEP 3 · 右へ入れる">試す</button></div>
+              <div class="alg"><span class="lbl">左へ入れる</span><code>U' L' U L U F U' F'</code><button class="try" data-alg="U' L' U L U F U' F'" data-base="yellow" data-name="STEP 3 · 左へ入れる">試す</button></div>
+            </div>
+            <p class="note">2段目に向きが逆の辺がはまっているときは、どちらかの手順で一度上段へ追い出してから入れ直します。</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <figure class="step-fig"><div data-fig="4"></div><figcaption>黄色の十字</figcaption></figure>
+          <div class="step-body">
+            <p class="step-no">STEP 4</p>
+            <h3>黄色い十字をつくる</h3>
+            <p>上面の黄色い辺の形は「点」「L字」「一直線」「十字」のどれかです。L字は左奥に、一直線は横向きに置いて手順を回すと、点 → L字 → 一直線 → 十字と進みます。</p>
+            <div class="algs">
+              <div class="alg"><span class="lbl">形を進める</span><code>F R U R' U' F'</code><button class="try" data-alg="F R U R' U' F'" data-base="yellow" data-name="STEP 4 · 黄色い十字">試す</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="step">
+          <figure class="step-fig"><div data-fig="5"></div><figcaption>黄色い面</figcaption></figure>
+          <div class="step-body">
+            <p class="step-no">STEP 5</p>
+            <h3>黄色い面をそろえる</h3>
+            <p>上面の黄色い角が1つだけのとき（魚の形）は、その角を左前に置いて手順を回します。それ以外のときは、前面の左上に黄色がある向きにして回します。上面が全部黄色になるまで繰り返します。</p>
+            <div class="algs">
+              <div class="alg"><span class="lbl">スーン</span><code>R U R' U R U2 R'</code><button class="try" data-alg="R U R' U R U2 R'" data-base="yellow" data-name="STEP 5 · スーン">試す</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="step">
+          <figure class="step-fig"><div data-fig="6"></div><figcaption>角の位置が完成</figcaption></figure>
+          <div class="step-body">
+            <p class="step-no">STEP 6</p>
+            <h3>上段の角を正しい位置へ</h3>
+            <p>角の側面2色が、両隣の中心と同じ組み合わせになっていれば正しい位置です。正しい角を右前上に置いて手順を回すと、残り3つの角が回転移動します。正しい角が1つもないときは、どこからでも1回回すと1つ見つかります。</p>
+            <div class="algs">
+              <div class="alg"><span class="lbl">角を3つ入れ替え</span><code>U R U' L' U R' U' L</code><button class="try" data-alg="U R U' L' U R' U' L" data-base="yellow" data-name="STEP 6 · 角の入れ替え">試す</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="step">
+          <figure class="step-fig"><div data-fig="7"></div><figcaption>6面完成</figcaption></figure>
+          <div class="step-body">
+            <p class="step-no">STEP 7</p>
+            <h3>上段の辺をそろえて完成</h3>
+            <p>1面だけ上段が完全にそろっているなら、その面を後ろにして手順を回します。辺が時計回りに動くか反時計回りに動くかで2つの手順を使い分けます。そろった面がないときは、どちらかを1回回せば1面そろいます。</p>
+            <div class="algs">
+              <div class="alg"><span class="lbl">反時計回り（Ua）</span><code>R U' R U R U R U' R' U' R2</code><button class="try" data-alg="R U' R U R U R U' R' U' R2" data-base="yellow" data-name="STEP 7 · Ua">試す</button></div>
+              <div class="alg"><span class="lbl">時計回り（Ub）</span><code>R2 U R U R' U' R' U' R' U R'</code><button class="try" data-alg="R2 U R U R' U' R' U' R' U R'" data-base="yellow" data-name="STEP 7 · Ub">試す</button></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="advanced">
+      <div class="sec-head">
+        <p class="eyebrow">SPEEDCUBING</p>
+        <h2>CFOPで速く解く</h2>
+        <p>世界のトップ選手の多くが使う解法です。初心者法をそろえられるようになったら、STEP 2〜3を1つにまとめ、STEP 4〜7を少ない手順で済ませる方向へ進みます。</p>
+      </div>
+      <div class="stages">
+        <div class="stage"><b>Cross</b><span>白十字。下に置いたまま8手以内が目標</span></div>
+        <div class="stage"><b>F2L</b><span>角と辺をペアにして1段目と2段目を同時に入れる</span></div>
+        <div class="stage"><b>OLL</b><span>上面を黄色にする。全57パターン</span></div>
+        <div class="stage"><b>PLL</b><span>上段の位置をそろえる。全21パターン</span></div>
+      </div>
+
+      <h3 class="group-title">F2L の基本形</h3>
+      <div class="algs">
+        <div class="alg"><span class="lbl">ペアを右奥から</span><code>U R U' R'</code><button class="try" data-alg="U R U' R'" data-base="yellow" data-name="F2L · 右から">試す</button></div>
+        <div class="alg"><span class="lbl">ペアを左奥から</span><code>U' F' U F</code><button class="try" data-alg="U' F' U F" data-base="yellow" data-name="F2L · 前から">試す</button></div>
+        <div class="alg"><span class="lbl">分かれたペア</span><code>R U' R' U R U' R'</code><button class="try" data-alg="R U' R' U R U' R'" data-base="yellow" data-name="F2L · 分かれたペア">試す</button></div>
+      </div>
+
+      <h3 class="group-title">2-look OLL（10手順で上面を黄色に）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>形</th><th>手順</th><th>手数</th><th></th></tr></thead>
+          <tbody id="ollTable"></tbody>
+        </table>
+      </div>
+
+      <h3 class="group-title">よく使う PLL</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>名前</th><th>手順</th><th>手数</th><th></th></tr></thead>
+          <tbody id="pllTable"></tbody>
+        </table>
+      </div>
+
+      <h3 class="group-title">解法ごとの目安</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>解法</th><th>覚える手順</th><th>平均手数</th><th>目安タイム</th></tr></thead>
+          <tbody>
+            <tr><td>初心者法（LBL）</td><td class="num">6</td><td class="num">100〜120</td><td>1〜2分</td></tr>
+            <tr><td>CFOP（2-look）</td><td class="num">16</td><td class="num">70前後</td><td>30〜45秒</td></tr>
+            <tr><td>CFOP（フル）</td><td class="num">78+</td><td class="num">55前後</td><td>20秒以下</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tips">
+        <div class="tip"><b>手順は指で覚える</b>記号を読みながら回すのは最初だけ。10回通しで回すと、手が形を覚えます。</div>
+        <div class="tip"><b>止まらずに回す</b>速く回すより、手を止めずに次のピースを探す方がタイムに効きます。</div>
+        <div class="tip"><b>回しやすいキューブ</b>磁石入りのスピードキューブは引っかかりが少なく、手順の練習がはかどります。</div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="sim" aria-label="シミュレーター">
+    <div class="sim-top">
+      <h2>シミュレーター</h2>
+      <span class="pill" id="simStatus">途中</span>
+    </div>
+    <div class="viewbar">
+      <span>見る向き</span>
+      <div class="seg" role="group" aria-label="見る向き">
+        <button id="vTop" class="on">上から</button><button id="vBot">下から</button>
+      </div>
+    </div>
+    <div class="sim-view">
+      <div id="simIso"></div>
+      <div id="simNet"></div>
+    </div>
+    <div class="case">
+      <span class="case-name" id="caseName"></span>
+      <div class="chips" id="chips"></div>
+      <div class="ctrl">
+        <button class="btn" id="bStart" title="最初へ">最初へ</button>
+        <button class="btn primary" id="bPlay">再生</button>
+        <button class="btn" id="bStep">1手進む</button>
+      </div>
+      <div class="viewbar">
+        <span>回転の速さ</span>
+        <div class="seg" id="speedSeg" role="group" aria-label="回転の速さ">
+          <button data-s="slow">ゆっくり</button><button data-s="normal" class="on">ふつう</button><button data-s="fast">はやい</button>
+        </div>
+      </div>
+    </div>
+    <div class="pad" id="pad"></div>
+    <form class="inrow" id="algForm">
+      <label for="algIn" class="mono" style="position:absolute;left:-9999px">手順を入力</label>
+      <input id="algIn" placeholder="例: R U R' U'" autocomplete="off" spellcheck="false">
+      <button class="btn" type="submit">実行</button>
+    </form>
+    <p class="err" id="algErr" hidden></p>
+    <div class="row-btns">
+      <button class="btn primary" id="bSolve">そろえる</button>
+      <button class="btn" id="bScr">スクランブル</button>
+      <button class="btn" id="bUndo">1手戻す</button>
+      <button class="btn" id="bResetW">リセット（白上）</button>
+      <button class="btn" id="bResetY">リセット（黄上）</button>
+    </div>
+  </aside>
+</div>
+
+<div class="wrap">
+  <section id="timer">
+    <div class="sec-head">
+      <p class="eyebrow">PRACTICE</p>
+      <h2>タイマー</h2>
+      <p>大会と同じ形式の20手スクランブルで計測します。白を上、緑を前にして持ち、表示どおりに崩してからスタートしてください。</p>
+    </div>
+    <div class="timer-grid">
+      <div>
+        <div class="scr">
+          <code id="scrText"></code>
+          <div id="scrNet" aria-label="スクランブル後の展開図"></div>
+        </div>
+        <div class="tpad" id="tpad" tabindex="0" role="button" aria-label="タイマー。押し続けて緑になったら離すとスタート">
+          <div class="clock" id="clock">0.00</div>
+          <p class="hint" id="thint">ここを押し続けて（またはスペースキー長押し）、緑になったら離すとスタート</p>
+        </div>
+      </div>
+      <div>
+        <div class="tstats">
+          <div><span>ベスト</span><b id="stBest">—</b></div>
+          <div><span>Ao5</span><b id="stAo5">—</b></div>
+          <div><span>Ao12</span><b id="stAo12">—</b></div>
+          <div><span>回数</span><b id="stN">0</b></div>
+        </div>
+        <div class="tlist" id="tlist"></div>
+        <div class="tactions">
+          <button class="btn" id="bNextScr">次のスクランブル</button>
+          <button class="btn" id="bScrSim">シミュレーターで崩す</button>
+          <button class="btn" id="bClear">記録をすべて消す</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <footer>配色は白上・緑前の標準配色。Ao5／Ao12は直近5回／12回から最高と最低を除いた平均です。記録はこのブラウザにだけ保存されます。</footer>
+</div>
+
+<script>
+(()=>{
+/* ---------- cube model ---------- */
+const V={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sc:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]};
+const z=x=>x===0?0:x;
+function rot(v,a){const c=V.cross(a,v),d=V.dot(a,v);return [z(-c[0]+a[0]*d),z(-c[1]+a[1]*d),z(-c[2]+a[2]*d)];}
+const FACES={
+  U:{n:[0,1,0],r:[1,0,0],u:[0,0,-1],c:'W'}, D:{n:[0,-1,0],r:[1,0,0],u:[0,0,1],c:'Y'},
+  F:{n:[0,0,1],r:[1,0,0],u:[0,1,0],c:'G'}, B:{n:[0,0,-1],r:[-1,0,0],u:[0,1,0],c:'B'},
+  R:{n:[1,0,0],r:[0,0,-1],u:[0,1,0],c:'R'}, L:{n:[-1,0,0],r:[0,0,1],u:[0,1,0],c:'O'}};
+const cellPos=(F,r,c)=>V.add(F.n,V.add(V.sc(F.r,c-1),V.sc(F.u,1-r)));
+const key=(p,n)=>p.join()+'|'+n.join();
+const MOVES={
+  U:{a:[0,1,0],t:d=>d===1},D:{a:[0,-1,0],t:d=>d===1},R:{a:[1,0,0],t:d=>d===1},
+  L:{a:[-1,0,0],t:d=>d===1},F:{a:[0,0,1],t:d=>d===1},B:{a:[0,0,-1],t:d=>d===1},
+  u:{a:[0,1,0],t:d=>d>=0},d:{a:[0,-1,0],t:d=>d>=0},r:{a:[1,0,0],t:d=>d>=0},
+  l:{a:[-1,0,0],t:d=>d>=0},f:{a:[0,0,1],t:d=>d>=0},b:{a:[0,0,-1],t:d=>d>=0},
+  M:{a:[-1,0,0],t:d=>d===0},E:{a:[0,-1,0],t:d=>d===0},S:{a:[0,0,1],t:d=>d===0},
+  x:{a:[1,0,0],t:()=>true},y:{a:[0,1,0],t:()=>true},z:{a:[0,0,1],t:()=>true}};
+function parse(str){
+  const s=String(str).replace(/[’`´]/g,"'").replace(/[()\[\]]/g,' ');
+  const out=[];const re=/([UDLRFBMESudlrfbxyz])(w?)(2'|2|'|3)?/g;let m,last=0;
+  const rest=s.replace(re,'').replace(/\s+/g,'');
+  if(rest.length) throw new Error('読めない記号があります: '+rest.slice(0,8));
+  while((m=re.exec(s))){let b=m[1];if(m[2]&&'UDLRFB'.includes(b))b=b.toLowerCase();
+    const suf=m[3]==='2'||m[3]==="2'"?'2':(m[3]==="'"||m[3]==='3')?"'":'';out.push(b+suf);}
+  return out;
+}
+const invTok=t=>t.endsWith('2')?t:t.endsWith("'")?t.slice(0,-1):t+"'";
+const inverse=str=>parse(str).reverse().map(invTok).join(' ');
+const amt=t=>t.endsWith('2')?2:t.endsWith("'")?3:1;
+function simplify(toks){const out=[];for(const t of toks){const last=out[out.length-1];
+    if(last&&last[0]===t[0]){const a=(amt(last)+amt(t))%4;out.pop();if(a)out.push(t[0]+['',"",'2',"'"][a]);}
+    else out.push(t);}return out;}
+class Cube{
+  constructor(s){if(s){this.s=s;return;}this.s=[];for(const f in FACES){const F=FACES[f];for(let r=0;r<3;r++)for(let c=0;c<3;c++)this.s.push({p:cellPos(F,r,c),n:F.n.slice(),c:F.c});}}
+  clone(){return new Cube(this.s.map(t=>({p:t.p.slice(),n:t.n.slice(),c:t.c})));}
+  turn(tok){const m=MOVES[tok[0]];const k=tok.endsWith('2')?2:tok.endsWith("'")?3:1;
+    for(const s of this.s){if(m.t(V.dot(s.p,m.a)))for(let i=0;i<k;i++){s.p=rot(s.p,m.a);s.n=rot(s.n,m.a);}}return this;}
+  alg(str){for(const t of (Array.isArray(str)?str:parse(str)))this.turn(t);return this;}
+  map(){const o={};for(const s of this.s)o[key(s.p,s.n)]=s;return o;}
+  solved(){const g={};for(const s of this.s){const k=s.n.join();if(g[k]===undefined)g[k]=s.c;else if(g[k]!==s.c)return false;}return true;}
+}
+const baseCube=b=>b==='yellow'?new Cube().alg('z2'):new Cube();
+
+/* ---------- rendering ---------- */
+const nz=p=>p.filter(v=>v===0).length;
+const isCenter=p=>nz(p)===2, isEdge=p=>nz(p)===1, isCorner=p=>nz(p)===0;
+function poly(pts,fill,extra=''){return `<polygon points="${pts.map(p=>p[0].toFixed(3)+','+p[1].toFixed(3)).join(' ')}" fill="${fill}" ${extra}/>`;}
+const nrm=v=>{const l=Math.hypot(v[0],v[1],v[2]);return [v[0]/l,v[1]/l,v[2]/l];};
+const VIEWS={
+  top:{d:nrm([1,1,1]),L:nrm([-.3,1,.6]),P:v=>[(v[0]-v[2])*0.866,(v[0]+v[2])*0.5-v[1]]},
+  bottom:{d:nrm([1,-1,1]),L:nrm([-.3,-1,.6]),P:v=>[(v[0]-v[2])*0.866,-(v[0]+v[2])*0.5-v[1]]}};
+function rotA(v,a,th){const c=Math.cos(th),s=Math.sin(th),x=V.cross(a,v),d=V.dot(a,v)*(1-c);
+  return [v[0]*c+x[0]*s+a[0]*d,v[1]*c+x[1]*s+a[1]*d,v[2]*c+x[2]*s+a[2]*d];}
+const AX6=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+function perp(n){const a=Math.abs(n[1])>.9?[1,0,0]:[0,1,0];const u=nrm(V.cross(n,a));return [u,V.cross(n,u)];}
+const SQ=[[1,1],[1,-1],[-1,-1],[-1,1]];
+/* 3D render: every cubie drawn back-to-front so a layer can be shown mid-turn */
+function isoSVG(cube,o={}){
+  const vw=VIEWS[o.view||'top'];
+  let mv=null,th=0;
+  if(o.anim){mv=MOVES[o.anim.tok[0]];const t=o.anim.tok;const k=t.endsWith('2')?2:t.endsWith("'")?-1:1;th=-Math.PI/2*k*o.anim.frac;}
+  const cubies=new Map([['0,0,0',{p:[0,0,0],st:[]}]]);
+  for(const s of cube.s){const k=s.p.join();if(!cubies.has(k))cubies.set(k,{p:s.p,st:[]});cubies.get(k).st.push(s);}
+  const quads=[];
+  for(const {p,st} of cubies.values()){
+    const moving=!!(mv&&mv.t(V.dot(p,mv.a)));
+    const xf=v=>moving?rotA(v,mv.a,th):v;
+    for(const n0 of AX6){
+      const nb=V.add(p,n0);
+      if(!mv&&Math.max(Math.abs(nb[0]),Math.abs(nb[1]),Math.abs(nb[2]))<=1)continue;
+      const n=xf(n0);if(V.dot(n,vw.d)<=.001)continue;
+      const [u,w]=perp(n0);const c0=V.add(p,V.sc(n0,.5));
+      quads.push({z:V.dot(xf(c0),vw.d),pts:SQ.map(([a,b])=>xf(V.add(c0,V.add(V.sc(u,a*.5),V.sc(w,b*.5))))),fill:'var(--body)',op:1,body:1});
+    }
+    for(const s of st){
+      const n=xf(s.n);if(V.dot(n,vw.d)<=.001)continue;
+      const [u,w]=perp(s.n);const c0=V.add(s.p,V.sc(s.n,.505));
+      const fill=o.mask&&!o.mask(s)?'var(--mask)':`var(--st-${s.c})`;
+      quads.push({z:V.dot(xf(c0),vw.d),pts:SQ.map(([a,b])=>xf(V.add(c0,V.add(V.sc(u,a*.42),V.sc(w,b*.42))))),fill,op:.66+.34*Math.max(0,V.dot(n,vw.L))});
+    }
+  }
+  quads.sort((a,b)=>a.z-b.z);
+  const out=quads.map(q=>{const pts=q.pts.map(v=>{const s=vw.P(v);return s[0].toFixed(3)+','+s[1].toFixed(3);}).join(' ');
+    return q.body?`<polygon points="${pts}" fill="var(--body)" stroke="var(--body)" stroke-width=".05" stroke-linejoin="round"/>`
+      :`<polygon points="${pts}" fill="${q.fill}" fill-opacity="${q.op.toFixed(2)}" stroke="${q.fill}" stroke-opacity="${q.op.toFixed(2)}" stroke-width=".08" stroke-linejoin="round"/>`;}).join('');
+  return `<svg viewBox="-2.85 -3.1 5.7 6.2" role="img" aria-label="${o.label||'キューブの図'}">${out}</svg>`;
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* animate one turn on el, then commit it to the cube. resolves false if cancelled */
+function animTurn({el,cube,tok,dur,opts={},alive=()=>true}){
+  return new Promise(res=>{
+    if(!alive()){res(false);return;}
+    if(reduced||dur<=0){cube.turn(tok);el.innerHTML=isoSVG(cube,opts);res(true);return;}
+    const D=tok.endsWith('2')?dur*1.5:dur,t0=performance.now();
+    const f=now=>{if(!alive()){res(false);return;}
+      const u=Math.min(1,(now-t0)/D),e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+      if(u<1){el.innerHTML=isoSVG(cube,{...opts,anim:{tok,frac:e}});requestAnimationFrame(f);}
+      else{cube.turn(tok);el.innerHTML=isoSVG(cube,opts);res(true);}};
+    requestAnimationFrame(f);});
+}
+const NETPOS={U:[3,0],L:[0,3],F:[3,3],R:[6,3],B:[9,3],D:[3,6]};
+function netSVG(cube,label){
+  const M=cube.map();let out='';
+  for(const f in NETPOS){const F=FACES[f],[fx,fy]=NETPOS[f];
+    out+=`<rect x="${fx+.02}" y="${fy+.02}" width="2.96" height="2.96" rx=".22" fill="var(--body)"/>`;
+    for(let r=0;r<3;r++)for(let c=0;c<3;c++){const s=M[key(cellPos(F,r,c),F.n)];
+      out+=`<rect x="${fx+c+.12}" y="${fy+r+.12}" width=".76" height=".76" rx=".12" fill="var(--st-${s.c})"/>`;}}
+  return `<svg viewBox="0 0 12 9" role="img" aria-label="${label||'展開図'}">${out}</svg>`;
+}
+
+/* ---------- scramble ---------- */
+function genScramble(n=20){const fs='UDLRFB',ax={U:0,D:0,L:1,R:1,F:2,B:2},out=[];let last=null,prev=null;
+  while(out.length<n){const f=fs[Math.random()*6|0];if(f===last)continue;
+    if(prev&&ax[f]===ax[last]&&ax[f]===ax[prev])continue;
+    out.push(f+['',"'",'2'][Math.random()*3|0]);prev=last;last=f;}return out.join(' ');}
+/* ---------- hero ---------- */
+(function hero(){
+  const el=document.getElementById('heroCube'),mv=document.getElementById('heroMove');
+  const opts={label:'ひとりでに解かれていくキューブ'};
+  let cube,queue,i,vis=true;
+  function fresh(){const s=genScramble(18);cube=new Cube().alg(s);queue=parse(inverse(s));i=0;el.innerHTML=isoSVG(cube,opts);}
+  fresh();
+  if(reduced)return;
+  new IntersectionObserver(es=>{vis=es[0].isIntersecting;}).observe(el);
+  (async()=>{for(;;){
+    while(!vis)await sleep(400);
+    if(i<queue.length){const t=queue[i];mv.innerHTML=`<b>${t}</b>　${i+1}/${queue.length} 手`;
+      await animTurn({el,cube,tok:t,dur:360,opts});i++;await sleep(120);}
+    else{mv.innerHTML='<b>完成</b>';await sleep(1800);fresh();mv.textContent='';await sleep(600);}
+  }})();
+})();
+
+/* ---------- notation cards ---------- */
+const CARDS=[['R','右面を上へ'],["R'",'右面を下へ'],['R2','右面を半回転'],['L','左面を下へ'],['U','上面を左へ'],["U'",'上面を右へ'],
+  ['D','下面を右へ'],['F','前面を時計回り'],['B','後面を後ろから見て時計回り'],['M','中央の縦列を下へ（Lと同じ向き）'],['r','右2列をまとめて上へ'],['y','全体を持ち替え（Uの向き）']];
+const mc=document.getElementById('moveCards');
+CARDS.forEach(([t,d])=>{const b=document.createElement('button');b.className='mv';b.type='button';
+  b.innerHTML=`<div class="mvc"></div><div><i>押すと再生</i><b>${t}</b><span>${d}</span></div>`;
+  const box=b.querySelector('.mvc'),lab=b.querySelector('i');let busy=false;
+  const opts={label:t+' の回転'};
+  box.innerHTML=isoSVG(new Cube().turn(t),opts);
+  b.addEventListener('click',async()=>{if(busy)return;busy=true;
+    const cube=new Cube();box.innerHTML=isoSVG(cube,opts);lab.textContent='回転中';
+    await sleep(180);await animTurn({el:box,cube,tok:t,dur:520,opts});
+    lab.textContent='もう一度押す';busy=false;});
+  mc.appendChild(b);});
+
+/* ---------- step figures ---------- */
+const FIG={
+  1:{b:'white',v:'top',m:s=>isCenter(s.p)||(s.p[1]===1&&isEdge(s.p))},
+  2:{b:'yellow',v:'bottom',m:s=>s.p[1]===-1||isCenter(s.p)},
+  3:{b:'yellow',v:'top',m:s=>s.p[1]<=0||isCenter(s.p)},
+  4:{b:'yellow',v:'top',m:s=>s.p[1]<=0||isCenter(s.p)||(s.p[1]===1&&isEdge(s.p)&&s.c==='Y')},
+  5:{b:'yellow',v:'top',m:s=>s.p[1]<=0||isCenter(s.p)||s.c==='Y'},
+  6:{b:'yellow',v:'top',m:s=>s.p[1]<=0||isCenter(s.p)||s.c==='Y'||isCorner(s.p)},
+  7:{b:'yellow',v:'top',m:null}};
+document.querySelectorAll('[data-fig]').forEach(el=>{const f=FIG[el.dataset.fig];
+  el.innerHTML=isoSVG(baseCube(f.b),{view:f.v,mask:f.m,label:'STEP '+el.dataset.fig+' の完成形'});});
+
+/* ---------- algorithm tables ---------- */
+const OLL=[['黄色い点 → 線','F R U R\' U\' F\''],['黄色い点 → L字','f R U R\' U\' f\''],['スーン','R U R\' U R U2 R\''],['アンチスーン','R U2 R\' U\' R U\' R\''],
+  ['H（両側に2つずつ）','R U R\' U R U\' R\' U R U2 R\''],['Pi','R U2 R2 U\' R2 U\' R2 U2 R'],['ヘッドライト','R2 D R\' U2 R D\' R\' U2 R\''],['T','r U R\' U\' r\' F R F\''],['L（蝶ネクタイ）','F\' r U R\' U\' r\' F R']];
+const PLL=[['T','R U R\' U\' R\' F R2 U\' R\' U\' R U R\' F\''],['Ua','R U\' R U R U R U\' R\' U\' R2'],['Ub','R2 U R U R\' U\' R\' U\' R\' U R\''],
+  ['H','M2 U M2 U2 M2 U M2'],['Aa','x R\' U R\' D2 R U\' R\' D2 R2 x\''],['Jb','R U R\' F\' R U R\' U\' R\' F R2 U\' R\''],['Y','F R U\' R\' U\' R U R\' F\' R U R\' U\' R\' F R F\'']];
+function fillTable(id,rows,prefix){document.getElementById(id).innerHTML=rows.map(([n,a])=>
+  `<tr><td>${n}</td><td><code>${a}</code></td><td class="num">${parse(a).length}</td><td><button class="try" data-alg="${a.replace(/"/g,'&quot;')}" data-base="yellow" data-name="${prefix} · ${n}">試す</button></td></tr>`).join('');}
+fillTable('ollTable',OLL,'OLL');fillTable('pllTable',PLL,'PLL');
+
+/* ---------- simulator ---------- */
+const SPEED={slow:620,normal:340,fast:160};
+const sim={view:'top',cur:new Cube(),caseStart:null,casePath:[],path:[],tokens:[],idx:0,hist:[],name:'',gen:0,chain:Promise.resolve(),playing:false,animating:false,animIdx:-1,speed:'normal'};
+const $=id=>document.getElementById(id);
+const simOpts=()=>({view:sim.view,label:'現在のキューブ'});
+function renderChips(){
+  $('caseName').textContent=sim.tokens.length?sim.name:'手順を選ぶと、ここで1手ずつ再生できます';
+  $('chips').innerHTML=sim.tokens.map((t,i)=>`<span class="${i<sim.idx?'done':''}${i===sim.animIdx?' cur':''}">${t}</span>`).join('');
+  const end=sim.tokens.length&&sim.idx>=sim.tokens.length;
+  $('bPlay').textContent=sim.playing?'一時停止':end?'もう一度':'再生';
+  $('bStep').disabled=!sim.tokens.length||end;
+  $('bSolve').disabled=sim.cur.solved();
+}
+function renderSim(){
+  if(!sim.animating)$('simIso').innerHTML=isoSVG(sim.cur,simOpts());
+  $('simNet').innerHTML=netSVG(sim.cur,'現在の展開図');
+  const ok=sim.cur.solved();$('simStatus').textContent=ok?'6面完成':'途中';$('simStatus').classList.toggle('ok',ok);
+  renderChips();
+}
+/* every turn goes through one queue; bumping gen cancels whatever is queued or mid-turn */
+function hardReset(){sim.gen++;sim.playing=false;sim.animating=false;sim.animIdx=-1;sim.chain=Promise.resolve();}
+function enqueue(fn){const g=sim.gen;const p=sim.chain.then(()=>g===sim.gen?fn(g):false).catch(e=>{console.error(e);return false;});sim.chain=p;return p;}
+async function animate(tok,g){sim.animating=true;
+  const ok=await animTurn({el:$('simIso'),cube:sim.cur,tok,dur:SPEED[sim.speed],opts:simOpts(),alive:()=>g===sim.gen});
+  if(g===sim.gen){sim.animating=false;renderSim();}return ok;}
+async function stepCase(g){if(sim.idx>=sim.tokens.length)return false;
+  sim.animIdx=sim.idx;renderChips();const ok=await animate(sim.tokens[sim.idx],g);
+  if(ok){sim.path.push(sim.tokens[sim.idx]);sim.idx++;sim.animIdx=-1;renderChips();}return ok;}
+function restartCase(){hardReset();sim.cur=sim.caseStart.clone();sim.path=sim.casePath.slice();sim.idx=0;renderSim();}
+function play(){
+  if(sim.playing){sim.playing=false;renderChips();return;}
+  if(!sim.tokens.length)return;
+  if(sim.idx>=sim.tokens.length&&sim.caseStart)restartCase();
+  sim.playing=true;renderChips();const g=sim.gen;
+  (async()=>{while(sim.playing&&g===sim.gen&&sim.idx<sim.tokens.length){
+      const ok=await enqueue(stepCase);if(!ok)break;await sleep(SPEED[sim.speed]*.3);}
+    if(g===sim.gen){sim.playing=false;renderChips();}})();
+}
+function loadCase(alg,base,name,autoplay){hardReset();sim.name=name||alg;sim.tokens=parse(alg);sim.idx=0;
+  sim.caseStart=baseCube(base).alg(inverse(alg));sim.cur=sim.caseStart.clone();sim.hist=[];
+  sim.casePath=parse(inverse(alg));sim.path=sim.casePath.slice();
+  sim.view='top';syncView();renderSim();
+  if(autoplay){const g=sim.gen;setTimeout(()=>{if(g===sim.gen&&!sim.playing&&sim.idx===0)play();},600);}}
+function manual(t){sim.playing=false;renderChips();enqueue(async g=>{const ok=await animate(t,g);if(ok){sim.hist.push(t);sim.path.push(t);}return ok;});}
+function syncView(){$('vTop').classList.toggle('on',sim.view==='top');$('vBot').classList.toggle('on',sim.view==='bottom');}
+$('vTop').onclick=()=>{sim.view='top';syncView();renderSim();};
+$('vBot').onclick=()=>{sim.view='bottom';syncView();renderSim();};
+$('speedSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sim.speed=b.dataset.s;
+  $('speedSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));});
+$('bPlay').onclick=play;
+$('bStep').onclick=()=>{sim.playing=false;renderChips();enqueue(stepCase);};
+$('bStart').onclick=()=>{if(sim.caseStart)restartCase();};
+const PAD=['U',"U'",'U2','D',"D'",'D2','R',"R'",'R2','L',"L'",'L2','F',"F'",'F2','B',"B'",'B2','M','E','S','x','y','z'];
+$('pad').innerHTML=PAD.map(t=>`<button type="button" data-t="${t}">${t}</button>`).join('');
+$('pad').addEventListener('click',e=>{const t=e.target.closest('button')?.dataset.t;if(t)manual(t);});
+$('algForm').addEventListener('submit',e=>{e.preventDefault();const v=$('algIn').value.trim();const err=$('algErr');
+  if(!v)return;try{const toks=parse(v);if(!toks.length)throw new Error('記号が見つかりません');
+    err.hidden=true;hardReset();sim.caseStart=sim.cur.clone();sim.casePath=sim.path.slice();sim.tokens=toks;sim.idx=0;sim.name='入力した手順';renderSim();play();}
+  catch(x){err.textContent=x.message+'。使える記号は U D L R F B M E S x y z と小文字、\' と 2 です。';err.hidden=false;}});
+function resetTo(b){hardReset();sim.cur=baseCube(b);sim.tokens=[];sim.idx=0;sim.caseStart=null;sim.hist=[];sim.path=[];renderSim();}
+$('bResetW').onclick=()=>resetTo('white');
+$('bResetY').onclick=()=>resetTo('yellow');
+$('bScr').onclick=()=>{const s=genScramble();resetTo('white');sim.cur.alg(s);sim.hist=parse(s);sim.path=parse(s);renderSim();$('algIn').value=s;};
+$('bUndo').onclick=()=>{sim.playing=false;renderChips();enqueue(async g=>{
+  if(sim.hist.length){const t=invTok(sim.hist[sim.hist.length-1]);const ok=await animate(t,g);if(ok){sim.hist.pop();sim.path.push(t);}return ok;}
+  if(sim.tokens.length&&sim.idx>0){sim.animIdx=sim.idx-1;renderChips();const t=invTok(sim.tokens[sim.idx-1]);const ok=await animate(t,g);
+    if(ok){sim.path.push(t);sim.idx--;sim.animIdx=-1;renderChips();}return ok;}
+  return false;});};
+$('bSolve').onclick=()=>{if(sim.cur.solved())return;
+  hardReset();const toks=simplify(sim.path.slice().reverse().map(invTok));
+  sim.caseStart=sim.cur.clone();sim.casePath=sim.path.slice();sim.tokens=toks;sim.idx=0;sim.hist=[];
+  sim.name=`そろえる手順（${toks.length}手・これまでの操作を逆にたどる）`;renderSim();play();};
+document.addEventListener('click',e=>{const b=e.target.closest('.try');if(!b)return;
+  loadCase(b.dataset.alg,b.dataset.base||'white',b.dataset.name,true);
+  if(matchMedia('(max-width:980px)').matches)$('sim').scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});});
+loadCase("R U R' U R U2 R'",'yellow','STEP 5 · スーン');
+
+/* ---------- nav highlight ---------- */
+const links=[...document.querySelectorAll('.nav a')];
+const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.isIntersecting){links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+en.target.id));}});},{rootMargin:'-40% 0px -55% 0px'});
+['notation','beginner','advanced','timer'].forEach(id=>io.observe(document.getElementById(id)));
+
+/* ---------- timer ---------- */
+const T={state:'idle',t0:0,raf:0,holdT:0,justStopped:false,scr:'',times:[]};
+try{T.times=JSON.parse(localStorage.getItem('cube-times')||'[]');if(!Array.isArray(T.times))T.times=[];}catch(e){T.times=[];}
+const save=()=>{try{localStorage.setItem('cube-times',JSON.stringify(T.times.slice(-500)));}catch(e){}};
+const fmt=ms=>{if(ms==null)return '—';const s=ms/1000;if(s<60)return s.toFixed(2);const m=Math.floor(s/60);return m+':'+(s-m*60).toFixed(2).padStart(5,'0');};
+function avgOf(n){if(T.times.length<n)return null;const a=T.times.slice(-n).map(t=>t.ms).sort((x,y)=>x-y).slice(1,-1);return a.reduce((x,y)=>x+y,0)/a.length;}
+function newScr(){T.scr=genScramble();$('scrText').textContent=T.scr;$('scrNet').innerHTML=netSVG(new Cube().alg(T.scr),'スクランブル後の展開図');}
+function renderTimes(){
+  $('stN').textContent=T.times.length;$('stBest').textContent=T.times.length?fmt(Math.min(...T.times.map(t=>t.ms))):'—';
+  $('stAo5').textContent=fmt(avgOf(5));$('stAo12').textContent=fmt(avgOf(12));
+  const L=$('tlist');
+  if(!T.times.length){L.innerHTML='<p class="empty">まだ記録はありません。1回解くとここに並びます。</p>';return;}
+  L.innerHTML=T.times.map((t,i)=>({t,i})).reverse().map(({t,i})=>`<div class="t"><span class="n">${i+1}</span><b>${fmt(t.ms)}</b><button type="button" data-del="${i}" aria-label="${i+1}回目を削除">削除</button></div>`).join('');
+}
+$('tlist').addEventListener('click',e=>{const d=e.target.closest('[data-del]');if(!d)return;T.times.splice(+d.dataset.del,1);save();renderTimes();});
+const pad=$('tpad'),clock=$('clock');
+function setPad(){pad.classList.toggle('hold',T.state==='hold');pad.classList.toggle('ready',T.state==='ready');
+  $('thint').textContent=T.state==='run'?'どこかを押す（またはキーを押す）と停止':T.state==='ready'?'離すとスタート':'ここを押し続けて（またはスペースキー長押し）、緑になったら離すとスタート';}
+function tick(){clock.textContent=fmt(performance.now()-T.t0);T.raf=requestAnimationFrame(tick);}
+function press(){if(T.state==='run'){const ms=performance.now()-T.t0;cancelAnimationFrame(T.raf);clock.textContent=fmt(ms);
+    T.times.push({ms:Math.round(ms),scr:T.scr,at:Date.now()});save();renderTimes();newScr();T.state='idle';T.justStopped=true;setPad();return;}
+  if(T.state!=='idle')return;T.justStopped=false;T.state='hold';clock.textContent='0.00';setPad();
+  T.holdT=setTimeout(()=>{if(T.state==='hold'){T.state='ready';setPad();}},300);}
+function release(){if(T.justStopped){T.justStopped=false;return;}
+  clearTimeout(T.holdT);
+  if(T.state==='ready'){T.state='run';T.t0=performance.now();tick();}else if(T.state==='hold'){T.state='idle';}
+  setPad();}
+pad.addEventListener('pointerdown',e=>{e.preventDefault();pad.focus();press();});
+pad.addEventListener('pointerup',release);
+pad.addEventListener('pointercancel',()=>{if(T.state==='hold'||T.state==='ready'){clearTimeout(T.holdT);T.state='idle';setPad();}});
+let spaceDown=false;
+window.addEventListener('keydown',e=>{const tag=(e.target.tagName||'').toLowerCase();if(tag==='input'||tag==='textarea')return;
+  if(T.state==='run'&&!['Shift','Control','Alt','Meta'].includes(e.key)){e.preventDefault();spaceDown=e.code==='Space';press();return;}
+  if(e.code==='Space'&&document.activeElement===pad){e.preventDefault();if(!spaceDown){spaceDown=true;press();}}});
+window.addEventListener('keyup',e=>{if(e.code==='Space'&&spaceDown){spaceDown=false;if(document.activeElement===pad||T.justStopped){e.preventDefault();release();}}});
+$('bNextScr').onclick=newScr;
+$('bScrSim').onclick=()=>{resetTo('white');sim.cur.alg(T.scr);sim.hist=parse(T.scr);sim.path=parse(T.scr);sim.name='タイマーのスクランブル';renderSim();$('sim').scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});};
+let clearArm=0;
+$('bClear').onclick=()=>{const b=$('bClear');if(!T.times.length)return;
+  if(Date.now()-clearArm<4000){T.times=[];save();renderTimes();b.textContent='記録をすべて消す';clearArm=0;return;}
+  clearArm=Date.now();b.textContent='もう一度押すと消去';setTimeout(()=>{if(clearArm&&Date.now()-clearArm>=4000){b.textContent='記録をすべて消す';clearArm=0;}},4100);};
+newScr();renderTimes();setPad();
+})();
+</script>
+
+</body></html>

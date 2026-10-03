@@ -1,0 +1,474 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ライツアウト攻略</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+/* ゲームと同じ夜の配電盤。縦一列の読み物、図はすべてランプの盤で描く */
+:root{
+  color-scheme: dark;
+  --bg:#12141d;
+  --panel:#1b1e2b;
+  --off:#262a3b;
+  --off-edge:#323750;
+  --lamp:#ffc857;
+  --glow:rgba(255,200,87,.5);
+  --fg:#ece8f4;
+  --muted:#8e93ad;
+  --hint:#7fd6ff;
+  --f-display:"Dela Gothic One","Hiragino Kaku Gothic ProN",sans-serif;
+  --f-ui:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Noto Sans JP",sans-serif;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15.5px;line-height:1.8;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:680px;margin:0 auto;padding-inline:18px;padding-block:20px 56px;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;text-wrap:balance;margin:0;letter-spacing:.03em;line-height:1.35}
+h1{font-size:2rem}
+h1 span{color:var(--lamp);text-shadow:0 0 16px var(--glow)}
+h2{font-size:1.35rem;display:flex;align-items:baseline;gap:10px}
+h2 .no{font-size:.8rem;color:var(--lamp);letter-spacing:.1em}
+h3{font-size:1.02rem;color:var(--lamp)}
+p{margin:0;max-width:62ch}
+section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:70px}
+b.em{color:var(--lamp);font-weight:700}
+.muted{color:var(--muted);font-size:.9rem}
+
+/* ヒーロー */
+.hero{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center}
+.hero p{color:var(--muted)}
+.hero-text{display:flex;flex-direction:column;gap:12px;min-width:0}
+.play{
+  align-self:flex-start;display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+  background:var(--lamp);color:#2b1d00;font-weight:700;border-radius:14px;padding:10px 20px;box-shadow:0 0 18px var(--glow);
+}
+.play svg{width:18px;height:18px}
+@media (max-width:460px){ .hero{grid-template-columns:1fr} .hero .mini{justify-self:start} }
+
+/* 目次 */
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(18,20,29,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  margin-inline:-18px;padding:10px 18px;border-bottom:1px solid var(--off-edge);overflow-x:auto;display:flex;gap:8px;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav a{flex:none;color:var(--muted);text-decoration:none;font-size:.85rem;border:1px solid var(--off-edge);border-radius:999px;padding:4px 12px}
+nav a:hover,nav a:focus-visible{color:var(--fg);border-color:var(--lamp);outline:none}
+
+/* ランプ盤(図) */
+.mini{display:grid;gap:var(--g,4px);padding:var(--p,6px);border-radius:12px;background:#191c29;width:max-content;box-shadow:inset 0 0 0 1px var(--off-edge)}
+.mini i{width:var(--s,18px);height:var(--s,18px);border-radius:28%;background:var(--off);position:relative;display:block}
+.mini i.on{background:radial-gradient(circle at 50% 40%,#ffe29a,var(--lamp) 60%,#e59a2b);box-shadow:0 0 10px var(--glow)}
+.mini i.tap::after{content:"";position:absolute;inset:-3px;border-radius:32%;border:2px solid var(--hint);box-shadow:0 0 8px var(--hint)}
+.mini i.dot::before{content:"";position:absolute;inset:32%;border-radius:50%;background:var(--hint)}
+.row-mini{display:flex;gap:3px}
+.row-mini i{width:14px;height:14px;border-radius:28%;background:var(--off);display:block;position:relative}
+.row-mini i.on{background:var(--lamp);box-shadow:0 0 6px var(--glow)}
+.row-mini i.tap{background:transparent;box-shadow:inset 0 0 0 2px var(--hint)}
+.row-mini i.tap::before{content:"";position:absolute;inset:30%;border-radius:50%;background:var(--hint)}
+
+.figure{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.figure .arrow{color:var(--muted);font-size:1.3rem}
+.caption{font-size:.82rem;color:var(--muted)}
+
+/* 法則カード */
+.laws{display:grid;gap:12px}
+.law{background:var(--panel);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.law h3 small{color:var(--muted);font-family:var(--f-ui);font-size:.75rem;margin-right:8px;letter-spacing:.1em}
+
+/* ステップ再生 */
+.demo{background:var(--panel);border-radius:18px;padding:18px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.demo-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.phase{display:inline-block;font-size:.75rem;letter-spacing:.1em;border-radius:999px;padding:2px 10px;border:1px solid var(--lamp);color:var(--lamp);align-self:flex-start}
+.phase.p2{border-color:var(--hint);color:var(--hint)}
+.phase.done{background:var(--lamp);color:#2b1d00}
+.step-msg{min-height:3.6em;font-size:.95rem}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  font-family:var(--f-ui);font-weight:700;font-size:.9rem;border-radius:12px;cursor:pointer;
+  border:1px solid var(--off-edge);background:#22263a;color:var(--fg);padding:8px 14px;min-height:40px;
+}
+.btn.primary{background:var(--lamp);border-color:var(--lamp);color:#2b1d00}
+.btn:active{transform:scale(.96)}
+.btn:focus-visible,.chip:focus-visible,.solver-board button:focus-visible{outline:2px solid var(--hint);outline-offset:2px}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.counter{font-family:var(--f-display);font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem}
+@media (max-width:520px){ .demo{grid-template-columns:1fr;justify-items:center} .demo-side{width:100%} }
+
+/* 表 */
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-family:var(--f-display);min-width:52px;height:38px;border-radius:12px;cursor:pointer;background:transparent;border:1px solid var(--off-edge);color:var(--muted);font-size:.95rem}
+.chip[aria-pressed="true"]{background:var(--lamp);border-color:var(--lamp);color:#2b1d00;box-shadow:0 0 14px var(--glow)}
+.table-box{background:var(--panel);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-weight:500;font-size:.75rem;color:var(--muted);text-align:left;padding:0 8px 8px;letter-spacing:.08em}
+.tbl td{padding:8px;border-top:1px solid var(--off-edge);vertical-align:middle}
+.tbl td.arrow{color:var(--muted);width:1%;padding-inline:4px}
+.tbl-wrap{overflow-x:auto}
+
+/* 最少手数 */
+.quiet{display:flex;gap:14px;flex-wrap:wrap}
+.stars-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.stars-list li{display:flex;gap:12px;align-items:baseline}
+.stars-list .s{color:var(--lamp);font-size:.95rem;letter-spacing:2px;min-width:3.6em;flex:none}
+
+/* ソルバー */
+.solver{background:var(--panel);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px;align-items:center}
+.solver .tabs{justify-content:center}
+.solver-board{display:grid;gap:6px;padding:10px;border-radius:16px;background:#191c29;width:min(100%,340px);aspect-ratio:1;box-sizing:border-box;touch-action:manipulation}
+.solver-board button{border:none;border-radius:22%;background:var(--off);cursor:pointer;position:relative;padding:0;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.35),inset 0 0 0 1px var(--off-edge);transition:background .15s}
+.solver-board button.on{background:radial-gradient(circle at 50% 42%,#ffe29a,var(--lamp) 55%,#e59a2b);box-shadow:0 0 14px var(--glow)}
+.solver-board button.tap::after{content:"";position:absolute;inset:30%;border-radius:50%;background:var(--hint);box-shadow:0 0 10px var(--hint)}
+.solver-out{text-align:center;min-height:1.8em}
+.solver-out b{font-family:var(--f-display);font-weight:400;font-size:1.3rem;color:var(--lamp)}
+.legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+
+footer{display:flex;flex-direction:column;align-items:center;gap:12px;border-top:1px solid var(--off-edge);padding-top:28px}
+footer .play{align-self:center}
+
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-text">
+      <h1>ライツ<span>アウト</span>攻略</h1>
+      <p>どんな盤面でも、決まった手順で必ず全部消せます。覚えることは「追っかけ法」と、サイズごとの小さな表だけです。</p>
+      <a class="play" href="../../games/lightsout/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>
+        ゲームで遊ぶ
+      </a>
+    </div>
+    <div class="mini" id="heroMini" style="--s:22px;--g:5px;--p:8px" aria-hidden="true"></div>
+  </header>
+
+  <nav aria-label="目次">
+    <a href="#rule">ルール</a>
+    <a href="#laws">3つの法則</a>
+    <a href="#chase">追っかけ法</a>
+    <a href="#tables">サイズ別の表</a>
+    <a href="#best">最少手数</a>
+    <a href="#solver">ソルバー</a>
+  </nav>
+
+  <section id="rule">
+    <h2><span class="no">01</span>ルール</h2>
+    <p>マスを押すと、<b class="em">そのマスと上下左右</b>のランプが反転します。点いていれば消え、消えていれば点きます。全部消せばクリアです。</p>
+    <div class="figure">
+      <div class="mini" id="ruleA" style="--s:22px"></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="mini" id="ruleB" style="--s:22px"></div>
+    </div>
+    <p class="caption">青い枠のマスを押すと、十字の5マスがひっくり返る。端のマスは3〜4マスだけ反転する。</p>
+  </section>
+
+  <section id="laws">
+    <h2><span class="no">02</span>3つの法則</h2>
+    <div class="laws">
+      <div class="law">
+        <h3><small>法則1</small>押す順番は関係ない</h3>
+        <p>同じマスの組み合わせを押せば、どの順番で押しても最後の盤面は同じです。</p>
+      </div>
+      <div class="law">
+        <h3><small>法則2</small>2回押すと押さなかったのと同じ</h3>
+        <p>反転を2回すると元に戻ります。だから解答は「どのマスを1回ずつ押すか」の組み合わせだけ。押す回数は最大でもマスの数までです。</p>
+      </div>
+      <div class="law">
+        <h3><small>法則3</small>押し方は重ねられる</h3>
+        <p>押し方Aと押し方Bを両方やると、それぞれの効果を重ねた結果になります。後で出てくる表は、この性質を使って組み合わせて使います。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="chase">
+    <h2><span class="no">03</span>追っかけ法</h2>
+    <p>上の行から順に、<b class="em">点いているランプの真下のマス</b>を押していきます。真下を押すと上のランプが消えるので、一段ずつ明かりを下へ追い込めます。最後は一番下の行だけにランプが残ります。</p>
+    <p>残った最下段の模様を下の表で調べ、<b class="em">一番上の行</b>の指定されたマスを押します。そこからもう一度追っかけ法をすると全部消えます。</p>
+    <div class="demo">
+      <div class="mini" id="demoBoard" style="--s:clamp(30px,9vw,40px);--g:6px;--p:10px"></div>
+      <div class="demo-side">
+        <span class="phase" id="demoPhase">1回目の追っかけ</span>
+        <p class="step-msg" id="demoMsg"></p>
+        <div class="btns">
+          <button class="btn" id="demoPrev" aria-label="一手戻す">◀</button>
+          <button class="btn primary" id="demoNext">次の一手</button>
+          <button class="btn" id="demoAuto">自動再生</button>
+          <button class="btn" id="demoNew">別の問題</button>
+        </div>
+        <span class="counter" id="demoCount"></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="tables">
+    <h2><span class="no">04</span>サイズ別の表</h2>
+    <p>1回目の追っかけの後、最下段に残った模様から、最上段で押すマスを引きます。<span class="muted">黄色が残ったランプ、青丸が押すマス。</span></p>
+    <div class="tabs" id="tableTabs" role="group" aria-label="サイズ"></div>
+    <div class="table-box" id="tableBox"></div>
+  </section>
+
+  <section id="best">
+    <h2><span class="no">05</span>最少手数で解くには</h2>
+    <p>4×4と5×5には、<b class="em">押しても盤面が全く変わらない押し方</b>があります。解答にこの模様を重ねると、別の正解が得られます。押すマスが減れば、そちらが近道です。</p>
+    <h3>5×5の「何も変わらない押し方」</h3>
+    <div class="quiet" id="quiet5"></div>
+    <p class="caption">青丸を全部押しても盤面は変化しない。5×5の正解は必ず4通りあり、その中で一番少ないものが最少手数。</p>
+    <p>3×3・6×6・7×7にはこの模様がなく、正解は1通りだけです。追っかけ法の答えがそのまま最少手数になります。4×4には15通りあり、正解は16通りあります。</p>
+    <h3>ゲームの星の条件</h3>
+    <ul class="stars-list">
+      <li><span class="s">★★★</span><span>最少手数ちょうどでクリア</span></li>
+      <li><span class="s">★★☆</span><span>最少手数＋2手以内(最少が5手以上なら、その半分まで余分に許される)</span></li>
+      <li><span class="s">★☆☆</span><span>それ以外のクリア</span></li>
+    </ul>
+    <p class="muted">ヒントボタンは最少手数の解から1マスを示します。迷ったら使っても星は減りません。ただし押し間違いが増えると手数が増えます。</p>
+  </section>
+
+  <section id="solver">
+    <h2><span class="no">06</span>ソルバー</h2>
+    <p>ゲームの盤面をマスをタップして写すと、最少手数で押すマスを青丸で表示します。</p>
+    <div class="solver">
+      <div class="tabs" id="solverTabs" role="group" aria-label="ソルバーのサイズ"></div>
+      <div class="solver-board" id="solverBoard"></div>
+      <div class="solver-out" id="solverOut"></div>
+      <div class="legend"><span><i style="background:var(--lamp)"></i>点いているランプ</span><span><i style="background:var(--hint);border-radius:50%"></i>押すマス</span></div>
+      <div class="btns">
+        <button class="btn" id="solverClear">全部消す</button>
+        <button class="btn" id="solverRandom">ランダム</button>
+        <button class="btn primary" id="solverApply">青丸を押してみる</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <a class="play" href="../../games/lightsout/" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>
+      ゲームで遊ぶ
+    </a>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  /* ---------- 小さな効果音 ---------- */
+  let ac=null;
+  function tone(f,d,type='triangle',v=.15,delay=0){
+    try{
+      if(!ac){ const A=window.AudioContext||window.webkitAudioContext; if(!A) return; ac=new A(); }
+      if(ac.state==='suspended') ac.resume();
+      const t=ac.currentTime+delay, o=ac.createOscillator(), g=ac.createGain();
+      o.type=type; o.frequency.value=f;
+      g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.005); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+d+.02);
+    }catch(e){}
+  }
+  const PENTA=[0,2,4,7,9];
+  const noteOf=(n,i)=>{ const k=(i/n|0)+i%n; return 330*Math.pow(2,(PENTA[k%5]+12*Math.floor(k/5))/12); };
+  const sClick=(n,i)=>tone(noteOf(n,i),.2);
+  const sDone=()=>[523.25,659.25,783.99,1046.5].forEach((f,k)=>tone(f,.35,'triangle',.14,k*.09));
+
+  /* ---------- 共通ロジック ---------- */
+  const nb=(n,i)=>{ const r=i/n|0,c=i%n,o=[i]; if(r>0)o.push(i-n); if(r<n-1)o.push(i+n); if(c>0)o.push(i-1); if(c<n-1)o.push(i+1); return o; };
+  const press=(n,s,i)=>{ for(const j of nb(n,i)) s[j]^=1; };
+  const P=str=>[...str].map(ch=>ch==='x'?1:0);
+
+  function solve(n,s){
+    const N=n*n,M=[];
+    for(let i=0;i<N;i++){ const row=new Uint8Array(N+1); for(const j of nb(n,i)) row[j]=1; row[N]=s[i]; M.push(row); }
+    const piv=[]; let r=0;
+    for(let c=0;c<N&&r<N;c++){
+      let p=-1; for(let k=r;k<N;k++) if(M[k][c]){p=k;break;}
+      if(p<0) continue;
+      [M[r],M[p]]=[M[p],M[r]];
+      for(let k=0;k<N;k++) if(k!==r&&M[k][c]){ const a=M[k],b=M[r]; for(let x=c;x<=N;x++) a[x]^=b[x]; }
+      piv.push(c); r++;
+    }
+    for(let k=r;k<N;k++) if(M[k][N]) return null;
+    const isP=new Uint8Array(N); piv.forEach(c=>isP[c]=1);
+    const free=[]; for(let c=0;c<N;c++) if(!isP[c]) free.push(c);
+    const base=new Uint8Array(N); piv.forEach((c,k)=>base[c]=M[k][N]);
+    const basis=free.map(f=>{ const v=new Uint8Array(N); v[f]=1; piv.forEach((c,k)=>v[c]=M[k][f]); return v; });
+    let best=base, bw=base.reduce((a,b)=>a+b,0);
+    for(let m=1;m<(1<<basis.length);m++){
+      const x=base.slice();
+      for(let b=0;b<basis.length;b++) if(m>>b&1){ const v=basis[b]; for(let t=0;t<N;t++) x[t]^=v[t]; }
+      const w=x.reduce((a,b)=>a+b,0); if(w<bw){best=x;bw=w;}
+    }
+    return best;
+  }
+
+  /* ---------- 図の描画 ---------- */
+  function mini(el,n,lit,taps=[],dots=[]){
+    el.style.gridTemplateColumns=`repeat(${n},var(--s,18px))`;
+    el.innerHTML='';
+    for(let i=0;i<n*n;i++){
+      const c=document.createElement('i');
+      if(lit[i]) c.classList.add('on');
+      if(taps.includes(i)) c.classList.add('tap');
+      if(dots.includes(i)) c.classList.add('dot');
+      el.appendChild(c);
+    }
+  }
+  const rowMini=(bits,kind)=>'<span class="row-mini">'+bits.map(b=>`<i class="${b?kind:''}"></i>`).join('')+'</span>';
+
+  // ヒーロー: ランプの盤
+  mini($('heroMini'),5,P('.x...xxx..x.x.x..xxx...x.'));
+
+  // ルール図
+  const before=new Array(25).fill(0); [1,5,13,19].forEach(i=>before[i]=1);
+  mini($('ruleA'),5,before,[12]);
+  const after=before.slice(); press(5,after,12);
+  mini($('ruleB'),5,after);
+
+  /* ---------- 追っかけ法デモ(5×5) ---------- */
+  const TABLE5={ '..xxx':'...x.', '.x.x.':'x..x.', '.xx.x':'x....', 'x...x':'xx...', 'x.xx.':'....x', 'xx.xx':'..x..', 'xxx..':'.x...' };
+  let seed=7;
+  const rnd=()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+  let demo;
+  function makeDemo(){
+    let start;
+    for(let t=0;t<500;t++){
+      start=new Array(25).fill(0);
+      for(let i=0;i<25;i++) if(rnd()<.45) press(5,start,i);
+      // 最上段の操作が必要な問題を選ぶ
+      const s=start.slice(); for(let r=0;r<4;r++) for(let c=0;c<5;c++) if(s[r*5+c]) press(5,s,(r+1)*5+c);
+      const bot=s.slice(20).map(v=>v?'x':'.').join('');
+      if(TABLE5[bot] && start.some(v=>v)) break;
+    }
+    const steps=[], s=start.slice();
+    const chase=(phase)=>{ for(let r=0;r<4;r++) for(let c=0;c<5;c++) if(s[r*5+c]){ const i=(r+1)*5+c; steps.push({i,phase,msg:`${r+1}行目の${c+1}列目が点いているので、その真下を押す。`}); press(5,s,i);} };
+    chase(1);
+    const bot=s.slice(20).map(v=>v?'x':'.').join('');
+    const top=TABLE5[bot]||'.....';
+    [...top].forEach((ch,c)=>{ if(ch==='x'){ steps.push({i:c,phase:2,msg:`最下段が表の模様と一致。表のとおり最上段の${c+1}列目を押す。`}); press(5,s,c);} });
+    chase(3);
+    demo={start,steps,pos:0};
+    renderDemo();
+  }
+  function demoState(){ const s=demo.start.slice(); for(let k=0;k<demo.pos;k++) press(5,s,demo.steps[k].i); return s; }
+  function renderDemo(){
+    const s=demoState(), next=demo.steps[demo.pos];
+    mini($('demoBoard'),5,s,next?[next.i]:[]);
+    const ph=$('demoPhase');
+    ph.className='phase';
+    if(!next){ ph.textContent='完成'; ph.classList.add('done'); $('demoMsg').textContent='全部消えた。押したのは合計 '+demo.steps.length+' マス。'; }
+    else if(next.phase===1){ ph.textContent='1回目の追っかけ'; $('demoMsg').textContent=next.msg; }
+    else if(next.phase===2){ ph.textContent='最上段を押す'; ph.classList.add('p2'); $('demoMsg').textContent=next.msg; }
+    else { ph.textContent='2回目の追っかけ'; $('demoMsg').textContent=next.msg; }
+    if(demo.pos===0) $('demoMsg').textContent='青枠のマスを押す。'+$('demoMsg').textContent;
+    $('demoCount').textContent=`${demo.pos} / ${demo.steps.length}`;
+    $('demoPrev').disabled=demo.pos===0;
+    $('demoNext').disabled=!next;
+  }
+  let autoTimer=null;
+  const stopAuto=()=>{ clearInterval(autoTimer); autoTimer=null; $('demoAuto').textContent='自動再生'; };
+  function demoStep(){
+    const st=demo.steps[demo.pos]; if(!st) return false;
+    demo.pos++; sClick(5,st.i); renderDemo();
+    if(demo.pos===demo.steps.length){ sDone(); return false; }
+    return true;
+  }
+  $('demoNext').onclick=()=>{ stopAuto(); demoStep(); };
+  $('demoPrev').onclick=()=>{ stopAuto(); if(demo.pos>0){ demo.pos--; tone(520,.12,'triangle',.1); renderDemo(); } };
+  $('demoNew').onclick=()=>{ stopAuto(); makeDemo(); tone(660,.1,'square',.04); };
+  $('demoAuto').onclick=()=>{
+    if(autoTimer){ stopAuto(); return; }
+    if(demo.pos>=demo.steps.length){ demo.pos=0; renderDemo(); }
+    $('demoAuto').textContent='停止';
+    autoTimer=setInterval(()=>{ if(!demoStep()) stopAuto(); },650);
+  };
+  makeDemo();
+
+  /* ---------- サイズ別の表 ---------- */
+  const T3={ '..x':'.xx', '.x.':'xxx', '.xx':'x..', 'x..':'xx.', 'x.x':'x.x', 'xx.':'..x', 'xxx':'.x.' };
+  const EFFECT={ // 最上段の1マスを押して追っかけたとき最下段に残る模様
+    6:['x...x.','.x.x.x','....x.','.x....','x.x.x.','.x...x'],
+    7:['x.xx.xx','..xx.xx','xx.....','xx.x.xx','.....xx','xx.xx..','xx.xx.x']
+  };
+  function lookupTable(map,note){
+    let h=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>最下段に残った模様</th><th></th><th>最上段で押すマス</th></tr></thead><tbody>`;
+    for(const [b,t] of Object.entries(map)) h+=`<tr><td>${rowMini(P(b),'on')}</td><td class="arrow">→</td><td>${rowMini(P(t),'tap')}</td></tr>`;
+    return h+'</tbody></table></div>'+(note?`<p class="muted">${note}</p>`:'');
+  }
+  function effectTable(n){
+    let h=`<p>このサイズは模様が ${(1<<n)-1} 通りあるので、代わりに<b class="em">最上段の1マスが最下段に何を残すか</b>の表を使います。</p>`;
+    h+=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>最上段で押すマス</th><th></th><th>最下段に残る模様</th></tr></thead><tbody>`;
+    EFFECT[n].forEach((b,k)=>{ const t=new Array(n).fill(0); t[k]=1; h+=`<tr><td>${rowMini(t,'tap')}</td><td class="arrow">→</td><td>${rowMini(P(b),'on')}</td></tr>`; });
+    h+='</tbody></table></div>';
+    h+=`<p>残った模様と同じになるように行を選びます。複数の行を選ぶと、同じ列に黄色が2回出たところは消えます(法則3)。選んだ行の青丸を全部押してから、もう一度追っかければ完成です。</p><p class="muted">組み合わせ探しが面倒なら、下のソルバーで答えを見られます。</p>`;
+    return h;
+  }
+  const TAB_CONTENT={
+    3:()=>lookupTable(T3,'3×3は、どの模様にも答えが1つだけあります。'),
+    4:()=>`<h3>4×4は追っかけるだけ</h3><p>4×4では、最上段のどのマスを押しても追っかけ後の最下段は変わりません。つまり<b class="em">解ける盤面なら1回目の追っかけで全部消えます</b>。ゲームは解ける問題だけを出すので、4×4は追っかけ法だけでクリアできます。</p><p class="muted">追っかけの手数は最少とは限りません。最少を狙うならソルバーで確認できます。</p>`,
+    5:()=>lookupTable(TABLE5,'この7パターン以外が残ることはありません。ゲームは解ける問題だけ出題します。'),
+    6:()=>effectTable(6),
+    7:()=>effectTable(7)
+  };
+  function buildTabs(box,cur,onPick,prefix){
+    box.innerHTML='';
+    [3,4,5,6,7].forEach(n=>{
+      const b=document.createElement('button');
+      b.className='chip'; b.id=prefix+n; b.textContent=`${n}×${n}`; b.setAttribute('aria-pressed',n===cur);
+      b.onclick=()=>{ tone(880,.05,'square',.04); onPick(n); };
+      box.appendChild(b);
+    });
+  }
+  let tableN=5;
+  function showTable(n){ tableN=n; buildTabs($('tableTabs'),n,showTable,'tt'); $('tableBox').innerHTML=TAB_CONTENT[n](); }
+  showTable(5);
+
+  /* ---------- 何も変わらない押し方 ---------- */
+  ['.xxx.x.x.xxx.xxx.x.x.xxx.','x.x.xx.x.x.....x.x.xx.x.x','xx.xx.....xx.xx.....xx.xx'].forEach(q=>{
+    const el=document.createElement('div'); el.className='mini'; el.style.setProperty('--s','16px');
+    const bits=P(q); mini(el,5,new Array(25).fill(0),[],bits.map((v,i)=>v?i:-1).filter(i=>i>=0));
+    $('quiet5').appendChild(el);
+  });
+
+  /* ---------- ソルバー ---------- */
+  let sn=5, ss=new Array(25).fill(0), sol=null;
+  function buildSolver(){
+    buildTabs($('solverTabs'),sn,n=>{ sn=n; ss=new Array(n*n).fill(0); buildSolver(); },'st');
+    const bd=$('solverBoard'); bd.innerHTML='';
+    bd.style.gridTemplateColumns=`repeat(${sn},1fr)`;
+    for(let i=0;i<sn*sn;i++){
+      const b=document.createElement('button'); b.id='sv'+i;
+      b.setAttribute('aria-label',`${(i/sn|0)+1}行${i%sn+1}列`);
+      b.onclick=()=>{ ss[i]^=1; sClick(sn,i); updateSolver(); };
+      bd.appendChild(b);
+    }
+    updateSolver();
+  }
+  function updateSolver(){
+    sol=solve(sn,ss);
+    const btns=$('solverBoard').children;
+    for(let i=0;i<sn*sn;i++){
+      btns[i].classList.toggle('on',!!ss[i]);
+      btns[i].classList.toggle('tap',!!(sol&&sol[i]));
+      btns[i].setAttribute('aria-pressed',!!ss[i]);
+    }
+    const out=$('solverOut');
+    if(!ss.some(v=>v)) out.innerHTML='<span class="muted">点いているマスをタップして入力</span>';
+    else if(!sol) out.innerHTML='<span class="muted">この盤面は解けません。写し間違いがないか確認してください。</span>';
+    else out.innerHTML=`最少 <b>${sol.reduce((a,b)=>a+b,0)}</b> 手`;
+    $('solverApply').disabled=!sol||!ss.some(v=>v);
+  }
+  $('solverClear').onclick=()=>{ ss=new Array(sn*sn).fill(0); tone(392,.15,'triangle',.1); updateSolver(); };
+  $('solverRandom').onclick=()=>{
+    ss=new Array(sn*sn).fill(0);
+    do{ for(let i=0;i<sn*sn;i++) if(Math.random()<.5) press(sn,ss,i); }while(!ss.some(v=>v));
+    tone(660,.1,'square',.04); updateSolver();
+  };
+  $('solverApply').onclick=()=>{
+    if(!sol) return;
+    const list=[]; sol.forEach((v,i)=>v&&list.push(i));
+    const btn=$('solverApply'); btn.disabled=true;
+    list.forEach((i,k)=>setTimeout(()=>{
+      press(sn,ss,i); sClick(sn,i); updateSolver();
+      if(k===list.length-1){ sDone(); }
+    },k*220));
+  };
+  buildSolver();
+})();
+</script>
+
+</body></html>
