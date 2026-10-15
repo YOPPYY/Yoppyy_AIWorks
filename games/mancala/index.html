@@ -1,0 +1,454 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>マンカラ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* Layout: landscape wooden board. CPU store left, your store right, 2 rows of 6 pits between. */
+:root{
+  --bg1:#27384b; --bg2:#0f1620;
+  --wood-a:#7b4e2c; --wood-b:#5a3620; --wood-c:#432616;
+  --cream:#f3e3c6; --amber:#f2b441; --teal:#5fd0c0; --coral:#ee7f62;
+  --font-d:'Dela Gothic One','Zen Kaku Gothic New','Hiragino Sans','Noto Sans JP',sans-serif;
+  --font-b:'Zen Kaku Gothic New','Hiragino Sans','Noto Sans JP',system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(120% 100% at 50% 20%,var(--bg1) 0%,var(--bg2) 72%);color:var(--cream);font-family:var(--font-b);overflow:hidden;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#app{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0;--h:400px;--d:70px}
+#app.rot{transform:rotate(90deg) translateY(-100%)}
+button{appearance:none;border:0;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;background:none}
+button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+#bar{height:44px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:4px 14px 0}
+.ib{width:46px;height:36px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1}
+.ib:active{background:rgba(255,255,255,.18)}
+.ib:disabled{opacity:.35}
+#hintBtn{justify-self:end}
+#pill{display:flex;align-items:center;gap:8px;padding:5px 16px;border-radius:99px;background:rgba(0,0,0,.35);font-weight:700;font-size:14px;min-width:110px;justify-content:center}
+#pill i{width:10px;height:10px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+#pill.cpu i{background:var(--teal);box-shadow:0 0 8px var(--teal)}
+
+#stage{height:calc(100% - 44px);display:flex;align-items:center;justify-content:center}
+#board{display:flex;align-items:stretch;gap:calc(var(--d)*.3);padding:calc(var(--d)*.62) calc(var(--d)*.32);border-radius:calc(var(--d)*.55);
+  background:repeating-linear-gradient(92deg,rgba(0,0,0,.05) 0 2px,transparent 2px 9px),linear-gradient(180deg,var(--wood-a),var(--wood-b) 55%,var(--wood-c));
+  box-shadow:0 calc(var(--d)*.3) calc(var(--d)*.8) rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.35)}
+#mid{display:flex;flex-direction:column;gap:calc(var(--d)*.3)}
+.row{display:grid;grid-template-columns:repeat(6,var(--d));gap:calc(var(--d)*.2)}
+
+.pit,.store{position:relative;background:radial-gradient(circle at 50% 36%,#1d110a 0%,#2c1a0f 62%,#44291a 100%);
+  box-shadow:inset 0 calc(var(--d)*.07) calc(var(--d)*.14) rgba(0,0,0,.75),0 1px 0 rgba(255,255,255,.14)}
+.pit{width:var(--d);height:var(--d);border-radius:50%}
+.store{width:calc(var(--d)*1.25);border-radius:calc(var(--d)*.62);display:block}
+.pit.mine,.store.you{box-shadow:inset 0 calc(var(--d)*.07) calc(var(--d)*.14) rgba(0,0,0,.75),0 0 0 2px rgba(242,180,65,.22),0 1px 0 rgba(255,255,255,.14)}
+.pit.theirs,.store.cpu{box-shadow:inset 0 calc(var(--d)*.07) calc(var(--d)*.14) rgba(0,0,0,.75),0 0 0 2px rgba(95,208,192,.22),0 1px 0 rgba(255,255,255,.14)}
+.pit.can{box-shadow:inset 0 calc(var(--d)*.07) calc(var(--d)*.14) rgba(0,0,0,.75),0 0 0 3px rgba(242,180,65,.7)}
+.pit.can:active{transform:scale(.95)}
+.pit.hint::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:3px solid var(--amber);box-shadow:0 0 18px var(--amber);animation:ring 1s ease-in-out infinite;pointer-events:none}
+.pit.pop,.store.pop{animation:pop .28s ease-out}
+.pit.cap,.store.cap{box-shadow:inset 0 0 calc(var(--d)*.3) var(--coral),0 0 0 3px var(--coral)}
+.pit.pick::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:3px solid var(--teal);box-shadow:0 0 14px var(--teal);pointer-events:none}
+@keyframes ring{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.09);opacity:.45}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+
+.beads{position:absolute;inset:0;pointer-events:none}
+.bead{position:absolute;border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.9) 0 9%,rgba(255,255,255,0) 30%),var(--c);
+  box-shadow:inset -2px -3px 4px rgba(0,0,0,.38),0 1px 2px rgba(0,0,0,.55);
+  transition:left .25s,top .25s,width .25s,height .25s}
+.bead.new{animation:beadIn .22s ease-out}
+@keyframes beadIn{from{transform:translate(-50%,-50%) scale(1.9);opacity:.25}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+
+.num{position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:max(11px,calc(var(--d)*.2));color:#f1dcc0;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
+#rowTop .num{bottom:100%;margin-bottom:calc(var(--d)*.06)}
+#rowBot .num{top:100%;margin-top:calc(var(--d)*.06)}
+.store .num{top:50%;bottom:auto;transform:translateY(-50%);font-family:var(--font-d);font-weight:400;font-size:calc(var(--d)*.6);color:rgba(255,240,215,.26);text-shadow:none}
+.store .who{position:absolute;left:0;right:0;bottom:calc(var(--d)*.1);text-align:center;font-size:max(9px,calc(var(--d)*.13));letter-spacing:.14em;color:rgba(255,240,215,.4);font-weight:700}
+
+#toast{position:absolute;left:50%;top:50%;transform:translate(-50%,-40%);font-family:var(--font-d);font-size:clamp(20px,calc(var(--h)*.06),34px);padding:6px 20px;border-radius:99px;background:rgba(10,14,20,.62);color:var(--cream);opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;z-index:15;white-space:nowrap}
+#toast.show{opacity:1;transform:translate(-50%,-50%)}
+
+.ov{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,12,18,.62);backdrop-filter:blur(4px);z-index:20}
+.ov.show{display:flex}
+.card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 28px;border-radius:20px;background:rgba(22,28,38,.92);border:1px solid rgba(255,255,255,.14);box-shadow:0 18px 50px rgba(0,0,0,.5);max-height:92%;overflow:auto;max-width:92%}
+.title{font-family:var(--font-d);font-size:clamp(30px,calc(var(--h)*.1),52px);margin:0;letter-spacing:.06em;line-height:1.1}
+.deco{display:flex;gap:8px}
+.deco i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.9) 0 9%,rgba(255,255,255,0) 30%),var(--c);box-shadow:inset -2px -3px 4px rgba(0,0,0,.38)}
+.seg{display:flex;gap:6px}
+.seg button{padding:8px 16px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);font-weight:700;font-size:15px}
+.seg button.on{background:var(--amber);color:#2a1a08;border-color:var(--amber)}
+.btn{padding:11px 34px;border-radius:14px;background:var(--amber);color:#2a1a08;font-weight:700;font-size:18px;box-shadow:0 3px 0 #a8741a}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #a8741a}
+.btn.sub{background:rgba(255,255,255,.1);color:var(--cream);box-shadow:none;border:1px solid rgba(255,255,255,.18);font-size:15px;padding:8px 22px}
+.tgs{display:flex;gap:8px}
+.tg{padding:6px 14px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);font-size:14px;font-weight:700}
+.tg.off{opacity:.45;text-decoration:line-through}
+.rowbtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.rules{margin:0;padding-left:1.2em;font-size:14px;line-height:1.7;max-width:460px;text-align:left}
+#resTitle{font-size:clamp(34px,calc(var(--h)*.13),64px)}
+#resScore{font-family:var(--font-d);font-size:clamp(20px,calc(var(--h)*.06),30px);display:flex;gap:14px;align-items:center}
+#resScore b{font-weight:400}
+#resScore .y{color:var(--amber)} #resScore .c{color:var(--teal)}
+
+@media (prefers-reduced-motion:reduce){.bead.new,.pit.pop,.store.pop,.pit.hint::after{animation:none}}
+</style>
+
+<div id="app">
+  <header id="bar">
+    <button class="ib" id="pauseBtn" aria-label="ポーズ"><svg width="18" height="18" viewBox="0 0 18 18"><rect x="3" y="2" width="4" height="14" rx="1.2" fill="currentColor"/><rect x="11" y="2" width="4" height="14" rx="1.2" fill="currentColor"/></svg></button>
+    <div id="pill"><i></i><span id="pillTx">あなたの番</span></div>
+    <button class="ib" id="hintBtn" aria-label="ヒント">💡</button>
+  </header>
+  <main id="stage">
+    <div id="board">
+      <div class="store cpu" id="s13"><div class="beads"></div><span class="num"></span><span class="who">CPU</span></div>
+      <div id="mid"><div class="row" id="rowTop"></div><div class="row" id="rowBot"></div></div>
+      <div class="store you" id="s6"><div class="beads"></div><span class="num"></span><span class="who">YOU</span></div>
+    </div>
+  </main>
+  <div id="toast"></div>
+
+  <div class="ov show" id="menuOv">
+    <div class="card">
+      <h1 class="title">マンカラ</h1>
+      <div class="deco"><i style="--c:#7fd6c6"></i><i style="--c:#f2b441"></i><i style="--c:#ee7f62"></i><i style="--c:#efe6d2"></i><i style="--c:#8fa6f0"></i></div>
+      <div class="seg" id="lvSeg"><button data-lv="easy">やさしい</button><button data-lv="normal">ふつう</button><button data-lv="hard">つよい</button></div>
+      <button class="btn" id="startBtn">はじめる</button>
+      <div class="tgs"><button class="tg" data-k="bgm">♪ BGM</button><button class="tg" data-k="se">♬ 効果音</button><button class="tg" id="rulesBtn">? ルール</button></div>
+    </div>
+  </div>
+
+  <div class="ov" id="rulesOv">
+    <div class="card">
+      <h2 class="title" style="font-size:28px">ルール</h2>
+      <ol class="rules">
+        <li>自分の穴を1つ選び、石を全部取って反時計回りに1個ずつ配る</li>
+        <li>相手のストア（左の大きな穴）は飛ばす</li>
+        <li>最後の石が自分のストア（右）に入ったら、もう一回</li>
+        <li>最後の石が自分の空の穴に入ったら、向かいの石を横取り</li>
+        <li>片側が空になったら終了。ストアの石が多い方の勝ち</li>
+      </ol>
+      <button class="btn sub" id="rulesClose">もどる</button>
+    </div>
+  </div>
+
+  <div class="ov" id="pauseOv">
+    <div class="card">
+      <h2 class="title" style="font-size:34px">ポーズ</h2>
+      <button class="btn" id="resumeBtn">つづける</button>
+      <div class="tgs"><button class="tg" data-k="bgm">♪ BGM</button><button class="tg" data-k="se">♬ 効果音</button></div>
+      <div class="rowbtns"><button class="btn sub" id="restartBtn">さいしょから</button><button class="btn sub" id="toMenuBtn">タイトルへ</button></div>
+    </div>
+  </div>
+
+  <div class="ov" id="resOv">
+    <div class="card">
+      <h2 class="title" id="resTitle">かち!</h2>
+      <div id="resScore"><b class="y" id="rY">0</b><span>-</span><b class="c" id="rC">0</b></div>
+      <div class="rowbtns"><button class="btn" id="againBtn">もう一度</button><button class="btn sub" id="toMenu2">タイトルへ</button></div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const STORE=[6,13];
+const COL=['#7fd6c6','#f2b441','#ee7f62','#efe6d2','#8fa6f0'];
+
+/* ---------- settings ---------- */
+let cfg={bgm:true,se:true,level:'normal'};
+try{Object.assign(cfg,JSON.parse(localStorage.getItem('mancala-cfg')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('mancala-cfg',JSON.stringify(cfg))}catch(e){}};
+
+/* ---------- rules ---------- */
+const own=(p,i)=>p===0?i<6:(i>=7&&i<=12);
+function play(b,p,i,log){
+  b=b.slice(); let n=b[i]; b[i]=0; let idx=i; const my=STORE[p], opp=STORE[1-p];
+  if(log) log.push({t:'pick',i,n});
+  while(n>0){ idx=(idx+1)%14; if(idx===opp) continue; b[idx]++; n--; if(log) log.push({t:'drop',i:idx,n0:0}); }
+  let extra=false, cap=0;
+  if(idx===my) extra=true;
+  else if(own(p,idx)&&b[idx]===1&&b[12-idx]>0){
+    cap=b[12-idx]+1; b[my]+=cap; const o=12-idx; b[idx]=0; b[o]=0;
+    if(log) log.push({t:'cap',i:idx,o,n:cap});
+  }
+  let s0=0,s1=0; for(let k=0;k<6;k++){s0+=b[k];s1+=b[7+k];}
+  let over=false;
+  if(s0===0||s1===0){
+    over=true; b[6]+=s0; b[13]+=s1; for(let k=0;k<6;k++){b[k]=0;b[7+k]=0;}
+    if(log) log.push({t:'sweep'});
+  }
+  return {b,extra:extra&&!over,over,cap};
+}
+function legal(b,p){const r=[];for(let k=5;k>=0;k--){const i=p*7+k;if(b[i]>0)r.push(i);}return r;}
+
+/* ---------- AI ---------- */
+const TIMEOUT={};let deadline=0,nodes=0;
+function ev(b,p){const o=1-p;let sp=0,so=0;for(let k=0;k<6;k++){sp+=b[p*7+k];so+=b[o*7+k];}return b[STORE[p]]-b[STORE[o]]+0.1*(sp-so);}
+function fin(b,p){const d=b[STORE[p]]-b[STORE[1-p]];return d+(d>0?100:d<0?-100:0);}
+function nega(b,p,depth,alpha,beta){
+  if((++nodes&1023)===0&&Date.now()>deadline) throw TIMEOUT;
+  const ms=legal(b,p);
+  if(depth===0||ms.length===0) return ev(b,p);
+  let best=-1e9;
+  for(const m of ms){
+    const r=play(b,p,m,null); let v;
+    if(r.over) v=fin(r.b,p);
+    else if(r.extra) v=nega(r.b,p,depth-1,alpha,beta);
+    else v=-nega(r.b,1-p,depth-1,-beta,-alpha);
+    if(v>best)best=v; if(v>alpha)alpha=v; if(alpha>=beta)break;
+  }
+  return best;
+}
+function best(b,p,maxD,ms){
+  const moves=legal(b,p); if(moves.length<=1) return {move:moves[0]};
+  deadline=Date.now()+ms; nodes=0; let bm=moves[0];
+  for(let d=1;d<=maxD;d++){
+    try{
+      const order=[bm,...moves.filter(m=>m!==bm)];
+      let cur=null,cv=-1e9,alpha=-1e9;
+      for(const m of order){
+        const r=play(b,p,m,null); let v;
+        if(r.over) v=fin(r.b,p);
+        else if(r.extra) v=nega(r.b,p,d-1,alpha,1e9);
+        else v=-nega(r.b,1-p,d-1,-1e9,-alpha);
+        if(v>cv){cv=v;cur=m;} if(v>alpha)alpha=v;
+      }
+      bm=cur;
+    }catch(e){if(e!==TIMEOUT)throw e;break;}
+  }
+  return {move:bm};
+}
+function cpuChoose(b){
+  const lv=cfg.level, ms=legal(b,1);
+  if(lv==='easy'){ if(Math.random()<.4) return ms[Math.floor(Math.random()*ms.length)]; return best(b,1,2,200).move; }
+  if(lv==='normal') return best(b,1,6,450).move;
+  return best(b,1,14,1100).move;
+}
+
+/* ---------- audio ---------- */
+const AU=(()=>{
+  let ctx=null,master,bgmBus,seBus,timer=null,nextT=0,step=0,noiseBuf;
+  const mf=m=>440*Math.pow(2,(m-69)/12);
+  const PENT=[0,2,4,7,9,12,14,16,19,21];
+  const CH=[{r:38,t:[62,66,69,73]},{r:35,t:[59,62,66,69]},{r:31,t:[55,59,62,66]},{r:33,t:[57,61,64,67]}];
+  const PA=[0,2,1,3,2,1,3,2], PB=[0,1,2,1,3,2,1,0];
+  const MEL=[[[0,81],[3,78],[6,76]],[[0,78],[4,74],[6,76]],[[0,79],[3,78],[5,74]],[[0,76],[3,73],[6,69]],
+             [[0,74],[2,78],[4,81],[6,78]],[[0,78],[3,74],[6,71]],[[0,74],[3,79],[5,78]],[[0,73],[2,76],[4,81]]];
+  function init(){
+    if(ctx){ if(ctx.state==='suspended'&&!paused) ctx.resume(); return; }
+    const C=window.AudioContext||window.webkitAudioContext; if(!C) return;
+    ctx=new C(); master=ctx.createGain(); master.gain.value=.85; master.connect(ctx.destination);
+    bgmBus=ctx.createGain(); bgmBus.gain.value=cfg.bgm?.5:0;
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=3200; bgmBus.connect(lp); lp.connect(master);
+    const dl=ctx.createDelay(1); dl.delayTime.value=.34; const fb=ctx.createGain(); fb.gain.value=.28;
+    const dlp=ctx.createBiquadFilter(); dlp.type='lowpass'; dlp.frequency.value=1800;
+    bgmBus.connect(dl); dl.connect(dlp); dlp.connect(fb); fb.connect(dl); dlp.connect(master);
+    seBus=ctx.createGain(); seBus.gain.value=cfg.se?1:0; seBus.connect(master);
+    noiseBuf=ctx.createBuffer(1,ctx.sampleRate*.2,ctx.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  }
+  function pluck(dest,t,f,v,d,type){
+    const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain(),g2=ctx.createGain();
+    o.type=type||'triangle'; o.frequency.setValueAtTime(f,t); o2.type='sine'; o2.frequency.setValueAtTime(f*2,t); g2.gain.value=.25;
+    o.connect(g); o2.connect(g2); g2.connect(g);
+    g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(v,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    g.connect(dest); o.start(t); o2.start(t); o.stop(t+d+.05); o2.stop(t+d+.05);
+  }
+  function pad(t,f,d,v){
+    const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=f;
+    g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(v,t+.5); g.gain.linearRampToValueAtTime(.0001,t+d);
+    o.connect(g); g.connect(bgmBus); o.start(t); o.stop(t+d+.05);
+  }
+  function click(t,v,hp){
+    const s=ctx.createBufferSource(); s.buffer=noiseBuf; const f=ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||2500;
+    const g=ctx.createGain(); g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.0001,t+.05);
+    s.connect(f); f.connect(g); g.connect(seBus); s.start(t); s.stop(t+.06);
+  }
+  function se(name,k){
+    if(!ctx||!cfg.se) return; const t=ctx.currentTime;
+    switch(name){
+      case 'pick':{const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(90,t+.12);
+        g.gain.setValueAtTime(.35,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);o.connect(g);g.connect(seBus);o.start(t);o.stop(t+.16);break;}
+      case 'drop': pluck(seBus,t,mf(74+PENT[Math.min(k||0,9)]),.32,.3,'sine'); click(t,.12,3500); break;
+      case 'store': pluck(seBus,t,mf(62),.4,.5,'sine'); pluck(seBus,t,mf(74),.18,.4,'sine'); break;
+      case 'extra': [69,73,76,81].forEach((m,i)=>pluck(seBus,t+i*.07,mf(m),.3,.35,'triangle')); break;
+      case 'cap': click(t,.35,1200); [76,69,62].forEach((m,i)=>pluck(seBus,t+i*.06,mf(m),.3,.3,'triangle')); break;
+      case 'hint': [81,88].forEach((m,i)=>pluck(seBus,t+i*.1,mf(m),.25,.5,'sine')); break;
+      case 'tap': pluck(seBus,t,mf(86),.2,.12,'sine'); break;
+      case 'win': [62,66,69,74,78,81,86].forEach((m,i)=>pluck(seBus,t+i*.09,mf(m),.3,.7,'triangle')); break;
+      case 'lose': [69,65,62,57].forEach((m,i)=>pluck(seBus,t+i*.22,mf(m),.28,.8,'sine')); break;
+      case 'draw': [74,74,69].forEach((m,i)=>pluck(seBus,t+i*.18,mf(m),.28,.6,'triangle')); break;
+    }
+  }
+  function sched(s,t){
+    const bar=Math.floor(s/8),st=s%8,ch=CH[bar%4],pat=(bar%2)?PB:PA;
+    pluck(bgmBus,t,mf(ch.t[pat[st]]),.16,.9,'triangle');
+    if(st===0){ pluck(bgmBus,t,mf(ch.r+12),.3,1.7,'sine'); ch.t.slice(0,3).forEach(m=>pad(t,mf(m-12),2.8,.022)); }
+    if(st===4) pluck(bgmBus,t,mf(ch.r+19),.14,1.1,'sine');
+    MEL[bar].forEach(([ms,m])=>{ if(ms===st) pluck(bgmBus,t,mf(m),.13,1.3,'sine'); });
+  }
+  function tick(){ const e=60/88/2; while(nextT<ctx.currentTime+.3){ sched(step,nextT); step=(step+1)%64; nextT+=e; } }
+  function bgmStart(){ if(!ctx||timer||!cfg.bgm) return; nextT=ctx.currentTime+.15; step=0; timer=setInterval(tick,80); }
+  function bgmStop(){ clearInterval(timer); timer=null; }
+  function apply(){ if(!ctx) return; bgmBus.gain.value=cfg.bgm?.5:0; seBus.gain.value=cfg.se?1:0; if(cfg.bgm) bgmStart(); else bgmStop(); }
+  return {init,se,bgmStart,bgmStop,apply,suspend(){ctx&&ctx.suspend();},resume(){ctx&&ctx.resume();}};
+})();
+
+/* ---------- state ---------- */
+let board,view,turn=0,busy=false,paused=false,mode='menu',tok=0,hintPit=-1;
+const EL=[];
+const isStore=i=>i===6||i===13;
+
+function mkPit(i){
+  const b=document.createElement('button'); b.className='pit '+(i<6?'mine':'theirs'); b.dataset.i=i;
+  b.innerHTML='<div class="beads"></div><span class="num"></span>'; b.setAttribute('aria-label',(i<6?'あなたの穴 ':'CPUの穴 ')+((i%7)+1));
+  EL[i]=b; return b;
+}
+for(let c=0;c<6;c++) $('#rowTop').append(mkPit(12-c));
+for(let c=0;c<6;c++) $('#rowBot').append(mkPit(c));
+EL[6]=$('#s6'); EL[13]=$('#s13');
+
+function layout(i){
+  const el=EL[i], box=el.querySelector('.beads'), n=box.children.length;
+  const w=el.clientWidth,h=el.clientHeight, st=isStore(i);
+  const rx=st?w*.3:w*.33, ry=st?h*.4:w*.33;
+  const sz=Math.max(6,Math.min(w*(st?.26:.27),1.45*Math.sqrt(rx*ry/Math.max(n,1))));
+  for(let k=0;k<n;k++){
+    const s=box.children[k], t=n===1?0:Math.sqrt((k+.5)/n), a=k*2.39996+i*.7;
+    s.style.left=(w/2+rx*t*Math.cos(a))+'px'; s.style.top=(h/2+ry*t*Math.sin(a))+'px'; s.style.width=s.style.height=sz+'px';
+  }
+}
+function renderPit(i,anim){
+  const el=EL[i], box=el.querySelector('.beads'), n=view[i];
+  el.querySelector('.num').textContent=n;
+  while(box.children.length<n){
+    const k=box.children.length, s=document.createElement('i'); s.className='bead'+(anim?' new':''); s.style.setProperty('--c',COL[(k*3+i)%COL.length]);
+    s.addEventListener('animationend',()=>s.classList.remove('new')); box.append(s);
+  }
+  while(box.children.length>n) box.lastChild.remove();
+  layout(i);
+}
+const renderAll=()=>{for(let i=0;i<14;i++)renderPit(i,false);};
+new ResizeObserver(()=>{ if(view) renderAll(); }).observe($('#board'));
+
+function flash(i,cls){const e=EL[i];cls=cls||'pop';e.classList.remove(cls);void e.offsetWidth;e.classList.add(cls);setTimeout(()=>e.classList.remove(cls),cls==='pop'?300:700);}
+let toastT; function toast(tx){const t=$('#toast');t.textContent=tx;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1300);}
+
+function sleep(ms){return new Promise(res=>{let left=ms,last=performance.now();(function t(){const n=performance.now();if(!paused)left-=n-last;last=n;if(left<=0)res();else setTimeout(t,16);})();});}
+
+function clearHint(){ if(hintPit>=0) EL[hintPit].classList.remove('hint'); hintPit=-1; }
+function updateUI(){
+  const pill=$('#pill'); pill.classList.toggle('cpu',turn===1);
+  $('#pillTx').textContent=mode==='play'?(turn===0?'あなたの番':'CPUの番'):'';
+  for(let i=0;i<6;i++) EL[i].classList.toggle('can',mode==='play'&&turn===0&&!busy&&!paused&&board[i]>0);
+  $('#hintBtn').disabled=!(mode==='play'&&turn===0&&!busy);
+  $('#pauseBtn').disabled=mode!=='play';
+}
+
+/* ---------- flow ---------- */
+function startGame(){
+  tok++; board=[4,4,4,4,4,4,0,4,4,4,4,4,4,0]; view=board.slice(); turn=0; busy=false; paused=false; mode='play'; clearHint();
+  $$('.ov').forEach(o=>o.classList.remove('show')); renderAll(); updateUI();
+  AU.init(); AU.apply(); AU.resume(); AU.se('tap');
+}
+function showMenu(){
+  tok++; mode='menu'; paused=false; busy=false; clearHint(); $$('.ov').forEach(o=>o.classList.remove('show')); $('#menuOv').classList.add('show'); updateUI(); AU.resume();
+}
+async function animate(log,who,my){
+  let k=0, delay=200;
+  for(const e of log){
+    if(tok!==my) return;
+    if(e.t==='pick'){ view[e.i]=0; renderPit(e.i); flash(e.i); AU.se('pick'); delay=e.n>10?120:e.n>6?160:200; k=0; await sleep(260); }
+    else if(e.t==='drop'){ view[e.i]++; renderPit(e.i,true); flash(e.i); AU.se(isStore(e.i)?'store':'drop',k++); await sleep(delay); }
+    else if(e.t==='cap'){
+      flash(e.i,'cap'); flash(e.o,'cap'); AU.se('cap'); await sleep(500); if(tok!==my) return;
+      const st=STORE[who]; view[st]+=e.n; view[e.i]=0; view[e.o]=0; renderPit(e.i); renderPit(e.o); renderPit(st,true); flash(st); AU.se('store');
+      toast(who===0?'とった!':'とられた!'); await sleep(350);
+    }
+    else if(e.t==='sweep'){
+      await sleep(200);
+      for(let i=0;i<14;i++){ if(isStore(i)||view[i]===0) continue; if(tok!==my) return; const st=i<6?6:13; view[st]+=view[i]; view[i]=0; renderPit(i); renderPit(st,true); AU.se('drop',(i%6)); await sleep(110); }
+    }
+  }
+}
+async function runMove(i,my){
+  busy=true; clearHint(); updateUI();
+  const who=turn, log=[], r=play(board,who,i,log);
+  await animate(log,who,my); if(tok!==my) return;
+  board=r.b; view=board.slice(); renderAll();
+  if(r.over){ return finish(my); }
+  if(r.extra){ toast('もう一回!'); AU.se('extra'); } else turn=1-turn;
+  busy=false; updateUI();
+  if(turn===1) cpuTurn(my);
+}
+async function cpuTurn(my){
+  await sleep(500); if(tok!==my) return;
+  const mv=await new Promise(res=>setTimeout(()=>res(cpuChoose(board)),20));
+  if(tok!==my) return;
+  EL[mv].classList.add('pick'); await sleep(420); EL[mv].classList.remove('pick'); if(tok!==my) return;
+  runMove(mv,my);
+}
+async function finish(my){
+  busy=true; updateUI(); await sleep(700); if(tok!==my) return;
+  mode='over'; const y=board[6],c=board[13];
+  $('#rY').textContent=y; $('#rC').textContent=c;
+  const t=$('#resTitle'); t.textContent=y>c?'かち!':y<c?'まけ…':'ひきわけ'; t.style.color=y>c?'var(--amber)':y<c?'var(--teal)':'var(--cream)';
+  AU.se(y>c?'win':y<c?'lose':'draw'); $('#resOv').classList.add('show'); updateUI();
+}
+function setPause(v){
+  if(mode!=='play'||paused===v) return; paused=v; $('#pauseOv').classList.toggle('show',v); v?AU.suspend():AU.resume(); updateUI();
+}
+
+/* ---------- input ---------- */
+$('#rowBot').addEventListener('click',e=>{
+  const b=e.target.closest('.pit'); if(!b) return; const i=+b.dataset.i;
+  if(mode!=='play'||paused||busy||turn!==0||board[i]===0) return; runMove(i,tok);
+});
+$('#hintBtn').addEventListener('click',()=>{
+  if(mode!=='play'||paused||busy||turn!==0) return; AU.se('hint'); const my=tok;
+  setTimeout(()=>{
+    if(tok!==my||busy||turn!==0||paused) return;
+    const m=best(board,0,12,700).move; clearHint(); hintPit=m; EL[m].classList.add('hint');
+    const r=play(board,0,m,null); toast(r.extra?'もう一回打てる!':r.cap?'石がとれる!':'この穴がおすすめ');
+  },30);
+});
+$('#pauseBtn').addEventListener('click',()=>setPause(true));
+$('#resumeBtn').addEventListener('click',()=>setPause(false));
+$('#restartBtn').addEventListener('click',startGame);
+$('#toMenuBtn').addEventListener('click',showMenu);
+$('#againBtn').addEventListener('click',startGame);
+$('#toMenu2').addEventListener('click',showMenu);
+$('#startBtn').addEventListener('click',startGame);
+$('#rulesBtn').addEventListener('click',()=>{AU.init();AU.se('tap');$('#rulesOv').classList.add('show')});
+$('#rulesClose').addEventListener('click',()=>$('#rulesOv').classList.remove('show'));
+
+function syncCfg(){
+  $$('.tg[data-k]').forEach(b=>b.classList.toggle('off',!cfg[b.dataset.k]));
+  $$('#lvSeg button').forEach(b=>b.classList.toggle('on',b.dataset.lv===cfg.level));
+}
+$$('.tg[data-k]').forEach(b=>b.addEventListener('click',()=>{ cfg[b.dataset.k]=!cfg[b.dataset.k]; save(); AU.init(); AU.apply(); if(paused&&cfg.bgm){} syncCfg(); AU.se('tap'); }));
+$$('#lvSeg button').forEach(b=>b.addEventListener('click',()=>{ cfg.level=b.dataset.lv; save(); syncCfg(); }));
+syncCfg();
+
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) setPause(true); });
+function fit(){
+  const de=document.documentElement; let W=de.clientWidth||innerWidth,H=de.clientHeight||innerHeight;
+  if(window.visualViewport){W=Math.min(W,Math.round(visualViewport.width))||W;H=Math.min(H,Math.round(visualViewport.height))||H;}
+  const rot=H>W, app=$('#app'), w=rot?H:W, h=rot?W:H;
+  app.classList.toggle('rot',rot); app.style.width=w+'px'; app.style.height=h+'px';
+  app.style.setProperty('--h',h+'px'); app.style.setProperty('--d',Math.max(24,Math.min((w-32)/10.9,(h-100)/3.6))+'px');
+  if(view) renderAll();
+}
+addEventListener('resize',fit); addEventListener('orientationchange',()=>setTimeout(fit,150));
+if(window.visualViewport) visualViewport.addEventListener('resize',fit);
+setInterval(fit,700); fit();
+
+/* ---------- boot ---------- */
+board=[4,4,4,4,4,4,0,4,4,4,4,4,4,0]; view=board.slice(); renderAll(); updateUI();
+})();
+</script>
+
+</body></html>

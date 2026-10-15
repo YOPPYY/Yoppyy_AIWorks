@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="ja"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>よぴぴっぴのゲーム棚</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -191,7 +191,7 @@ body.has-player .wrap{padding-bottom:110px}
   </nav>
 
   <section class="panel" id="p-games" role="tabpanel" aria-labelledby="tab-games">
-  <a class="hero" id="hero" target="_blank" rel="noopener"></a>
+  <a class="hero" id="hero"></a>
 
   <div class="bar">
     <nav class="chips" id="chips" aria-label="ジャンル"></nav>
@@ -242,67 +242,67 @@ body.has-player .wrap{padding-bottom:110px}
 <script>
 // ---- game list: newest first. To add a game, add one line at the top. ----
 const GAMES = [
-  {id:"dochira",   title:"どっちが安い?",       cat:"puz", url:"https://claude.ai/artifact/PuzvXkDbzsbHGrE7RTWXjc", tag:"2つの値札を単価で比べて、安いほうを選ぶ10問勝負。"},
-  {id:"hfcircuit",  title:"ひとふでサーキット",  cat:"act", url:"https://claude.ai/artifact/6uLbb1u4geqYCdFDxcsSQB", tag:"指で一筆書きしたコースで、CPU3台と競うレース。"},
-  {id:"arrowcross", title:"アローフォール クロス", cat:"act", url:"https://claude.ai/artifact/XVqDEVdUT2EMW3q5hr7M3e", tag:"6曲・2レーン/3レーンを選べる、矢印音ゲーの続編。"},
-  {id:"sunsetgp",   title:"サンセットGP",        cat:"act", url:"https://claude.ai/artifact/9qqtF5muXmycG7QxmcHcVg", tag:"夕焼けのコースをCPU5台と3周走る、レトロな疑似3Dレース。", wide:true},
-  {id:"circlebreak", title:"サークルブレイク3",   cat:"act", url:"https://claude.ai/artifact/VKX5VQxBHuUmP2MVJKo2h7", tag:"円形の盤を回して球を返し、中心のコアを壊すブロック崩し。"},
-  {id:"tenpoker",   title:"10JQKAポーカー",      cat:"tbl", url:"https://claude.ai/artifact/2aUTNe7oZ92WELuNDfQBSU", tag:"10・J・Q・K・Aの20枚だけで遊ぶ、CPUとのドローポーカー。"},
-  {id:"tsukimochi", title:"月のもち屋",          cat:"act", url:"https://claude.ai/artifact/ACZakgwRZghvdFXmdZBdit", tag:"臼でもちをつき、設備を増やして月まで稼ぐ放置クリッカー。"},
-  {id:"mancala",    title:"マンカラ",             cat:"tbl", url:"https://claude.ai/artifact/YU61LshU7X2FovpdpYgGmE", tag:"石を配って自陣のストアに集める、CPUとの頭脳戦。", wide:true},
-  {id:"speed123",   title:"的わり 1・2・3",      cat:"act", url:"https://claude.ai/artifact/HRqKkgDb6jibnM4wPx2iNT", tag:"並んだ的を1・2・3の順に撃ち抜く30秒勝負。"},
-  {id:"colorspeed", title:"カラースピード",       cat:"tbl", url:"https://claude.ai/artifact/RsX451mxpdNRENRoEAAAdd", tag:"4色のカードで±1をつなぐ、CPUとの早出し勝負。"},
-  {id:"kroon",      title:"3段クルーン",          cat:"act", url:"https://claude.ai/artifact/R6oJttSA5G7jwtEhNUa3iz", tag:"回る台の当たり穴に玉を落とし、3段突破で大当たり。"},
-  {id:"michi",      title:"ミチつなぎ",           cat:"puz", url:"https://claude.ai/artifact/LeejqRP4uDg1sJiMj6bMrU", tag:"タイルを回して光の道を全部つなぐ、60ステージのパズル。"},
-  {id:"shoken",     title:"初見殺しランド",       cat:"act", url:"https://claude.ai/artifact/PSJKh12wED21tbt2yxmSFc", tag:"罠だらけの横スクロール。死んで覚えてゴールを目指せ。", wide:true},
-  {id:"tripop",     title:"トライポップ",         cat:"puz", url:"https://claude.ai/artifact/UQXQ6qM6Yxa2FwvMEeaoce", tag:"同じ色の三角を3つ以上つなげて消す、60秒パズル。"},
-  {id:"iromaru",    title:"いろまるばつ",         cat:"tbl", url:"https://claude.ai/artifact/9QmUYjiHyos7JDqwkvKQwn", tag:"色とマルバツを重ねて並べる、カード式の三目並べ。"},
-  {id:"arrowfall",  title:"アローフォール",       cat:"act", url:"https://claude.ai/artifact/DvMDiKKDXA1x9RnUt9mBEE", tag:"落ちてくる矢印に合わせて、左・右・下をタップする音ゲー。"},
-  {id:"hexapop",    title:"ヘキサポップ",         cat:"puz", url:"https://claude.ai/artifact/KHL2kA23xVYVtY9ZM2tJAj", tag:"同じ図形を数字の数だけつなげて消す、60秒パズル。"},
-  {id:"polypop",    title:"ポリポップ",           cat:"puz", url:"https://claude.ai/artifact/WhzVDbjECrR9hryFNMK92u", tag:"同じ形を角の数だけつなげて消す、落ちものパズル。"},
-  {id:"yotsuba",    title:"ヨツバビート",         cat:"act", url:"https://claude.ai/artifact/7kteHK561SLe24ox9pgzNt", tag:"4レーンに降るノーツを、曲に合わせてたたく音ゲー。"},
-  {id:"tsuchinoko", title:"ツチノコ大量発生",     cat:"act", url:"https://claude.ai/artifact/NUFTwAzYALd42UsPH6hXKy", tag:"草むらのツチノコを網で捕まえ、1cm＝1,000円で稼ぐ。"},
-  {id:"tekkotsu",   title:"鉄骨渡り",           cat:"act", url:"https://claude.ai/artifact/3igeWyeRppEJryG6mQtW7e", tag:"左右の足を交互に出して、高所の鉄骨を渡りきれ。"},
-  {id:"amida",      title:"あみだシャッフル",     cat:"tbl", url:"https://claude.ai/artifact/DvgaMX6YuiqLHgQRipXtrH", tag:"あみだの先のメダルの行き先を、早い者勝ちで当てる。"},
-  {id:"atsunabe",   title:"アツナベの達人",       cat:"act", url:"https://claude.ai/artifact/89fAqUVE93oXDuNhcpXAef", tag:"3の倍数と3がつく数でタイコをたたき、アホになれ。"},
-  {id:"igo",        title:"師匠つき囲碁",         cat:"tbl", url:"https://claude.ai/artifact/1w8SmyDCpdCe272sdQ7Es5", tag:"超最強CPUの師匠がヒントをくれる囲碁。"},
-  {id:"chikuwa",    title:"ちくわ笛ジャンプ",     cat:"act", url:"https://claude.ai/artifact/NV7uyHsuKxZ2GUuDooKrSz", tag:"長押しで音が上がり、はなすとジャンプ。曲にのって進む。"},
-  {id:"kurofuku",   title:"黒服から逃げろ",       cat:"act", url:"https://claude.ai/artifact/2Rv8HgFmHvzHAWWP4YhjDG", tag:"黒服をかわして四隅のカードを集め、中央へ届けろ。", wide:true},
-  {id:"bowling",    title:"ナイトレーン ボウリング", cat:"act", url:"https://claude.ai/artifact/H6Aduo59apLMs4ed4q4YC9", tag:"夜のレーンで遊ぶ3Dボウリング。ストライクを狙え。"},
-  {id:"golf",       title:"そよかぜゴルフ",       cat:"act", url:"https://claude.ai/artifact/C7W1dVWFYH1tEMDxnRGNRd", tag:"方向とパワーを決めて打つ、3ホールの3Dゴルフ。"},
-  {id:"tango",      title:"単語さがし",           cat:"puz", url:"https://claude.ai/artifact/MJii1pCfGQdmcrZqXNxb2Y", tag:"文字の盤から隠れた単語を探す。CPU対戦もあり。"},
-  {id:"pinball",    title:"ネオンピンボール",     cat:"act", url:"https://claude.ai/artifact/NhEeYgbLYh8DZvFFWAeWfm", tag:"画面の左右タッチでフリッパー。光るネオン台のピンボール。"},
-  {id:"dungeons10", title:"6ダンジョンズ",        cat:"puz", url:"https://claude.ai/artifact/QqGABpPJV74KXkqB1hSNgV", tag:"6x6のダンジョンで、地下6階を目指せ。"},
-  {id:"lvbattle",   title:"数字バトル",           cat:"puz", url:"https://claude.ai/artifact/WbHRvoxdrSp1ir5NfPk2GX", tag:"自分より弱い敵から倒して吸収し、塔の頂上のボスへ。"},
-  {id:"deathroomba", title:"デスルンバ",          cat:"act", url:"https://claude.ai/artifact/8JwAcQtNwJ6gy2tLeLbxTx", tag:"刃つきのルンバだらけの部屋で、60秒逃げ切れ。"},
-  {id:"sugi",       title:"スギ切りハクション",   cat:"act", url:"https://claude.ai/artifact/GaQ5sC3zERM7u9oFT8ajBX", tag:"花粉症の男がタップでスギを切りまくる。鼻の限界に注意。"},
-  {id:"templerunners", title:"テンプルブラザーズ", cat:"act", url:"https://claude.ai/artifact/WUEB3XWCRqeRiyj4vNeuiP", tag:"左右2画面の遺跡を、2人同時に走らせる。"},
-  {id:"pinnuki",    title:"ピンぬきダンジョン",   cat:"puz", url:"https://claude.ai/artifact/1GjajDgRBvZitjsF732NEs", tag:"ピンを抜く順番で、金貨を勇者のもとへ届ける。"},
-  {id:"shisho",     title:"師匠つきオセロ",       cat:"tbl", url:"https://claude.ai/artifact/X3635zBatN9zX3MgcKyMeb", tag:"超最強CPUの師匠が最善手を教えてくれるオセロ。"},
-  {id:"zorogate",   title:"ぞろぞろゲート",       cat:"act", url:"https://claude.ai/artifact/YM1VGg3PHfh5bwwYKWzcWm", tag:"＋や×のゲートで仲間を増やし、敵の群れに突っこむ。"},
-  {id:"gakegp",     title:"崖っぷちドライブGP",   cat:"act", url:"https://claude.ai/code/artifact/a74daaff-de68-48de-870e-3c4ba6b8a1aa", tag:"崖のループコースでCPU3台とレース。落ちたら爆発。"},
-  {id:"kotoba",     title:"ことばさがし",         cat:"puz", url:"https://claude.ai/code/artifact/fed7cf10-4c69-4f06-ac19-f0d658f7c1b9", tag:"風船がなくなる前に、ひらがなの言葉を見つけよう。"},
-  {id:"surechigai", title:"すれ違いストリート",   cat:"act", url:"https://claude.ai/code/artifact/168bedde-ec5c-4078-8870-1c5860563cc1", tag:"前から来る人を3レーンでよけて歩く。"},
-  {id:"gake",       title:"崖っぷちドライブ",     cat:"act", url:"https://claude.ai/code/artifact/e52280bc-1fb6-4bf0-a9cf-dcf95d31fc74", tag:"ハンドルをスライドして崖道を走り抜ける。"},
-  {id:"tetris",     title:"テトリスタワーバトル", cat:"act", url:"https://claude.ai/code/artifact/400616b4-bf26-4eaf-ae21-9a7ee5ab664d", tag:"ブロックを積み上げて、落としたら負け。"},
-  {id:"souko",      title:"夜勤の倉庫番",         cat:"puz", url:"https://claude.ai/code/artifact/0a8c28ba-8215-455a-afa6-90a3ce8cb537", tag:"スワイプで荷物を押して定位置へ。"},
-  {id:"lightsout",  title:"ライツアウト",         cat:"puz", url:"https://claude.ai/code/artifact/df58a0e1-3102-4924-bf7e-f467d0a955a2", tag:"押すと上下左右も反転。全部消そう。"},
-  {id:"hitofude",   title:"ひとふでタイル",       cat:"puz", url:"https://claude.ai/code/artifact/948e25af-7895-4144-89cf-535c161d9d4d", tag:"すべてのタイルを一筆書きでなぞる。"},
-  {id:"watersort",  title:"ウォーターソート",     cat:"puz", url:"https://claude.ai/code/artifact/ab0c92b9-d2b7-47dd-89e4-2db6b450a968", tag:"試験管の色水を一色ずつにそろえる。"},
-  {id:"hotaru",     title:"ホタル迷宮",           cat:"act", url:"https://claude.ai/code/artifact/d2983cae-7551-46c5-a365-556694b99689", tag:"夜の森の迷路をスワイプで駆けまわる。"},
-  {id:"jiji",       title:"ジジ抜き神経衰弱",     cat:"tbl", url:"https://claude.ai/code/artifact/4452327f-cd21-44d2-8f87-06ccf3b8f59c", tag:"ジョーカーが場をかき混ぜる、CPUとの神経衰弱。"},
-  {id:"shanghai",   title:"トランプ上海",         cat:"tbl", url:"https://claude.ai/code/artifact/09050fc3-57b4-43e5-9f6b-2f12b55aba94", tag:"麻雀牌のかわりにトランプで遊ぶ上海。"},
-  {id:"hakushon",   title:"ハックション砲",       cat:"act", url:"https://claude.ai/code/artifact/c46b91ce-b667-4f42-883b-1f327306627b", tag:"長押しで吸って、くしゃみでおじさんを遠くへ。"},
-  {id:"superball",  title:"スーパーボールよけ",   cat:"act", url:"https://claude.ai/code/artifact/65c2f503-5662-471b-8d9c-0921fd1cc2ad", tag:"はね回るボールをひたすらよける。"},
-  {id:"gyakusuika", title:"逆スイカゲーム",       cat:"puz", url:"https://claude.ai/code/artifact/c06b53fd-fe4f-4af0-8f9e-ff009a4d6e66", tag:"大きな果物を落とし、同じ果物で小さくしていく。"},
-  {id:"neji",       title:"ネジはずし工房",       cat:"puz", url:"https://claude.ai/code/artifact/7e869ada-ce07-4b39-9e59-5ef6af087052", tag:"ネジを外して、同じ色の箱に3本ずつ。"},
-  {id:"meikyu",     title:"迷宮エスケープ",       cat:"puz", url:"https://claude.ai/code/artifact/afa3bf93-e0d6-4b5c-9b1b-3b7b8a645cff", tag:"ファミコン風の3D迷路から脱出。"},
-  {id:"doublerun",  title:"ダブルラン",           cat:"act", url:"https://claude.ai/code/artifact/5e4418c7-2ea2-4cf5-ada4-ae63f2c74b59", tag:"上下2人のランナーを同時にジャンプさせる。"},
-  {id:"climax9",    title:"クライマックス9",      cat:"tbl", url:"https://claude.ai/code/artifact/2f46f444-ec58-4046-be1a-f231e9093fec", tag:"8番と9番だけ残ったビリヤードでCPUと勝負。", wide:true},
-  {id:"hebi",       title:"ヘビはしごラッシュ",   cat:"tbl", url:"https://claude.ai/code/artifact/945ba9ea-e082-419d-a0c6-a985bee599c1", tag:"順番なしの早い者勝ちすごろく。"},
-  {id:"nebaneba",   title:"ねばねば10秒",         cat:"act", url:"https://claude.ai/code/artifact/376ea589-9a6d-4d7e-81f2-40e62b44ca34", tag:"10秒間、納豆をぐるぐるかき混ぜる。"},
-  {id:"tsumiki",    title:"ゆうぐれ積み木",       cat:"act", url:"https://claude.ai/code/artifact/53131574-b964-4aae-b3a4-fdfd6ba3438a", tag:"タップでブロックを落として、夕空の上まで。"},
-  {id:"kozeni",     title:"小銭の5秒勘定",        cat:"puz", url:"https://claude.ai/code/artifact/d2b626f2-3dec-49e3-a272-afac36f1b9c2", tag:"5秒だけ見える小銭の合計を答える。"},
+  {id:"dochira",   title:"どっちが安い?",       cat:"puz", url:"games/dochira/", tag:"2つの値札を単価で比べて、安いほうを選ぶ10問勝負。"},
+  {id:"hfcircuit",  title:"ひとふでサーキット",  cat:"act", url:"games/hfcircuit/", tag:"指で一筆書きしたコースで、CPU3台と競うレース。"},
+  {id:"arrowcross", title:"アローフォール クロス", cat:"act", url:"games/arrowcross/", tag:"6曲・2レーン/3レーンを選べる、矢印音ゲーの続編。"},
+  {id:"sunsetgp",   title:"サンセットGP",        cat:"act", url:"games/sunsetgp/", tag:"夕焼けのコースをCPU5台と3周走る、レトロな疑似3Dレース。", wide:true},
+  {id:"circlebreak", title:"サークルブレイク3",   cat:"act", url:"games/circlebreak/", tag:"円形の盤を回して球を返し、中心のコアを壊すブロック崩し。"},
+  {id:"tenpoker",   title:"10JQKAポーカー",      cat:"tbl", url:"games/tenpoker/", tag:"10・J・Q・K・Aの20枚だけで遊ぶ、CPUとのドローポーカー。"},
+  {id:"tsukimochi", title:"月のもち屋",          cat:"act", url:"games/tsukimochi/", tag:"臼でもちをつき、設備を増やして月まで稼ぐ放置クリッカー。"},
+  {id:"mancala",    title:"マンカラ",             cat:"tbl", url:"games/mancala/", tag:"石を配って自陣のストアに集める、CPUとの頭脳戦。", wide:true},
+  {id:"speed123",   title:"的わり 1・2・3",      cat:"act", url:"games/speed123/", tag:"並んだ的を1・2・3の順に撃ち抜く30秒勝負。"},
+  {id:"colorspeed", title:"カラースピード",       cat:"tbl", url:"games/colorspeed/", tag:"4色のカードで±1をつなぐ、CPUとの早出し勝負。"},
+  {id:"kroon",      title:"3段クルーン",          cat:"act", url:"games/kroon/", tag:"回る台の当たり穴に玉を落とし、3段突破で大当たり。"},
+  {id:"michi",      title:"ミチつなぎ",           cat:"puz", url:"games/michi/", tag:"タイルを回して光の道を全部つなぐ、60ステージのパズル。"},
+  {id:"shoken",     title:"初見殺しランド",       cat:"act", url:"games/shoken/", tag:"罠だらけの横スクロール。死んで覚えてゴールを目指せ。", wide:true},
+  {id:"tripop",     title:"トライポップ",         cat:"puz", url:"games/tripop/", tag:"同じ色の三角を3つ以上つなげて消す、60秒パズル。"},
+  {id:"iromaru",    title:"いろまるばつ",         cat:"tbl", url:"games/iromaru/", tag:"色とマルバツを重ねて並べる、カード式の三目並べ。"},
+  {id:"arrowfall",  title:"アローフォール",       cat:"act", url:"games/arrowfall/", tag:"落ちてくる矢印に合わせて、左・右・下をタップする音ゲー。"},
+  {id:"hexapop",    title:"ヘキサポップ",         cat:"puz", url:"games/hexapop/", tag:"同じ図形を数字の数だけつなげて消す、60秒パズル。"},
+  {id:"polypop",    title:"ポリポップ",           cat:"puz", url:"games/polypop/", tag:"同じ形を角の数だけつなげて消す、落ちものパズル。"},
+  {id:"yotsuba",    title:"ヨツバビート",         cat:"act", url:"games/yotsuba/", tag:"4レーンに降るノーツを、曲に合わせてたたく音ゲー。"},
+  {id:"tsuchinoko", title:"ツチノコ大量発生",     cat:"act", url:"games/tsuchinoko/", tag:"草むらのツチノコを網で捕まえ、1cm＝1,000円で稼ぐ。"},
+  {id:"tekkotsu",   title:"鉄骨渡り",           cat:"act", url:"games/tekkotsu/", tag:"左右の足を交互に出して、高所の鉄骨を渡りきれ。"},
+  {id:"amida",      title:"あみだシャッフル",     cat:"tbl", url:"games/amida/", tag:"あみだの先のメダルの行き先を、早い者勝ちで当てる。"},
+  {id:"atsunabe",   title:"アツナベの達人",       cat:"act", url:"games/atsunabe/", tag:"3の倍数と3がつく数でタイコをたたき、アホになれ。"},
+  {id:"igo",        title:"師匠つき囲碁",         cat:"tbl", url:"games/igo/", tag:"超最強CPUの師匠がヒントをくれる囲碁。"},
+  {id:"chikuwa",    title:"ちくわ笛ジャンプ",     cat:"act", url:"games/chikuwa/", tag:"長押しで音が上がり、はなすとジャンプ。曲にのって進む。"},
+  {id:"kurofuku",   title:"黒服から逃げろ",       cat:"act", url:"games/kurofuku/", tag:"黒服をかわして四隅のカードを集め、中央へ届けろ。", wide:true},
+  {id:"bowling",    title:"ナイトレーン ボウリング", cat:"act", url:"games/bowling/", tag:"夜のレーンで遊ぶ3Dボウリング。ストライクを狙え。"},
+  {id:"golf",       title:"そよかぜゴルフ",       cat:"act", url:"games/golf/", tag:"方向とパワーを決めて打つ、3ホールの3Dゴルフ。"},
+  {id:"tango",      title:"単語さがし",           cat:"puz", url:"games/tango/", tag:"文字の盤から隠れた単語を探す。CPU対戦もあり。"},
+  {id:"pinball",    title:"ネオンピンボール",     cat:"act", url:"games/pinball/", tag:"画面の左右タッチでフリッパー。光るネオン台のピンボール。"},
+  {id:"dungeons10", title:"6ダンジョンズ",        cat:"puz", url:"games/dungeons10/", tag:"6x6のダンジョンで、地下6階を目指せ。"},
+  {id:"lvbattle",   title:"数字バトル",           cat:"puz", url:"games/lvbattle/", tag:"自分より弱い敵から倒して吸収し、塔の頂上のボスへ。"},
+  {id:"deathroomba", title:"デスルンバ",          cat:"act", url:"games/deathroomba/", tag:"刃つきのルンバだらけの部屋で、60秒逃げ切れ。"},
+  {id:"sugi",       title:"スギ切りハクション",   cat:"act", url:"games/sugi/", tag:"花粉症の男がタップでスギを切りまくる。鼻の限界に注意。"},
+  {id:"templerunners", title:"テンプルブラザーズ", cat:"act", url:"games/templerunners/", tag:"左右2画面の遺跡を、2人同時に走らせる。"},
+  {id:"pinnuki",    title:"ピンぬきダンジョン",   cat:"puz", url:"games/pinnuki/", tag:"ピンを抜く順番で、金貨を勇者のもとへ届ける。"},
+  {id:"shisho",     title:"師匠つきオセロ",       cat:"tbl", url:"games/shisho/", tag:"超最強CPUの師匠が最善手を教えてくれるオセロ。"},
+  {id:"zorogate",   title:"ぞろぞろゲート",       cat:"act", url:"games/zorogate/", tag:"＋や×のゲートで仲間を増やし、敵の群れに突っこむ。"},
+  {id:"gakegp",     title:"崖っぷちドライブGP",   cat:"act", url:"games/gakegp/", tag:"崖のループコースでCPU3台とレース。落ちたら爆発。"},
+  {id:"kotoba",     title:"ことばさがし",         cat:"puz", url:"games/kotoba/", tag:"風船がなくなる前に、ひらがなの言葉を見つけよう。"},
+  {id:"surechigai", title:"すれ違いストリート",   cat:"act", url:"games/surechigai/", tag:"前から来る人を3レーンでよけて歩く。"},
+  {id:"gake",       title:"崖っぷちドライブ",     cat:"act", url:"games/gake/", tag:"ハンドルをスライドして崖道を走り抜ける。"},
+  {id:"tetris",     title:"テトリスタワーバトル", cat:"act", url:"games/tetris/", tag:"ブロックを積み上げて、落としたら負け。"},
+  {id:"souko",      title:"夜勤の倉庫番",         cat:"puz", url:"games/souko/", tag:"スワイプで荷物を押して定位置へ。"},
+  {id:"lightsout",  title:"ライツアウト",         cat:"puz", url:"games/lightsout/", tag:"押すと上下左右も反転。全部消そう。"},
+  {id:"hitofude",   title:"ひとふでタイル",       cat:"puz", url:"games/hitofude/", tag:"すべてのタイルを一筆書きでなぞる。"},
+  {id:"watersort",  title:"ウォーターソート",     cat:"puz", url:"games/watersort/", tag:"試験管の色水を一色ずつにそろえる。"},
+  {id:"hotaru",     title:"ホタル迷宮",           cat:"act", url:"games/hotaru/", tag:"夜の森の迷路をスワイプで駆けまわる。"},
+  {id:"jiji",       title:"ジジ抜き神経衰弱",     cat:"tbl", url:"games/jiji/", tag:"ジョーカーが場をかき混ぜる、CPUとの神経衰弱。"},
+  {id:"shanghai",   title:"トランプ上海",         cat:"tbl", url:"games/shanghai/", tag:"麻雀牌のかわりにトランプで遊ぶ上海。"},
+  {id:"hakushon",   title:"ハックション砲",       cat:"act", url:"games/hakushon/", tag:"長押しで吸って、くしゃみでおじさんを遠くへ。"},
+  {id:"superball",  title:"スーパーボールよけ",   cat:"act", url:"games/superball/", tag:"はね回るボールをひたすらよける。"},
+  {id:"gyakusuika", title:"逆スイカゲーム",       cat:"puz", url:"games/gyakusuika/", tag:"大きな果物を落とし、同じ果物で小さくしていく。"},
+  {id:"neji",       title:"ネジはずし工房",       cat:"puz", url:"games/neji/", tag:"ネジを外して、同じ色の箱に3本ずつ。"},
+  {id:"meikyu",     title:"迷宮エスケープ",       cat:"puz", url:"games/meikyu/", tag:"ファミコン風の3D迷路から脱出。"},
+  {id:"doublerun",  title:"ダブルラン",           cat:"act", url:"games/doublerun/", tag:"上下2人のランナーを同時にジャンプさせる。"},
+  {id:"climax9",    title:"クライマックス9",      cat:"tbl", url:"games/climax9/", tag:"8番と9番だけ残ったビリヤードでCPUと勝負。", wide:true},
+  {id:"hebi",       title:"ヘビはしごラッシュ",   cat:"tbl", url:"games/hebi/", tag:"順番なしの早い者勝ちすごろく。"},
+  {id:"nebaneba",   title:"ねばねば10秒",         cat:"act", url:"games/nebaneba/", tag:"10秒間、納豆をぐるぐるかき混ぜる。"},
+  {id:"tsumiki",    title:"ゆうぐれ積み木",       cat:"act", url:"games/tsumiki/", tag:"タップでブロックを落として、夕空の上まで。"},
+  {id:"kozeni",     title:"小銭の5秒勘定",        cat:"puz", url:"games/kozeni/", tag:"5秒だけ見える小銭の合計を答える。"},
 ];
 const CATS = [["all","すべて"],["act","アクション"],["puz","パズル"],["tbl","テーブル"]];
 // reading for タイトル順 (kanji titles sort by reading, not code point). New games without an entry fall back to their title.
@@ -405,7 +405,7 @@ function renderGrid(){
   const list = sorted().filter(g => current==="all" || g.cat===current);
   $("grid").innerHTML = list.map(g => {
     const n = sortBy === "pop" ? `<span class="plays"${pop[g.id] ? "" : " hidden"}>${EYE}${pop[g.id] || 0}</span>` : "";
-    return `<a class="card cat-${g.cat}${g.wide?" wide":""}" href="${g.url}" data-id="${g.id}" target="_blank" rel="noopener">
+    return `<a class="card cat-${g.cat}${g.wide?" wide":""}" href="${g.url}" data-id="${g.id}">
       <div class="shot">${img(g)}${n}</div><div class="name"><i></i>${g.title}</div><div class="tag">${g.tag}</div></a>`;
   }).join("");
   $("count").textContent = GAMES.length + "本";
@@ -427,6 +427,7 @@ document.addEventListener("click", e => {
 });
 
 if(!CATS.some(c=>c[0]===current)) current = "all";
+if (!window.claude?.use) { $("sort-pop").hidden = true; if (sortBy === "pop") sortBy = "new"; }
 renderHero(); renderChips(); setSort(); renderGrid();
 initPop();
 
@@ -1488,7 +1489,7 @@ const GUIDES = {
     ]
   }
 };
-const READS = [{"title": "夜勤の倉庫番 攻略", "kind": "攻略", "game": "souko", "url": "https://claude.ai/artifact/WGZ29ZLpsab9TQV6z69a8r", "desc": "全22ステージの解き方。各ステージのボードが解答手順どおりに動く。"}, {"title": "ライツアウト攻略", "kind": "攻略", "game": "lightsout", "url": "https://claude.ai/artifact/Do2APxoHVwbUY5gq6y748K", "desc": "追っかけ法とサイズ別の表で、どんな盤面でも必ず全部消せる。ソルバーつき。"}, {"title": "オセロのしくみ", "kind": "解説", "game": "shisho", "url": "https://claude.ai/artifact/84UGC36xDA3xfx1yPqnw2p", "desc": "8×8の配列と8方向の探索でオセロが動くしくみを、盤で試しながら読める。"}, {"title": "小銭の5秒勘定のしくみ", "kind": "解説", "game": "kozeni", "url": "https://claude.ai/artifact/AitSWHzZr6NetRAhvgqRP3", "desc": "コインの並べ方・効果音・エフェクトの作り方を、動かしながら解説。"}, {"title": "キューブ完全攻略", "kind": "攻略", "game": null, "url": "https://claude.ai/artifact/GHMFkTC1SQxhtQYqRB6tNU", "desc": "ルービックキューブの記号から7ステップの解法、CFOPまで。シミュレーターつき。"}, {"title": "ソート図鑑", "kind": "解説", "game": null, "url": "https://claude.ai/artifact/XSocY8vD9VB7dCKAa1dmc3", "desc": "並べ替えアルゴリズムの比較と交換を、アニメーションで見比べる図鑑。"}, {"title": "迷路生成ラボ", "kind": "解説", "game": null, "url": "https://claude.ai/artifact/LiAkwnkRU8JkWYoGJzsVkP", "desc": "9つの迷路生成方式を動かして、できあがる迷路のクセを見比べる。"}];
+const READS = [{"title": "夜勤の倉庫番 攻略", "kind": "攻略", "game": "souko", "url": "guides/souko-guide/", "desc": "全22ステージの解き方。各ステージのボードが解答手順どおりに動く。"}, {"title": "ライツアウト攻略", "kind": "攻略", "game": "lightsout", "url": "guides/lightsout-guide/", "desc": "追っかけ法とサイズ別の表で、どんな盤面でも必ず全部消せる。ソルバーつき。"}, {"title": "オセロのしくみ", "kind": "解説", "game": "shisho", "url": "guides/othello/", "desc": "8×8の配列と8方向の探索でオセロが動くしくみを、盤で試しながら読める。"}, {"title": "小銭の5秒勘定のしくみ", "kind": "解説", "game": "kozeni", "url": "guides/kozeni-guide/", "desc": "コインの並べ方・効果音・エフェクトの作り方を、動かしながら解説。"}, {"title": "キューブ完全攻略", "kind": "攻略", "game": null, "url": "guides/cube/", "desc": "ルービックキューブの記号から7ステップの解法、CFOPまで。シミュレーターつき。"}, {"title": "ソート図鑑", "kind": "解説", "game": null, "url": "guides/sort/", "desc": "並べ替えアルゴリズムの比較と交換を、アニメーションで見比べる図鑑。"}, {"title": "迷路生成ラボ", "kind": "解説", "game": null, "url": "guides/maze/", "desc": "9つの迷路生成方式を動かして、できあがる迷路のクセを見比べる。"}];
 const PLAY_I = '<path d="M7 5l12 7-12 7z"/>', PAUSE_I = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 const CHEV = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9l5 5 5-5z"/></svg>';
 const thumb = (g, cls = "th") => `<img class="${cls}${g.wide ? " w" : ""}" src="shots/${g.id}.webp" alt="" loading="lazy" decoding="async">`;
@@ -1525,7 +1526,7 @@ window.addEventListener("hashchange", () => { const h = fromHash(); if (h) showT
 // reads
 $("reads").innerHTML = READS.map(r => {
   const g = r.game && byId[r.game];
-  return `<a class="read" href="${r.url}" target="_blank" rel="noopener">
+  return `<a class="read" href="${r.url}">
     <span class="k${r.kind === "攻略" ? " cap" : ""}">${r.kind}${g ? "・" + esc(g.title) : ""}</span>
     <b>${esc(r.title)}</b><span class="d">${esc(r.desc)}</span></a>`;
 }).join("");
@@ -1548,8 +1549,8 @@ function renderGuides(){
         <div><h3>操作</h3><ul>${d.controls.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>
         <div><h3>攻略のコツ</h3><ul>${d.tips.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>
         <div class="acts">
-          <a class="btn pri" href="${g.url}" data-id="${g.id}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>あそぶ</a>
-          ${r ? `<a class="btn" href="${r.url}" target="_blank" rel="noopener">${esc(r.title)}</a>` : ""}
+          <a class="btn pri" href="${g.url}" data-id="${g.id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>あそぶ</a>
+          ${r ? `<a class="btn" href="${r.url}">${esc(r.title)}</a>` : ""}
           ${d.bgm ? `<button type="button" class="btn" data-listen="${g.id}">${'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3v12.5a3.5 3.5 0 1 1-2-3.2V7.2l-8 1.6v8.7a3.5 3.5 0 1 1-2-3.2V5.4L19 3z"/></svg>'}BGMを聴く</button>` : ""}
         </div>
       </div></details>`;

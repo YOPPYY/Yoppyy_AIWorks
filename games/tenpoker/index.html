@@ -1,0 +1,624 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>10JQKAポーカー</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&family=Roboto+Slab:wght@800;900&display=swap">
+<style>
+/* layout: 縦画面1枚のテーブル。上=CPU、中央=ポットと一言メッセージ、下=自分の手札とボタン。単一テーマ(フェルト卓) */
+:root{
+  --felt-0:#0b2a2c; --felt-1:#15524e; --ink:#0f1a1c; --paper:#f3f1ea;
+  --red:#c2332b; --brass:#e2b650; --brass-d:#9c7420; --mist:#a9cfc6; --danger:#d9573f;
+  --display:'Roboto Slab',Georgia,serif; --body:'Noto Sans JP',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(120% 80% at 50% 45%,var(--felt-1),var(--felt-0) 72%) var(--felt-0);color:#e9f2ee;font-family:var(--body);overflow:hidden;touch-action:manipulation;user-select:none;-webkit-user-select:none;padding-inline:16px}
+button{font-family:inherit}
+#app{height:100%;max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:6px;padding-block:6px 22px}
+header{display:flex;justify-content:space-between;align-items:center;min-height:44px}
+.chipbox{display:flex;align-items:baseline;gap:8px}
+.chipbox small{opacity:.75;font-weight:900;letter-spacing:.14em;font-size:11px}
+.chipbox b{font:900 24px var(--display);color:var(--brass);font-variant-numeric:tabular-nums}
+.chipbox.me{justify-content:center}
+[hidden]{display:none!important}
+.hr{display:flex;gap:8px}
+.ib{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.28);background:rgba(0,0,0,.28);color:#fff;display:grid;place-items:center;padding:0;cursor:pointer}
+.ib svg{width:22px;height:22px;fill:currentColor}
+.ib .x{display:none}
+.ib.off .x{display:block}.ib.off .wv{display:none}
+#odds{--rh:20px;width:100%;max-width:400px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 10px}
+.oc{display:flex;flex-direction:column;gap:3px;min-width:0}
+.oh{display:flex;justify-content:space-between;align-items:baseline;font-weight:900;font-size:12px;letter-spacing:.1em;padding:0 4px}
+.oh b{color:var(--brass)}
+.oh span{opacity:.85;font-size:11px;letter-spacing:0}
+.orows{display:flex;flex-direction:column;gap:3px}
+#odds.fix .orows{min-height:calc(var(--rh)*7 + 18px)}
+.or{display:flex;justify-content:space-between;align-items:center;gap:6px;height:var(--rh);padding:0 6px;border-radius:5px;font-weight:700;font-size:12px;background:linear-gradient(90deg,rgba(226,182,80,.4) var(--p),rgba(255,255,255,.06) var(--p))}
+.op{font-variant-numeric:tabular-nums}
+.btn.rec{flex:0 0 34%}
+#mid.od #msg{display:none}
+.zone.cpu .card.keep .face{box-shadow:0 0 0 3px var(--brass),0 0 14px 1px rgba(226,182,80,.55)}
+.zone.cpu .card.dim .inner{opacity:.35}
+@media (max-height:690px){#odds{--rh:16px}.or{font-size:12px}#mid.od #pot{display:none}}
+.zone{display:flex;flex-direction:column;gap:6px}
+.zone.cpu{margin-top:auto}
+#actions{margin-bottom:auto}
+.nameline{height:28px;display:flex;justify-content:center;align-items:center}
+.nameline span{font-weight:900;font-size:15px;padding:3px 14px;border-radius:99px;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.15)}
+.nameline span.big{background:var(--brass);color:#2a1d02;border-color:transparent}
+.nameline span:empty{display:none}
+.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:2.4%;padding-top:20px}
+.zone.cpu .hand{padding-top:0;padding-bottom:4px}
+.card{aspect-ratio:5/7;position:relative;perspective:700px;container-type:inline-size;transition:transform .16s ease}
+.pl .card{cursor:pointer}
+.card.hold{transform:translateY(-12px)}
+.card.hold::after{content:'HOLD';position:absolute;left:0;right:0;top:-19px;text-align:center;font:900 11px var(--body);letter-spacing:.12em;color:var(--brass)}
+.card .inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .35s ease}
+.card.down .inner{transform:rotateY(180deg)}
+.face,.back{position:absolute;inset:0;border-radius:9%/6.5%;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.face{background:var(--paper);color:#161a22;box-shadow:0 3px 7px rgba(0,0,0,.45)}
+.face.red{color:var(--red)}
+.face .tl{position:absolute;left:12%;top:6%;display:flex;flex-direction:column;align-items:center;line-height:1}
+.face .tl b{font:900 32cqw/1 var(--display)}
+.face .tl i{font-style:normal;font-size:27cqw;margin-top:2cqw}
+.face .mid{position:absolute;inset:0;display:grid;place-items:center;font-size:60cqw;padding:22% 0 0 18%}
+.back{transform:rotateY(180deg);background:repeating-linear-gradient(45deg,#1f4592 0 6px,#193a7c 6px 12px);border:3px solid var(--paper);box-shadow:0 3px 7px rgba(0,0,0,.45)}
+.card.in{animation:dealIn .28s ease-out both}
+.card.out{animation:dealOut .26s ease-in both}
+@keyframes dealIn{from{opacity:0;transform:translateY(-46px) scale(.9)}to{opacity:1}}
+@keyframes dealOut{to{opacity:0;transform:translateY(40px) scale(.9)}}
+.hand.win .face{box-shadow:0 0 0 3px var(--brass),0 0 18px 2px rgba(226,182,80,.65)}
+#mid{flex:0 1 270px;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+#pot{display:flex;align-items:baseline;gap:8px;visibility:hidden}
+#pot.on{visibility:visible}
+#pot small{font-weight:900;letter-spacing:.14em;font-size:11px;opacity:.75}
+#pot b{font:900 28px var(--display);color:var(--brass);font-variant-numeric:tabular-nums}
+#msg{min-height:58px;display:flex;align-items:center;justify-content:center;text-align:center;text-wrap:balance;font-weight:900;font-size:20px;line-height:1.3}
+#msg.win{color:var(--brass);font-size:30px}
+#msg.lose{color:var(--mist);font-size:26px}
+#actions{display:flex;gap:10px;min-height:66px;padding-bottom:4px;flex-shrink:0}
+.btn{flex:1;min-width:0;white-space:nowrap;height:62px;border-radius:14px;border:0;font:900 18px var(--body);background:var(--brass);color:#2a1d02;box-shadow:0 3px 0 var(--brass-d);cursor:pointer}
+.btn.sub{background:rgba(255,255,255,.14);color:#e9f2ee;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.btn.danger{background:var(--danger);color:#fff;box-shadow:0 3px 0 #8f3322}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+.btn:focus-visible,.ib:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.ov{position:fixed;inset:0;background:rgba(5,18,20,.9);display:flex;align-items:center;justify-content:center;z-index:10;padding:20px 16px}
+.ov[hidden]{display:none!important}
+.ov#pause{z-index:20}
+.panel{width:100%;max-width:360px;max-height:100%;overflow-y:auto;display:flex;flex-direction:column;gap:12px;text-align:center}
+.panel>.btn{flex:none;height:58px}
+.logo{font:900 56px/1 var(--display);letter-spacing:.02em;color:var(--paper)}
+.logo-sub{font-weight:900;font-size:26px;letter-spacing:.3em;color:var(--brass);margin-top:-4px}
+.suits{font:900 30px var(--display);letter-spacing:.3em;padding-left:.3em}
+.suits .r{color:#e35b50}
+.goal{opacity:.85;font-weight:700;font-size:14px}
+.panel h2{margin:0;font-size:24px;font-weight:900}
+.toggles{display:flex;gap:10px}
+.rules{background:rgba(255,255,255,.07);border-radius:12px;padding:10px 14px;text-align:left;font-size:14px}
+.rules div{display:flex;justify-content:space-between;padding:3px 0;font-weight:700}
+.rules div span:last-child{font-variant-numeric:tabular-nums;opacity:.8}
+.rules p{margin:6px 0 0;font-size:12px;opacity:.75;line-height:1.5;font-weight:500}
+.rules h3{margin:0 0 4px;font-size:12px;letter-spacing:.14em;opacity:.7}
+.stat{font-weight:700;opacity:.9}
+.paused *{animation-play-state:paused!important}
+@media (prefers-reduced-motion:reduce){.card.in,.card.out{animation-duration:.01s}.card .inner{transition:none}}
+</style>
+
+<div id="app">
+  <header>
+    <div class="chipbox"><small>CPU</small><b id="cpuChips">500</b></div>
+    <div class="hr">
+      <button class="ib" id="hSnd" aria-label="サウンド"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9H3z"/><g class="wv" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.3 5.7a9 9 0 0 1 0 12.6"/></g><path class="x" d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="ib" id="pauseBtn" aria-label="ポーズ"><svg viewBox="0 0 16 16" style="width:16px;height:16px"><rect x="2" y="1" width="4.5" height="14" rx="1"/><rect x="9.5" y="1" width="4.5" height="14" rx="1"/></svg></button>
+    </div>
+  </header>
+  <section class="zone cpu"><div class="hand" id="cpuHand"></div><div class="nameline"><span id="cpuName"></span></div></section>
+  <section id="mid"><div id="pot"><small>POT</small><b id="potV">0</b></div><div id="odds" hidden><div class="oc" id="ocY"><div class="oh"><b>YOU</b><span id="ohY"></span></div><div class="orows" id="orY"></div></div><div class="oc" id="ocC"><div class="oh"><b>CPU</b><span id="ohC"></span></div><div class="orows" id="orC"></div></div></div><div id="msg"></div></section>
+  <section class="zone pl"><div class="nameline"><span id="plName"></span></div><div class="hand" id="plHand"></div></section>
+  <div class="chipbox me"><small>YOU</small><b id="meChips">500</b></div>
+  <footer id="actions"></footer>
+</div>
+
+<div class="ov" id="title">
+  <div class="panel">
+    <div><div class="logo">10JQKA</div><div class="logo-sub">ポーカー</div></div>
+    <div class="suits"><span>♠&#xFE0E;</span><span class="r">♥&#xFE0E;</span><span class="r">♦&#xFE0E;</span><span>♣&#xFE0E;</span></div>
+    <div class="goal">CPUのチップを0にしよう</div>
+    <button class="btn" id="startBtn">スタート</button>
+    <button class="btn sub opnbtn" id="openBtn">手札・確率の表示 ON</button>
+    <button class="btn sub sndbtn" id="soundBtnT">サウンド ON</button>
+  </div>
+</div>
+
+<div class="ov" id="pause" hidden>
+  <div class="panel">
+    <h2>ポーズ</h2>
+    <button class="btn" id="resumeBtn">再開</button>
+    <button class="btn sub sndbtn" id="soundBtn">サウンド ON</button>
+    <div class="toggles"><button class="btn sub" id="restartBtn">はじめから</button><button class="btn sub" id="titleBtn">タイトルへ</button></div>
+    <div class="rules">
+      <h3>役の強さ(20枚中5枚の出方)</h3>
+      <div><span>ロイヤルフラッシュ</span><span>4通り</span></div>
+      <div><span>フォーカード</span><span>80通り</span></div>
+      <div><span>フルハウス</span><span>480通り</span></div>
+      <div><span>ストレート</span><span>1020通り</span></div>
+      <div><span>スリーカード</span><span>1920通り</span></div>
+      <div><span>ツーペア</span><span>4320通り</span></div>
+      <div><span>ワンペア</span><span>7680通り</span></div>
+      <p>ストレートは10-J-Q-K-Aだけ。同じマーク5枚はロイヤルのみ。役なしは出ない。</p>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="end" hidden>
+  <div class="panel">
+    <h2 id="endTitle"></h2>
+    <div class="stat" id="endStat"></div>
+    <button class="btn" id="againBtn">もう一度</button>
+  </div>
+</div>
+
+<script>
+// <logic>
+const RANKS=['10','J','Q','K','A'];
+const SUITS=['♠︎','♥︎','♦︎','♣︎'];
+const CATS=['ワンペア','ツーペア','スリーカード','ストレート','フルハウス','フォーカード','ロイヤルフラッシュ'];
+function evalHand(h){
+  const cnt=[0,0,0,0,0]; h.forEach(c=>cnt[c.r]++);
+  const g=[]; for(let r=4;r>=0;r--) if(cnt[r]) g.push([cnt[r],r]);
+  g.sort((a,b)=>b[0]-a[0]||b[1]-a[1]);
+  const pat=g.map(x=>x[0]).join('');
+  let cat;
+  if(pat==='41') cat=5; else if(pat==='32') cat=4; else if(pat==='311') cat=2;
+  else if(pat==='221') cat=1; else if(pat==='2111') cat=0;
+  else cat=h.every(c=>c.s===h[0].s)?6:3;
+  return {cat,tb:g.map(x=>x[1])};
+}
+function cmpHand(a,b){
+  if(a.cat!==b.cat) return a.cat-b.cat;
+  for(let i=0;i<a.tb.length;i++) if(a.tb[i]!==b.tb[i]) return a.tb[i]-b.tb[i];
+  return 0;
+}
+function val(e){
+  const t=e.tb;
+  switch(e.cat){
+    case 0: return .12+.08*t[0];
+    case 1: return .5+.04*t[0]+.005*t[1];
+    case 2: return .78+.02*t[0];
+    case 3: return .92;
+    case 4: return .94+.008*t[0];
+    case 5: return .98+.003*t[0];
+    default: return 1;
+  }
+}
+function allCards(){const a=[];for(let r=0;r<5;r++)for(let s=0;s<4;s++)a.push({r,s});return a;}
+function combos(arr,k,cb){
+  const idx=[];
+  (function rec(st){
+    if(idx.length===k){cb(idx.map(i=>arr[i]));return;}
+    for(let i=st;i<arr.length;i++){idx.push(i);rec(i+1);idx.pop();}
+  })(0);
+}
+// CPUの交換: 残す札のビットマスクを返す(期待値が最大になる組み合わせ)
+function cpuHold(hand){
+  const key=c=>c.r*4+c.s;
+  const hs=new Set(hand.map(key));
+  const unseen=allCards().filter(c=>!hs.has(key(c)));
+  let best=-1,bestMask=31;
+  for(let m=31;m>=0;m--){
+    const kept=hand.filter((_,i)=>(m>>i)&1);
+    const k=5-kept.length;
+    let sum=0,n=0;
+    if(k===0){sum=val(evalHand(hand));n=1;}
+    else combos(unseen,k,d=>{sum+=val(evalHand(kept.concat(d)));n++;});
+    const v=sum/n;
+    if(v>best+1e-9){best=v;bestMask=m;}
+  }
+  return bestMask;
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function popcnt(m){let c=0;while(m){c+=m&1;m>>=1;}return c;}
+// 公開情報だけで、CPUの交換計画(cm)に対して勝つ確率が最も高い残し方を探す(同率なら残す枚数が多い方)
+function bestMaskOpen(P,C,cm,deck){
+  const ck=C.filter((_,i)=>(cm>>i)&1),kc=5-ck.length;
+  let best=-1,bm=31;
+  for(let m=0;m<32;m++){
+    const kept=P.filter((_,i)=>(m>>i)&1),k=5-kept.length;
+    let w=0,n=0;
+    combos(deck,k,d1=>{
+      const ph=evalHand(kept.concat(d1));
+      const rest=deck.filter(c=>d1.indexOf(c)<0);
+      combos(rest,kc,d2=>{n++;const r=cmpHand(ph,evalHand(ck.concat(d2)));w+=r>0?1:(r===0?.5:0);});
+    });
+    const v=w/n;
+    if(v>best+1e-9||(Math.abs(v-best)<=1e-9&&popcnt(m)>popcnt(bm))){best=v;bm=m;}
+  }
+  return bm;
+}
+// </logic>
+
+const $=id=>document.getElementById(id);
+const CANCEL={};
+let epoch=0,paused=false,inGame=false;
+const S={me:500,cpu:500,pot:0,bet:0,rounds:0,myPaid:0};
+let P=[],C=[],deck=[],held=[false,false,false,false,false],phase='idle',drawBtn=null,cpuPlan=0;
+const prefs={sound:true,open:true};
+try{const p=JSON.parse(localStorage.getItem('tenace-prefs')||'{}');
+  if(typeof p.sound==='boolean')prefs.sound=p.sound;else if(p.bgm===false&&p.se===false)prefs.sound=false;
+  if(typeof p.open==='boolean')prefs.open=p.open;}catch(e){}
+function savePrefs(){try{localStorage.setItem('tenace-prefs',JSON.stringify(prefs));}catch(e){}}
+
+/* ---------- 時間と入力(ポーズ中は止まる) ---------- */
+function sleep(ms){return new Promise(res=>{let left=ms;const t=setInterval(()=>{if(paused)return;left-=40;if(left<=0){clearInterval(t);res();}},40);});}
+async function sl(ms){const e=epoch;await sleep(ms);if(e!==epoch)throw CANCEL;}
+function ask(list){
+  return new Promise(res=>{
+    const box=$('actions');box.innerHTML='';
+    list.forEach(b=>{
+      const el=document.createElement('button');
+      el.className='btn '+(b.cls||'');el.textContent=b.label;
+      if(b.disabled)el.disabled=true;
+      el.onclick=()=>{if(paused)return;sfx.click();if(b.fn){b.fn();return;}box.innerHTML='';res(b.key);};
+      box.appendChild(el);
+    });
+  });
+}
+async function A(list){const e=epoch;const k=await ask(list);if(e!==epoch)throw CANCEL;return k;}
+
+/* ---------- 音 ---------- */
+let ctx=null,master,seGain,bgmGain,noiseBuf=null,bgmTimer=null,bgmStep=0,bgmNext=0;
+function initAudio(){
+  if(ctx)return;
+  try{
+    ctx=new(window.AudioContext||window.webkitAudioContext)();
+    master=ctx.createGain();master.gain.value=.9;master.connect(ctx.destination);
+    seGain=ctx.createGain();seGain.gain.value=.8;seGain.connect(master);
+    bgmGain=ctx.createGain();bgmGain.gain.value=prefs.sound?.5:0;bgmGain.connect(master);
+    noiseBuf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);
+    const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  }catch(e){ctx=null;}
+}
+function m2f(m){return 440*Math.pow(2,(m-69)/12);}
+function tone(f,d,type,v,t0,f2,dest){
+  if(!ctx)return;
+  const t=ctx.currentTime+(t0||0);
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+  if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(dest||seGain);o.start(t);o.stop(t+d+.03);
+}
+function noise(d,v,f,q,t0,type,dest){
+  if(!ctx)return;
+  const t=ctx.currentTime+(t0||0);
+  const s=ctx.createBufferSource();s.buffer=noiseBuf;
+  const fl=ctx.createBiquadFilter();fl.type=type||'bandpass';fl.frequency.value=f;fl.Q.value=q||1;
+  const g=ctx.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  s.connect(fl);fl.connect(g);g.connect(dest||seGain);s.start(t,Math.random()*.5);s.stop(t+d+.02);
+}
+const se=fn=>(...a)=>{if(prefs.sound&&ctx)fn(...a);};
+const sfx={
+  click:se(()=>tone(520,.07,'triangle',.18)),
+  deal:se(()=>{noise(.06,.5,3200,.8);tone(180,.05,'sine',.12);}),
+  flip:se(()=>{noise(.09,.45,1800,.9);tone(300,.06,'triangle',.08);}),
+  hold:se(()=>tone(740,.08,'square',.07)),
+  unhold:se(()=>tone(480,.08,'square',.06)),
+  chip:se(()=>{tone(2300,.09,'triangle',.12);tone(3000,.08,'triangle',.1,.05);noise(.05,.3,6000,1,0,'highpass');}),
+  win:se(()=>{[523,659,784,1047].forEach((f,i)=>tone(f,.28,'triangle',.17,i*.09));}),
+  big:se(()=>{[523,659,784,1047,1319,1568].forEach((f,i)=>tone(f,.4,'triangle',.18,i*.08));tone(262,.9,'sine',.2,0);}),
+  lose:se(()=>{tone(330,.35,'sawtooth',.1,0,160);tone(247,.5,'sawtooth',.09,.18,110);}),
+  draw:se(()=>{tone(440,.2,'triangle',.14);tone(440,.2,'triangle',.14,.15);}),
+  fold:se(()=>tone(260,.3,'sine',.14,0,170))
+};
+// BGM: 8小節ループのラウンジジャズ風
+const CHORDS=[
+  {r:38,th:3,comp:[53,57,60,64],mel:[62,65,67,69,72,74]},
+  {r:43,th:4,comp:[53,59,62,67],mel:[62,65,67,71,74,77]},
+  {r:48,th:4,comp:[52,55,59,64],mel:[64,67,71,72,76,79]},
+  {r:45,th:3,comp:[55,60,64,67],mel:[64,67,69,72,76,79]},
+  {r:38,th:3,comp:[53,57,60,64],mel:[62,65,69,72,74,77]},
+  {r:43,th:4,comp:[53,59,62,67],mel:[62,67,71,74,77,79]},
+  {r:48,th:4,comp:[52,55,59,64],mel:[64,67,71,74,76,79]},
+  {r:43,th:4,comp:[53,59,62,65],mel:[62,65,67,71,74,77]}
+];
+const SPB=60/92;
+let lastMel=0;
+function bgmStepAt(n,t){
+  const bar=Math.floor(n/8)%8,s=n%8,ch=CHORDS[bar],nx=CHORDS[(bar+1)%8];
+  const off=t-ctx.currentTime;
+  if(s===0||s===2||s===4||s===6){
+    noise(.05,.12,7500,.7,off,'highpass',bgmGain);
+    const appr=nx.r+(ch.r<nx.r?-1:1);
+    const note=[ch.r,ch.r+ch.th,ch.r+7,appr][s/2];
+    tone(m2f(note),SPB*.62,'triangle',.3,off,null,bgmGain);
+    tone(m2f(note),SPB*.5,'sine',.25,off,null,bgmGain);
+  }else if(s===3||s===7){
+    noise(.04,.08,7500,.7,off,'highpass',bgmGain);
+  }
+  if(s===0||s===3){
+    ch.comp.forEach(m=>tone(m2f(m),SPB*.55,'triangle',s===0?.045:.06,off,null,bgmGain));
+  }
+  if((s===0||s===2||s===3||s===4||s===6||s===7)&&Math.random()<(s===0?.55:.36)){
+    let m=ch.mel[Math.floor(Math.random()*ch.mel.length)];
+    if(m===lastMel)m=ch.mel[(ch.mel.indexOf(m)+2)%ch.mel.length];
+    lastMel=m;
+    tone(m2f(m),SPB*.9,'sine',.11,off,null,bgmGain);
+    tone(m2f(m)*2,SPB*.5,'sine',.035,off,null,bgmGain);
+  }
+}
+function startBgm(){
+  if(!ctx||bgmTimer)return;
+  bgmNext=ctx.currentTime+.15;bgmStep=0;
+  bgmTimer=setInterval(()=>{
+    if(!ctx||ctx.state!=='running')return;
+    while(bgmNext<ctx.currentTime+.2){
+      bgmStepAt(bgmStep,bgmNext);
+      bgmNext+=(bgmStep%2===0)?SPB*2/3:SPB/3;
+      bgmStep++;
+    }
+  },50);
+}
+function applyPrefs(){
+  document.querySelectorAll('.sndbtn').forEach(b=>b.textContent='サウンド '+(prefs.sound?'ON':'OFF'));
+  document.querySelectorAll('.opnbtn').forEach(b=>b.textContent='手札・確率の表示 '+(prefs.open?'ON':'OFF'));
+  $('hSnd').classList.toggle('off',!prefs.sound);
+  if(bgmGain)bgmGain.gain.value=prefs.sound?.5:0;
+}
+function toggleSound(){prefs.sound=!prefs.sound;savePrefs();applyPrefs();if(prefs.sound){initAudio();sfx.click();}}
+
+/* ---------- 表示 ---------- */
+function mkCard(c,down,anim){
+  const el=document.createElement('div');
+  el.className='card'+(down?' down':'')+(anim?' in':'');
+  const red=c.s===1||c.s===2;
+  el.innerHTML='<div class="inner"><div class="face'+(red?' red':'')+'"><div class="tl"><b>'+RANKS[c.r]+'</b><i>'+SUITS[c.s]+'</i></div><div class="mid">'+SUITS[c.s]+'</div></div><div class="back"></div></div>';
+  return el;
+}
+function setName(id,text,big){const e=$(id);e.textContent=text||'';e.className=big?'big':'';}
+function msg(t,cls){const m=$('msg');m.textContent=t||'';m.className=cls||'';}
+function updChips(){$('meChips').textContent=S.me;$('cpuChips').textContent=S.cpu;$('potV').textContent=S.pot;$('pot').classList.toggle('on',S.pot>0);}
+function refreshPlName(){
+  if(P.length===5&&phase!=='idle'){const e=evalHand(P);setName('plName',CATS[e.cat],e.cat>=3);}
+}
+function refreshCpuName(){
+  if(prefs.open&&C.length===5&&phase!=='idle'){const e=evalHand(C);setName('cpuName',CATS[e.cat],e.cat>=3);}
+}
+// 役ごとの確率: 残す札を固定し、公開されている山札(pool)から引き直す全組み合わせを数える
+function oddsOf(hand,keep,pool){
+  const kept=hand.filter((_,i)=>keep[i]);
+  const k=5-kept.length;
+  const cnt=[0,0,0,0,0,0,0];let n=0;
+  combos(pool,k,d=>{cnt[evalHand(kept.concat(d)).cat]++;n++;});
+  return cnt.map(c=>c/n);
+}
+const SHORT=['ワンペア','ツーペア','スリーカード','ストレート','フルハウス','フォーカード','ロイヤル'];
+function fillCol(id,hand,keep,pool){
+  const p=oddsOf(hand,keep,pool);
+  const k=keep.filter(h=>!h).length;
+  $('oh'+id).textContent=k?'交換 '+k+'枚':'そのまま';
+  let html='';
+  for(let c=6;c>=0;c--){
+    if(p[c]<=0)continue;
+    const pc=p[c]*100;
+    html+='<div class="or" style="--p:'+pc.toFixed(1)+'%"><span>'+SHORT[c]+'</span><span class="op">'+(pc>99.95?'100':pc.toFixed(1))+'%</span></div>';
+  }
+  $('or'+id).innerHTML=html;
+}
+function openPanel(y,c,fix){
+  $('ocY').hidden=!y;$('ocC').hidden=!c;
+  $('odds').classList.toggle('fix',!!fix);
+  $('odds').hidden=false;$('mid').classList.add('od');
+}
+function hideOdds(){$('odds').hidden=true;$('mid').classList.remove('od');}
+function updateOdds(){
+  if(!prefs.open||phase!=='draw')return;
+  fillCol('Y',P,held.slice(),deck);
+}
+// おすすめ: 公開表示ONなら勝つ確率が最大の残し方、OFFならCPUと同じ期待値の考え方
+function recommend(){return prefs.open?bestMaskOpen(P,C,cpuPlan,deck):cpuHold(P);}
+function applyHold(mask){
+  for(let i=0;i<5;i++){held[i]=!!((mask>>i)&1);$('plHand').children[i].classList.toggle('hold',held[i]);}
+  sfx.hold();updateDrawBtn();updateOdds();
+}
+function updateDrawBtn(){
+  if(!drawBtn)return;
+  const n=held.filter(h=>!h).length;
+  drawBtn.textContent=n===0?'このまま勝負':'交換 '+n+'枚';
+}
+function resetTable(){
+  $('plHand').innerHTML='';$('cpuHand').innerHTML='';
+  $('plHand').classList.remove('win');$('cpuHand').classList.remove('win');
+  setName('plName','');setName('cpuName','');msg('');hideOdds();
+  S.pot=0;S.bet=0;S.myPaid=0;held=[false,false,false,false,false];P=[];C=[];updChips();
+}
+function sortHand(h){return h.sort((a,b)=>a.r-b.r||a.s-b.s);}
+function flipReveal(){return (async()=>{
+  const els=$('cpuHand').children;
+  for(let i=0;i<5;i++){els[i].classList.remove('down');sfx.flip();await sl(140);}
+})();}
+
+/* ---------- ゲーム進行 ---------- */
+async function swapCards(side,idxs){
+  const box=side==='pl'?$('plHand'):$('cpuHand');
+  const hand=side==='pl'?P:C;
+  idxs.forEach(i=>box.children[i].classList.add('out'));
+  await sl(280);
+  for(const i of idxs){
+    const c=deck.shift();hand[i]=c;
+    const el=mkCard(c,side==='cpu'&&!prefs.open,true);
+    box.replaceChild(el,box.children[i]);
+    if(side==='pl'){el.addEventListener('click',()=>toggleHold(i));}
+    sfx.deal();await sl(130);
+  }
+}
+function toggleHold(i){
+  if(phase!=='draw'||paused)return;
+  held[i]=!held[i];
+  $('plHand').children[i].classList.toggle('hold',held[i]);
+  (held[i]?sfx.hold:sfx.unhold)();
+  updateDrawBtn();updateOdds();
+}
+async function round(){
+  S.rounds++;
+  resetTable();phase='idle';
+  const maxBet=Math.min(S.me,S.cpu);
+  const vals=[10,50,100].filter(v=>v<=maxBet);
+  if(maxBet>100)vals.push(maxBet);else if(!vals.includes(maxBet))vals.push(maxBet);
+  msg('賭け金を選ぼう');
+  const bet=await A(vals.map(v=>({key:v,label:(v===maxBet&&v>100)?'ALL IN':String(v),cls:v===maxBet&&v>100?'danger':''})));
+  S.bet=bet;S.me-=bet;S.cpu-=bet;S.pot=bet*2;S.myPaid=bet;updChips();sfx.chip();msg('');
+  // 配る
+  deck=shuffle(allCards());
+  P=sortHand(deck.splice(0,5));C=sortHand(deck.splice(0,5));
+  phase='deal';
+  for(let i=0;i<5;i++){
+    const pe=mkCard(P[i],false,true);const ci=i;
+    pe.addEventListener('click',()=>toggleHold(ci));
+    $('plHand').appendChild(pe);sfx.deal();await sl(110);
+    $('cpuHand').appendChild(mkCard(C[i],!prefs.open,true));sfx.deal();await sl(110);
+  }
+  phase='draw';refreshPlName();refreshCpuName();
+  cpuPlan=cpuHold(C);
+  if(prefs.open){
+    const ck=[0,1,2,3,4].map(i=>!!((cpuPlan>>i)&1));
+    [...$('cpuHand').children].forEach((el,i)=>el.classList.add(ck[i]?'keep':'dim'));
+    fillCol('C',C,ck,deck);fillCol('Y',P,held.slice(),deck);openPanel(true,true,true);
+  }else msg('残すカードをタップ');
+  const pr=A([{key:'rec',label:'おすすめ',cls:'sub rec',fn:()=>{if(phase==='draw')applyHold(recommend());}},{key:'draw',label:''}]);
+  drawBtn=$('actions').lastChild;updateDrawBtn();
+  await pr;drawBtn=null;
+  phase='busy';msg('');hideOdds();
+  const idxs=[0,1,2,3,4].filter(i=>!held[i]);
+  $('plHand').querySelectorAll('.hold').forEach(e=>e.classList.remove('hold'));
+  if(idxs.length)await swapCards('pl',idxs);
+  refreshPlName();
+  // CPUの交換
+  const mask=cpuPlan;
+  const cIdx=[0,1,2,3,4].filter(i=>!((mask>>i)&1));
+  const cKeep=[0,1,2,3,4].map(i=>!!((mask>>i)&1));
+  if(prefs.open){
+    [...$('cpuHand').children].forEach((el,i)=>el.classList.add(cKeep[i]?'keep':'dim'));
+    msg(cIdx.length?'CPU '+cIdx.length+'枚交換':'CPU 交換なし');
+    await sl(1200);
+  }else{
+    msg(cIdx.length?'CPU '+cIdx.length+'枚交換':'CPU 交換なし');
+    await sl(500);
+  }
+  if(cIdx.length)await swapCards('cpu',cIdx);
+  if(prefs.open){[...$('cpuHand').children].forEach(el=>el.classList.remove('keep','dim'));hideOdds();refreshCpuName();}
+  await sl(300);msg('');
+  // ベット
+  const pe=evalHand(P),ce=evalHand(C),cv=val(ce);
+  const r=Math.min(S.bet,S.me,S.cpu);
+  let folded=null; // 'cpu' | 'me'
+  if(r>0){
+    msg('勝負する?');
+    const act=await A([{key:'check',label:'チェック',cls:'sub'},{key:'raise',label:'レイズ +'+r}]);
+    if(act==='raise'){
+      S.me-=r;S.myPaid+=r;S.pot+=r;updChips();sfx.chip();msg('レイズ!');
+      await sl(800);
+      const call=cv>=.5||(cv>=.3&&Math.random()<.45)||Math.random()<.12;
+      if(call){S.cpu-=r;S.pot+=r;updChips();sfx.chip();msg('CPU コール');await sl(800);}
+      else{folded='cpu';}
+    }else{
+      const raise=cv>=.5?Math.random()<.8:Math.random()<.12;
+      if(raise){
+        S.cpu-=r;S.pot+=r;updChips();sfx.chip();msg('CPU レイズ +'+r);
+        const k=await A([{key:'call',label:'コール −'+r},{key:'drop',label:'ドロップ',cls:'danger'}]);
+        if(k==='call'){S.me-=r;S.myPaid+=r;S.pot+=r;updChips();sfx.chip();msg('コール');await sl(700);}
+        else folded='me';
+      }else{msg('CPU チェック');await sl(800);}
+    }
+  }
+  // 結果
+  phase='end';
+  const paid=S.myPaid;
+  if(folded==='cpu'){
+    sfx.fold();S.me+=S.pot;const net=S.pot-paid;S.pot=0;updChips();
+    msg('CPUがドロップ +'+net,'win');sfx.win();
+  }else if(folded==='me'){
+    sfx.fold();S.cpu+=S.pot;S.pot=0;updChips();
+    msg('ドロップ −'+paid,'lose');
+  }else{
+    msg('');if(!prefs.open)await flipReveal();
+    setName('cpuName',CATS[ce.cat],ce.cat>=3);
+    await sl(500);
+    const c=cmpHand(pe,ce);
+    if(c>0){
+      $('plHand').classList.add('win');
+      S.me+=S.pot;const net=S.pot-paid;S.pot=0;updChips();
+      msg('勝ち! +'+net,'win');(pe.cat>=4?sfx.big:sfx.win)();
+    }else if(c<0){
+      $('cpuHand').classList.add('win');
+      S.cpu+=S.pot;S.pot=0;updChips();
+      msg('負け −'+paid,'lose');sfx.lose();
+    }else{
+      const half=S.pot/2;S.me+=half;S.cpu+=half;S.pot=0;updChips();
+      msg('引き分け');sfx.draw();
+    }
+  }
+  await sl(300);
+  if(S.cpu<=0){await finish(true);return false;}
+  if(S.me<=0){await finish(false);return false;}
+  await A([{key:'next',label:'次のゲーム'}]);
+  return true;
+}
+function bestRounds(){try{return +localStorage.getItem('tenace-best')||0;}catch(e){return 0;}}
+async function finish(win){
+  inGame=false;phase='idle';
+  await sl(600);
+  let stat='';
+  if(win){
+    const b=bestRounds();
+    if(!b||S.rounds<b){try{localStorage.setItem('tenace-best',String(S.rounds));}catch(e){}stat=S.rounds+'ゲームでクリア (最短記録)';}
+    else stat=S.rounds+'ゲームでクリア (最短 '+b+'ゲーム)';
+    sfx.big();
+  }else{stat=S.rounds+'ゲーム目でチップがなくなった';sfx.lose();}
+  $('endTitle').textContent=win?'CPUのチップを0にした!':'チップがなくなった…';
+  $('endStat').textContent=stat;
+  $('end').hidden=false;
+}
+async function playGame(){
+  const e=epoch;
+  try{
+    S.me=500;S.cpu=500;S.rounds=0;
+    $('actions').innerHTML='';
+    while(await round()){}
+  }catch(err){if(err!==CANCEL)throw err;}
+}
+function startNew(){
+  epoch++;paused=false;document.body.classList.remove('paused');
+  $('pause').hidden=true;$('end').hidden=true;$('title').hidden=true;
+  if(ctx&&ctx.state==='suspended')ctx.resume();
+  inGame=true;phase='idle';resetTable();S.me=500;S.cpu=500;updChips();
+  playGame();
+}
+
+/* ---------- ポーズ ---------- */
+function setPause(p){
+  if(p===paused)return;
+  if(p&&!inGame)return;
+  paused=p;document.body.classList.toggle('paused',p);
+  $('pause').hidden=!p;
+  if(ctx){p?ctx.suspend():ctx.resume();}
+}
+$('pauseBtn').onclick=()=>{sfx.click();setPause(true);};
+$('resumeBtn').onclick=()=>setPause(false);
+$('restartBtn').onclick=()=>{startNew();};
+document.querySelectorAll('.sndbtn').forEach(b=>b.onclick=toggleSound);
+$('hSnd').onclick=toggleSound;
+$('openBtn').onclick=()=>{prefs.open=!prefs.open;savePrefs();applyPrefs();};
+$('titleBtn').onclick=()=>{
+  epoch++;paused=false;document.body.classList.remove('paused');
+  if(ctx&&ctx.state==='suspended')ctx.resume();
+  $('pause').hidden=true;$('end').hidden=true;inGame=false;phase='idle';
+  $('actions').innerHTML='';resetTable();$('title').hidden=false;
+};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)setPause(true);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'||e.key==='p'||e.key==='P'){if(inGame)setPause(!paused);}});
+$('startBtn').onclick=()=>{initAudio();applyPrefs();startBgm();if(ctx&&ctx.state==='suspended')ctx.resume();startNew();};
+$('againBtn').onclick=()=>{initAudio();startNew();};
+applyPrefs();
+</script>
+
+</body></html>
