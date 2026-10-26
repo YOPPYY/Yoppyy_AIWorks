@@ -1,0 +1,938 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>忍者は何人じゃ？</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* レイアウト構想: 縦長(9:16)で夜の屋敷の座敷を正面から見る。天井の穴・掛け軸・畳・襖から忍者が顔を出す。
+   文字は小さくしすぎず(最小でも18論理px相当)、ボタンは画面の上下端から離して置く */
+:root {
+  --night: #0c0f22;      /* 夜の底色 */
+  --indigo: #1b2145;     /* 副ボタン */
+  --moon: #f1e7c3;       /* 文字色 */
+  --ink: #07080f;        /* 忍者の黒 */
+  --vermilion: #d8402f;  /* 朱(主ボタン・ハンコ) */
+  --paper: #e8e0cb;      /* 和紙色(選択肢) */
+  --gold: #f0c46c;       /* 正解の灯り色 */
+  --steel: #dbe3ff;      /* 手裏剣の鋼色 */
+  --f-display: "Yuji Syuku", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }   /* display を指定した要素でも hidden で確実に隠す */
+html, body { height: 100%; }
+body {
+  background: var(--night);
+  color: var(--moon);
+  font-family: var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--moon); outline-offset: 2px; }
+
+#app { height: 100%; display: flex; align-items: center; justify-content: center; }
+/* #field は JS で 9:16 に収まるサイズへ調整。--u は 1論理px(360px幅基準)の実寸 */
+#field { position: relative; overflow: hidden; --u: 1px; background: var(--night); }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* 上部の操作ボタン(サウンド/ポーズ)。画面の端から少し離す */
+.tools { position: absolute; top: calc(var(--u) * 18); right: calc(var(--u) * 16); display: flex; gap: calc(var(--u) * 10); z-index: 7; }
+.tools button {
+  width: max(40px, calc(var(--u) * 44)); height: max(40px, calc(var(--u) * 44));
+  border-radius: 50%; display: grid; place-items: center;
+  background: rgba(5, 6, 16, .6); border: 1px solid rgba(241, 231, 195, .4); color: var(--moon);
+}
+.tools svg { width: 55%; height: 55%; }
+
+/* 左上の問題番号 */
+#hud { position: absolute; top: calc(var(--u) * 26); left: calc(var(--u) * 18); z-index: 4; text-shadow: 0 1px 4px rgba(5, 6, 16, .9); }
+#roundNo { font-family: var(--f-display); font-size: calc(var(--u) * 22); letter-spacing: .08em; }
+
+/* 出題の合図 */
+#banner {
+  position: absolute; left: 0; right: 0; top: 26%; text-align: center; pointer-events: none; z-index: 3;
+  font-family: var(--f-display); font-size: calc(var(--u) * 44); opacity: 0;
+  text-shadow: 0 0 calc(var(--u) * 16) rgba(241, 231, 195, .5), 0 calc(var(--u) * 3) 0 rgba(5, 6, 16, .7);
+}
+#banner.show { animation: banner 1s ease-out; }
+@keyframes banner { 0% { opacity: 0; transform: scale(1.25); } 25% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
+
+/* 共通パネル(タイトル・ポーズ・結果) */
+.panel { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.panel.dim { background: rgba(5, 6, 16, .76); gap: calc(var(--u) * 22); }
+#title { background: rgba(5, 6, 16, .5); gap: calc(var(--u) * 30); }
+#title h1 {
+  margin: 0; text-align: center; font-family: var(--f-display); font-weight: 400;
+  font-size: calc(var(--u) * 46); line-height: 1.22; letter-spacing: .04em; text-wrap: balance;
+  text-shadow: 0 0 calc(var(--u) * 18) rgba(241, 231, 195, .35), 0 calc(var(--u) * 3) 0 rgba(5, 6, 16, .7);
+}
+.seal {
+  display: block; width: calc(var(--u) * 46); height: calc(var(--u) * 46); margin: 0 auto calc(var(--u) * 14);
+  background: var(--vermilion); color: var(--paper); border-radius: 3px; transform: rotate(-6deg);
+  font-family: var(--f-display); font-size: calc(var(--u) * 32); line-height: calc(var(--u) * 46); text-align: center;
+}
+.stack { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 16); }
+.btn {
+  min-width: calc(var(--u) * 190); padding: calc(var(--u) * 12) calc(var(--u) * 22);
+  background: var(--vermilion); color: var(--paper); border-radius: 3px;
+  font-family: var(--f-display); font-size: calc(var(--u) * 24); letter-spacing: .2em; text-indent: .2em;
+  box-shadow: 0 calc(var(--u) * 4) 0 #7d1f16;
+}
+.btn:active { transform: translateY(calc(var(--u) * 3)); box-shadow: 0 calc(var(--u) * 1) 0 #7d1f16; }
+.btn.sub { background: var(--indigo); color: var(--moon); box-shadow: 0 calc(var(--u) * 4) 0 #070a1c; }
+.btn.sub:active { box-shadow: 0 calc(var(--u) * 1) 0 #070a1c; }
+
+/* タイトル画面の難易度ボタン(左の色帯が難易度ごとの色、右は最高記録の手裏剣) */
+.course {
+  width: calc(var(--u) * 300); display: flex; justify-content: space-between; align-items: center;
+  padding: calc(var(--u) * 12) calc(var(--u) * 16) calc(var(--u) * 12) calc(var(--u) * 18);
+  background: var(--indigo); color: var(--moon); border-radius: 3px;
+  border-left: calc(var(--u) * 8) solid var(--c); box-shadow: 0 calc(var(--u) * 4) 0 #070a1c;
+}
+.course b { font-family: var(--f-display); font-weight: 400; font-size: calc(var(--u) * 32); letter-spacing: .14em; }
+.course .stars { gap: calc(var(--u) * 4); }
+.course:active { transform: translateY(calc(var(--u) * 3)); box-shadow: 0 calc(var(--u) * 1) 0 #070a1c; }
+
+/* 手裏剣の評価(結果画面は大きく、タイトルの難易度ボタンは小さく) */
+.stars { display: flex; align-items: center; gap: calc(var(--u) * 8); }
+.shu { fill: transparent; stroke: rgba(241, 231, 195, .4); stroke-width: 4; stroke-linejoin: round; }
+.shu.on { fill: var(--steel); stroke: #8f9bd0; filter: drop-shadow(0 0 calc(var(--u) * 5) rgba(219, 227, 255, .55)); }
+.stars.anim .shu.on { animation: pop .55s ease-out both; animation-delay: calc(var(--i) * .17s); }
+@keyframes pop { 0% { transform: scale(.2) rotate(-200deg); opacity: 0; } 70% { transform: scale(1.2) rotate(20deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+
+.cname { font-family: var(--f-display); font-size: calc(var(--u) * 32); letter-spacing: .2em; text-indent: .2em; }
+.big { font-family: var(--f-display); font-size: calc(var(--u) * 72); line-height: 1; font-variant-numeric: tabular-nums; }
+.big small { font-size: .4em; margin-left: .1em; }
+
+/* 回答の選択肢(画面下端から離して置く) */
+#answer {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; text-align: center;
+  padding: calc(var(--u) * 44) calc(var(--u) * 16) calc(var(--u) * 36);
+  background: linear-gradient(to bottom, rgba(5, 6, 16, 0), rgba(5, 6, 16, .9) 40%);
+}
+#answer .q { font-family: var(--f-display); font-size: calc(var(--u) * 28); margin-bottom: calc(var(--u) * 12); text-shadow: 0 calc(var(--u) * 2) 0 rgba(5, 6, 16, .6); }
+#choices { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 12); }
+.choice {
+  height: calc(var(--u) * 64); background: var(--paper); color: var(--ink); border-radius: 3px;
+  font-weight: 700; font-size: calc(var(--u) * 34); font-variant-numeric: tabular-nums;
+  box-shadow: 0 calc(var(--u) * 4) 0 #8c8470;
+}
+.choice small { font-size: .6em; margin-left: .15em; }
+.choice:active { transform: translateY(calc(var(--u) * 3)); box-shadow: 0 calc(var(--u) * 1) 0 #8c8470; }
+
+/* 正誤の表示 */
+#verdict { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 6); background: rgba(5, 6, 16, .58); }
+#verdict .lab { font-family: var(--f-display); font-size: calc(var(--u) * 36); letter-spacing: .15em; }
+#verdict .big { font-size: calc(var(--u) * 88); }
+#verdict.ok .lab, #verdict.ok .big { color: var(--gold); }
+#verdict.ng .lab, #verdict.ng .big { color: #ff7d6b; }
+
+@media (prefers-reduced-motion: reduce) {
+  #banner.show { animation: none; opacity: 1; }
+  .stars.anim .shu.on { animation: none; }
+}
+</style>
+
+<div id="app">
+  <div id="field">
+    <canvas id="cv"></canvas>
+
+    <div id="hud" hidden><div id="roundNo"></div></div>
+    <div id="banner"></div>
+
+    <div class="tools">
+      <button id="btnSound" aria-label="サウンド"></button>
+      <button id="btnPause" aria-label="ポーズ" hidden>
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      </button>
+    </div>
+
+    <div id="answer" hidden>
+      <div class="q">何人じゃ？</div>
+      <div id="choices"></div>
+    </div>
+    <div id="verdict" hidden><div class="lab"></div><div class="big"></div></div>
+
+    <!-- タイトル画面: 難易度(下忍・中忍・上忍)をここで選ぶ -->
+    <div id="title" class="panel">
+      <div>
+        <span class="seal">忍</span>
+        <h1>忍者は<br>何人じゃ？</h1>
+      </div>
+      <div id="courseList" class="stack"></div>
+    </div>
+
+    <div id="pausePanel" class="panel dim" hidden>
+      <button id="btnResume" class="btn">再開</button>
+      <button id="btnQuit" class="btn sub">やめる</button>
+    </div>
+
+    <!-- 結果画面: 手裏剣5つで5段階評価 -->
+    <div id="overPanel" class="panel dim" hidden>
+      <div id="overCourse" class="cname"></div>
+      <div id="overStars" class="stars anim"></div>
+      <div class="big"><span id="overScore">0</span><small>/5問</small></div>
+      <div class="stack">
+        <button id="btnRetry" class="btn">もう一度</button>
+        <button id="btnHome" class="btn sub">タイトル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ============================================================
+   忍者は何人じゃ？
+   屋敷の座敷で、天井裏・掛け軸の裏・畳の下・襖の陰から忍者が顔を出しては戻る。
+   走って座敷を横切る忍者もいる。出てきた忍者の人数を数えて4択で答える。
+   猫(にせもの)は数えない。難易度は下忍・中忍・上忍の3つで、各5問。
+   ============================================================ */
+
+const W = 360, H = 640;                 // 論理座標(描画はこのサイズ基準で拡大縮小)
+const $ = s => document.querySelector(s);
+const field = $('#field'), cv = $('#cv'), g = cv.getContext('2d');
+
+// 色
+const INK = '#07080f', RIM = 'rgba(200,214,255,.45)', RED = '#d8402f', PAPER = '#e8e0cb', MOON = '#f1e7c3';
+
+/* ---------- 座敷の配置 ----------
+   天井 y 0〜118 / 壁 y 118〜470 / 畳 y 470〜640
+   襖: 左の隙間 x 8〜56 と戸板 x 56〜132 / 右の戸板 x 228〜304 と隙間 x 304〜352 */
+const GAP_L = 32, GAP_R = 328;          // 襖の隙間の中心x(走る忍者の出入り口)
+const FLOOR_TOP = 474;                  // 壁の足元(襖の隙間の下端)
+
+// 顔を出す場所
+const SPOTS = [
+  { id: 'ceilL',   type: 'ceil',   x: 92,  y: 104 },                 // 天井裏(天井板がずれて穴が開いている)
+  { id: 'ceilR',   type: 'ceil',   x: 268, y: 104 },
+  { id: 'scroll',  type: 'scroll', x: 180, y: 318 },                 // 掛け軸の裏(左右どちらかの端から顔を出す)
+  { id: 'tatamiL', type: 'tatami', x: 104, y: 592 },                 // 畳の下(畳が立ち上がっている)
+  { id: 'tatamiR', type: 'tatami', x: 262, y: 562 },
+  { id: 'fusumaL', type: 'fusuma', x: 56,  y: 392, edge: 56,  side: -1 },   // 開いた襖(戸板の陰から顔を出す)
+  { id: 'fusumaR', type: 'fusuma', x: 304, y: 392, edge: 304, side: 1 },
+];
+const SCROLL_HALF = 35;                 // 掛け軸の幅の半分
+const EM = 0.32, RET = 0.28;            // 顔を出す時間 / 引っ込む時間(秒)
+
+/* ---------- 難易度設定 ----------
+   n=忍者の人数 [1問目, 5問目] / gap=出現の間隔(秒) / hold=顔を出している時間(秒)
+   sp=走る速さ / run=走って横切る割合 / cat=猫の数 / burst=同時に出る確率 / spread=選択肢の幅 */
+const QN = 5;   // 各コースの問題数
+const COURSES = [
+  { name: '下忍', color: '#7fb7a4', n: [3, 7],  gap: [1.05, 0.85], hold: [1.3, 1.05],  sp: [150, 175], run: 0.25, cat: [0, 1], burst: 0,    spread: 3 },
+  { name: '中忍', color: '#f0c46c', n: [6, 10], gap: [0.8, 0.62],  hold: [1.0, 0.8],   sp: [185, 225], run: 0.3,  cat: [1, 3], burst: 0.1,  spread: 2 },
+  { name: '上忍', color: '#d8402f', n: [8, 12], gap: [0.65, 0.5],  hold: [0.82, 0.64], sp: [225, 265], run: 0.35, cat: [2, 4], burst: 0.15, spread: 2 },
+];
+const lerp = (a, b, k) => a + (b - a) * k;
+
+/* ---------- 状態 ---------- */
+const S = {
+  mode: 'title',     // title / ready / watch / settle / answer / verdict / over
+  paused: false,
+  round: 1, score: 0, course: 0,   // round=今何問目か(1〜5) / course=COURSES の番号
+  clock: 0,          // 出題中の経過時間(ポーズ中は進まない)
+  plan: [], planIdx: 0,
+  answer: 0,         // 正解の人数
+  timer: 0,
+  correct: false,
+  idle: 0.8,         // タイトル画面で飾りの忍者を出すまでの時間
+};
+const actors = [];   // 顔を出している忍者 / 走っている忍者・猫
+const puffs = [];    // 煙
+const sway = { amp: 0, t: 9 };   // 掛け軸の揺れ
+let best = [0, 0, 0];   // 難易度ごとの最高正解数
+try { const v = JSON.parse(localStorage.getItem('ninja_best2')); if (Array.isArray(v)) best = [0, 1, 2].map(i => +v[i] || 0); } catch (e) {}
+
+/* ============================================================
+   サウンド (BGM と効果音はまとめて ON/OFF)
+   ============================================================ */
+let ac = null, master, bgmG, seG, noiseBuf;
+let soundOn = true;
+try { soundOn = localStorage.getItem('ninja_snd') !== '0'; } catch (e) {}
+
+// AudioContext はユーザー操作の中で作る必要がある
+function initAudio() {
+  if (ac) { if (ac.state === 'suspended' && !S.paused) ac.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  ac = new AC();
+  master = ac.createGain(); master.gain.value = soundOn ? 1 : 0; master.connect(ac.destination);
+  bgmG = ac.createGain(); bgmG.gain.value = 0.5; bgmG.connect(master);
+  seG = ac.createGain(); seG.gain.value = 0.9; seG.connect(master);
+  // ホワイトノイズ(風切り音・拍子木用)
+  const len = Math.floor(ac.sampleRate * 0.5);
+  noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+}
+// 単音(周波数 f0→f1 へ滑らせながら減衰)
+function tone(dest, type, f0, f1, t, dur, vol) {
+  const o = ac.createOscillator(), gn = ac.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, t);
+  if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  gn.gain.setValueAtTime(0.0001, t);
+  gn.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+  gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(gn).connect(dest);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+// ノイズ(帯域を f0→f1 に動かす)
+function noise(dest, t, dur, f0, f1, vol, q) {
+  const s = ac.createBufferSource(); s.buffer = noiseBuf;
+  const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = q || 1;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  const gn = ac.createGain();
+  gn.gain.setValueAtTime(0.0001, t);
+  gn.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+  gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f).connect(gn).connect(dest);
+  s.start(t); s.stop(t + dur + 0.05);
+}
+// 効果音
+const SE = {
+  appear() { if (!ac) return; const t = ac.currentTime; noise(seG, t, 0.22, 600, 3200, 0.5, 1.2); tone(seG, 'sine', 200, 90, t, 0.12, 0.25); },
+  cat()    { if (!ac) return; const t = ac.currentTime; tone(seG, 'triangle', 520, 880, t, 0.12, 0.3); tone(seG, 'triangle', 880, 560, t + 0.12, 0.16, 0.3); },
+  click()  { if (!ac) return; const t = ac.currentTime; tone(seG, 'square', 880, 660, t, 0.06, 0.1); },
+  ok()     { if (!ac) return; const t = ac.currentTime; tone(seG, 'sine', 784, 784, t, 0.2, 0.4); tone(seG, 'sine', 1175, 1175, t + 0.1, 0.4, 0.4); tone(seG, 'triangle', 1568, 1568, t + 0.2, 0.4, 0.2); },
+  ng()     { if (!ac) return; const t = ac.currentTime; tone(seG, 'sawtooth', 220, 80, t, 0.4, 0.22); },
+  over()   { if (!ac) return; const t = ac.currentTime; [392, 330, 294, 220].forEach((f, i) => tone(seG, 'triangle', f, f, t + i * 0.22, 0.5, 0.35)); },
+};
+
+/* ---- BGM: 都節音階(D, E♭, G, A, B♭)の和風ループ。琴の爪弾き+太鼓 ---- */
+const MEL = [ // 16分音符×32ステップ(2小節)。数字はMIDIノート、0は休み
+  74, 0, 0, 70,  0, 69, 0, 0,  67, 0, 69, 0,  70, 0, 0, 0,
+  69, 0, 67, 0,  63, 0, 62, 0,  63, 0, 67, 0,  69, 0, 0, 0,
+];
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+const bgm = { on: false, step: 0, next: 0, timer: null };
+function stepLen() { return 60 / (88 + S.course * 12 + S.round * 2) / 4; }   // 上の難易度・後の問題ほど少し速く
+function playStep(i, t) {
+  const m = MEL[i];
+  if (m) {   // 琴: 三角波+1オクターブ上の倍音
+    tone(bgmG, 'triangle', midi(m) * 1.03, midi(m), t, 0.55, 0.2);
+    tone(bgmG, 'sine', midi(m) * 2, midi(m) * 2, t, 0.25, 0.05);
+  }
+  if (i % 8 === 0) {   // 太鼓
+    tone(bgmG, 'sine', 130, 45, t, 0.35, i % 16 === 0 ? 0.5 : 0.35);
+    noise(bgmG, t, 0.08, 200, 100, 0.15, 1);
+  }
+  if (i % 8 === 4) noise(bgmG, t, 0.05, 6000, 7000, 0.06, 2);   // 拍子木風のカラ
+  if (i % 16 === 0) tone(bgmG, 'triangle', 73, 73, t, 1.4, 0.16); // 低いドローン(D2)
+}
+function bgmTick() {
+  if (!bgm.on || !ac) return;
+  while (bgm.next < ac.currentTime + 0.25) {
+    playStep(bgm.step, bgm.next);
+    bgm.next += stepLen();
+    bgm.step = (bgm.step + 1) % MEL.length;
+  }
+}
+function startBgm() {
+  if (!ac) return;
+  bgm.on = true; bgm.step = 0; bgm.next = ac.currentTime + 0.1;
+  if (!bgm.timer) bgm.timer = setInterval(bgmTick, 60);
+}
+function stopBgm() { bgm.on = false; }
+
+// サウンドボタン(BGMと効果音をまとめて切り替え)
+const btnSound = $('#btnSound');
+function renderSound() {
+  btnSound.innerHTML = soundOn
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+}
+btnSound.addEventListener('click', () => {
+  initAudio();
+  soundOn = !soundOn;
+  try { localStorage.setItem('ninja_snd', soundOn ? '1' : '0'); } catch (e) {}
+  if (ac) master.gain.setTargetAtTime(soundOn ? 1 : 0, ac.currentTime, 0.02);
+  renderSound();
+  SE.click();
+});
+renderSound();
+
+/* ============================================================
+   描画
+   ============================================================ */
+let bg = null, fg = null;   // 背景(忍者の奥)と前景(襖の戸板。忍者の手前)は一度だけ描いて使い回す
+let seed = 7;
+const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };  // 毎回同じ模様にするための乱数
+
+function resize() {
+  const app = $('#app');
+  const cw = app.clientWidth, ch = app.clientHeight;
+  const sc = Math.min(cw / W, ch / H);
+  const fw = Math.max(1, Math.floor(W * sc)), fh = Math.max(1, Math.floor(H * sc));
+  field.style.width = fw + 'px'; field.style.height = fh + 'px';
+  field.style.setProperty('--u', (fw / W) + 'px');
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.round(fw * dpr); cv.height = Math.round(fh * dpr);
+  buildScene();
+}
+
+function newLayer() {
+  const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height;
+  const x = c.getContext('2d');
+  x.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  return { c, x };
+}
+
+// 座敷の背景と、忍者の手前に来る襖の戸板を作る
+function buildScene() {
+  const L1 = newLayer(), L2 = newLayer();
+  bg = L1.c; fg = L2.c;
+  const b = L1.x, f = L2.x;
+  seed = 7;
+  let gr;
+
+  /* --- 天井 --- */
+  gr = b.createLinearGradient(0, 0, 0, 118);
+  gr.addColorStop(0, '#150f0d'); gr.addColorStop(1, '#2d201a');
+  b.fillStyle = gr; b.fillRect(0, 0, W, 118);
+  b.strokeStyle = 'rgba(0,0,0,.35)'; b.lineWidth = 1.2;                 // 天井板の継ぎ目
+  for (let y = 14; y < 118; y += 14) { b.beginPath(); b.moveTo(0, y); b.lineTo(W, y); b.stroke(); }
+  b.fillStyle = '#3a2a20'; b.fillRect(0, 104, W, 14);                  // 梁
+  // 天井板がずれた穴(中は真っ暗)
+  SPOTS.filter(s => s.type === 'ceil').forEach(s => {
+    b.fillStyle = '#4a3527'; b.fillRect(s.x - 38, 84, 76, 38);           // 穴の縁
+    b.fillStyle = '#020104'; b.fillRect(s.x - 34, 88, 68, 30);           // 穴
+    b.fillStyle = '#5a4332';                                              // ずれた天井板
+    b.beginPath(); b.moveTo(s.x + 22, 80); b.lineTo(s.x + 62, 74); b.lineTo(s.x + 62, 82); b.lineTo(s.x + 22, 88); b.closePath(); b.fill();
+  });
+
+  /* --- 壁 --- */
+  gr = b.createLinearGradient(0, 118, 0, 470);
+  gr.addColorStop(0, '#4b3a2f'); gr.addColorStop(1, '#6b5442');
+  b.fillStyle = gr; b.fillRect(0, 118, W, 352);
+  b.fillStyle = '#2a1c14'; b.fillRect(0, 118, W, 12);                  // 長押(壁の上の横木)
+  b.fillStyle = 'rgba(255,220,160,.25)'; b.fillRect(0, 130, W, 2);
+  // 欄間(襖の上の格子)
+  [[8, 124], [228, 124]].forEach(p => {
+    b.fillStyle = '#251a14'; b.fillRect(p[0], 140, p[1], 48);
+    b.fillStyle = '#7c6248';
+    for (let x = p[0] + 4; x < p[0] + p[1] - 2; x += 9) b.fillRect(x, 142, 4, 44);
+  });
+  // 鴨居(襖の上の梁)と敷居(襖の下の梁)
+  b.fillStyle = '#1f1510'; b.fillRect(0, 188, W, 12);
+  b.fillStyle = 'rgba(255,220,160,.2)'; b.fillRect(0, 200, W, 2);
+  b.fillStyle = '#1f1510'; b.fillRect(0, 462, W, 12);
+  // 柱
+  b.fillStyle = '#241911'; b.fillRect(0, 118, 8, 356); b.fillRect(W - 8, 118, 8, 356);
+
+  /* --- 襖の隙間(隣の部屋の暗がり。月明かりが少し差す) --- */
+  [[8, 48], [304, 48]].forEach(p => {
+    gr = b.createLinearGradient(0, 200, 0, 462);
+    gr.addColorStop(0, '#120e26'); gr.addColorStop(1, '#3a3260');
+    b.fillStyle = gr; b.fillRect(p[0], 200, p[1], 262);
+  });
+
+  /* --- 畳の床 --- */
+  gr = b.createLinearGradient(0, 474, 0, H);
+  gr.addColorStop(0, '#7b8650'); gr.addColorStop(1, '#4e5a35');
+  b.fillStyle = gr; b.fillRect(0, 474, W, H - 474);
+  b.fillStyle = 'rgba(0,0,0,.05)';                                      // 畳の目
+  for (let y = 478; y < H; y += 5) b.fillRect(0, y, W, 1.5);
+  b.strokeStyle = '#14120c'; b.lineWidth = 3;                           // 畳の縁(奥の消失点 (180,330) に向かう線)
+  [-120, 0, 120, 240, 360, 480].forEach(x0 => {
+    const x1 = 180 + (x0 - 180) * (474 - 330) / (H - 330);
+    b.beginPath(); b.moveTo(x1, 474); b.lineTo(x0, H); b.stroke();
+  });
+  [548, 612].forEach(y => { b.beginPath(); b.moveTo(0, y); b.lineTo(W, y); b.stroke(); });
+
+  /* --- 畳が立ち上がった穴(畳の下) --- */
+  SPOTS.filter(s => s.type === 'tatami').forEach(s => {
+    const x = s.x, y = s.y;
+    b.fillStyle = '#020104';                                            // 床下の穴
+    b.beginPath(); b.moveTo(x - 32, y - 18); b.lineTo(x + 32, y - 18); b.lineTo(x + 42, y + 2); b.lineTo(x - 42, y + 2); b.closePath(); b.fill();
+    b.fillStyle = '#8c9762'; b.strokeStyle = '#14120c'; b.lineWidth = 3;   // 立てかけた畳
+    b.beginPath(); b.moveTo(x - 32, y - 18); b.lineTo(x + 32, y - 18); b.lineTo(x + 27, y - 82); b.lineTo(x - 27, y - 82); b.closePath(); b.fill(); b.stroke();
+    b.fillStyle = 'rgba(0,0,0,.08)';
+    for (let k = y - 80; k < y - 20; k += 5) b.fillRect(x - 28, k, 56, 1.5);
+  });
+
+  /* --- 明かりと四隅の陰 --- */
+  gr = b.createRadialGradient(180, 300, 20, 180, 300, 300);
+  gr.addColorStop(0, 'rgba(255,200,120,.2)'); gr.addColorStop(1, 'rgba(255,200,120,0)');
+  b.fillStyle = gr; b.fillRect(0, 0, W, H);
+  gr = b.createRadialGradient(W / 2, H * 0.5, H * 0.28, W / 2, H * 0.5, H * 0.82);
+  gr.addColorStop(0, 'rgba(4,3,8,0)'); gr.addColorStop(1, 'rgba(4,3,8,.62)');
+  b.fillStyle = gr; b.fillRect(0, 0, W, H);
+
+  /* --- 前景: 襖の戸板(忍者はこの陰から顔を出す) --- */
+  [[56, 76, -1], [228, 76, 1]].forEach(p => {
+    const x = p[0], w = p[1], side = p[2];
+    f.fillStyle = '#16100c'; f.fillRect(x - 2, 200, w + 4, 262);          // 黒漆の框
+    f.fillStyle = '#d4c79e'; f.fillRect(x + 3, 205, w - 6, 252);          // 襖紙
+    // 襖絵: 竹
+    f.strokeStyle = 'rgba(70,92,64,.75)'; f.lineWidth = 3.2;
+    [0.28, 0.5, 0.74].forEach((k, i) => {
+      const bx = x + w * k;
+      f.beginPath(); f.moveTo(bx, 457); f.lineTo(bx + (i - 1) * 2, 250 + i * 18); f.stroke();
+      f.lineWidth = 1.6;
+      for (let y = 440; y > 270 + i * 18; y -= 34) { f.beginPath(); f.moveTo(bx - 4, y); f.lineTo(bx + 4, y); f.stroke(); }
+      f.lineWidth = 3.2;
+    });
+    // 金の霞
+    f.fillStyle = 'rgba(201,163,78,.45)';
+    f.beginPath(); f.ellipse(x + w * 0.5, 430, w * 0.46, 11, 0, 0, 6.283); f.fill();
+    f.beginPath(); f.ellipse(x + w * 0.35, 232, w * 0.4, 8, 0, 0, 6.283); f.fill();
+    // 引き手(開いている側の端)
+    const hx = side < 0 ? x + 13 : x + w - 13;
+    f.fillStyle = '#2a1d14'; f.beginPath(); f.arc(hx, 338, 6, 0, 6.283); f.fill();
+    f.strokeStyle = '#c9a34e'; f.lineWidth = 1.6; f.beginPath(); f.arc(hx, 338, 6, 0, 6.283); f.stroke();
+    // 隙間に近い端の影
+    gr = f.createLinearGradient(side < 0 ? x : x + w, 0, side < 0 ? x + 18 : x + w - 18, 0);
+    gr.addColorStop(0, 'rgba(0,0,0,.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    f.fillStyle = gr; f.fillRect(side < 0 ? x : x + w - 18, 205, 18, 252);
+  });
+}
+
+// 掛け軸(揺れる。忍者はこの裏から顔を出す)
+function drawScroll(c, rot) {
+  c.save();
+  c.translate(180, 132);                        // 吊り金具の位置を軸に揺らす
+  c.rotate(rot);
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(-33, 30, 70, 172);   // 壁に落ちる影
+  c.strokeStyle = '#1a120d'; c.lineWidth = 1.6;                      // 吊り紐
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(-30, 20); c.moveTo(0, 0); c.lineTo(30, 20); c.stroke();
+  c.fillStyle = '#3a2616'; c.fillRect(-39, 18, 78, 6);               // 上の軸
+  c.fillStyle = '#2c3a6e'; c.fillRect(-SCROLL_HALF, 24, SCROLL_HALF * 2, 170);   // 裂地
+  c.fillStyle = '#c9a34e'; c.fillRect(-SCROLL_HALF, 24, SCROLL_HALF * 2, 2.5);
+  c.fillStyle = '#d8cca4'; c.fillRect(-25, 40, 50, 138);             // 本紙
+  c.fillStyle = '#14100e'; c.font = '400 64px "Yuji Syuku", "Hiragino Mincho ProN", serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('忍', 0, 110);   // 墨書
+  c.fillStyle = '#3a2616'; c.fillRect(-41, 192, 82, 7);              // 下の軸
+  c.fillStyle = '#c9a34e'; c.fillRect(-46, 190, 5, 11); c.fillRect(41, 190, 5, 11);
+  c.restore();
+}
+
+// 顔を出す忍者(正面向き。feet が原点、足元から頭までおよそ 60)
+// look = 目の動き(-1〜1)
+function ninjaFront(c, s, look) {
+  c.save(); c.scale(s, s);
+  c.lineJoin = 'round';
+  c.fillStyle = INK; c.strokeStyle = RIM; c.lineWidth = 1.4;
+  c.beginPath();                                                       // 胴体
+  c.moveTo(-16, -4); c.lineTo(-13, -32); c.quadraticCurveTo(0, -39, 13, -32); c.lineTo(16, -4); c.closePath(); c.fill(); c.stroke();
+  c.beginPath(); c.arc(0, -49, 11, 0, 6.283); c.fill(); c.stroke();   // 頭巾
+  c.save(); c.beginPath(); c.arc(0, -49, 10.6, 0, 6.283); c.clip();
+  c.fillStyle = RED; c.fillRect(-12, -58, 24, 4.2);                    // 鉢巻
+  c.fillStyle = '#e6cfae'; c.fillRect(-12, -52.5, 24, 8);              // 目の部分
+  c.restore();
+  c.fillStyle = '#fff';                                                // 目
+  c.beginPath(); c.ellipse(-4.2, -48.5, 2.9, 2.4, 0, 0, 6.283); c.fill();
+  c.beginPath(); c.ellipse(4.2, -48.5, 2.9, 2.4, 0, 0, 6.283); c.fill();
+  c.fillStyle = INK;
+  c.beginPath(); c.arc(-4.2 + look * 1.4, -48.5, 1.5, 0, 6.283); c.fill();
+  c.beginPath(); c.arc(4.2 + look * 1.4, -48.5, 1.5, 0, 6.283); c.fill();
+  const w = Math.sin(performance.now() / 110);                         // 鉢巻のたなびく端
+  c.strokeStyle = RED; c.lineWidth = 2.4; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(10.5, -56); c.quadraticCurveTo(16, -55 + w, 21, -51 + w * 2); c.stroke();
+  c.beginPath(); c.moveTo(10.5, -56); c.quadraticCurveTo(16, -59 - w, 20, -60 - w * 2); c.stroke();
+  c.restore();
+}
+
+// 走る忍者(横向きの姿。a.dir=±1 で左右反転)
+function drawNinja(c, a) {
+  const em = Math.min(1, a.t / 0.18);            // 出現時にぽんと大きくなる
+  const s = a.sc * (0.4 + 0.6 * em);
+  c.save();
+  c.translate(a.x, a.y);
+  c.fillStyle = 'rgba(5,6,16,.35)'; c.beginPath(); c.ellipse(0, 1, 16 * s, 4 * s, 0, 0, 6.283); c.fill();  // 地面の影
+  c.translate(0, -Math.abs(Math.sin(a.ph)) * 6 * s);   // 走りに合わせて上下
+  c.scale(a.dir * s, s);
+  const sn = Math.sin(a.ph), cs = Math.cos(a.ph);
+  const limb = (x1, y1, x2, y2, w) => {            // 縁取り付きの太線(手足)
+    c.lineCap = 'round';
+    c.strokeStyle = RIM; c.lineWidth = w + 2; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    c.strokeStyle = INK; c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+  };
+  limb(-6, -26, -14, -54, 3.5);                                  // 背中の刀
+  limb(0, -20, sn * 12, -2 - Math.max(0, cs) * 7, 7);            // 脚
+  limb(0, -20, -sn * 12, -2 - Math.max(0, -cs) * 7, 7);
+  limb(1, -23, 4, -40, 15);                                      // 胴
+  limb(3, -38, -10, -34 + sn * 3, 5);                            // 腕(後ろへ振る)
+  limb(3, -36, -8, -28 - sn * 3, 5);
+  c.fillStyle = INK; c.strokeStyle = RIM; c.lineWidth = 1.2;     // 頭
+  c.beginPath(); c.arc(6, -49, 9, 0, 6.283); c.fill(); c.stroke();
+  c.fillStyle = PAPER; c.fillRect(5.5, -52, 9.5, 5);             // 目の部分
+  c.fillStyle = INK; c.fillRect(11.5, -50.7, 2.4, 2.8);
+  c.fillStyle = RED; c.fillRect(-2.7, -57, 17.4, 3);             // 赤い鉢巻
+  c.strokeStyle = RED; c.lineWidth = 2.6;                        // なびく鉢巻の端
+  const wv = Math.sin(a.t * 18);
+  c.beginPath(); c.moveTo(-2, -55.5); c.quadraticCurveTo(-9, -55.5 + wv * 3, -16, -52 + wv * 4); c.stroke();
+  c.beginPath(); c.moveTo(-2, -55.5); c.quadraticCurveTo(-8, -58 - wv * 2, -14, -58 + wv * 3); c.stroke();
+  c.restore();
+}
+
+// 猫(にせもの。数えない)
+function drawCat(c, a) {
+  const em = Math.min(1, a.t / 0.18);
+  const s = a.sc * 0.85 * (0.4 + 0.6 * em);
+  c.save();
+  c.translate(a.x, a.y);
+  c.fillStyle = 'rgba(5,6,16,.35)'; c.beginPath(); c.ellipse(0, 1, 15 * s, 3.5 * s, 0, 0, 6.283); c.fill();
+  c.translate(0, -Math.abs(Math.sin(a.ph)) * 5 * s);
+  c.scale(a.dir * s, s);
+  const sn = Math.sin(a.ph);
+  c.strokeStyle = '#a8742f'; c.lineWidth = 4; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-8, -10); c.lineTo(-8 - sn * 7, -2); c.moveTo(8, -10); c.lineTo(8 + sn * 7, -2);   // 脚
+  c.moveTo(-5, -10); c.lineTo(-5 + sn * 6, -2); c.moveTo(5, -10); c.lineTo(5 - sn * 6, -2); c.stroke();
+  c.beginPath(); c.moveTo(-12, -16); c.quadraticCurveTo(-24, -26 + sn * 4, -20, -34); c.stroke();            // しっぽ
+  c.fillStyle = '#d89a52'; c.beginPath(); c.ellipse(0, -15, 14, 7, 0, 0, 6.283); c.fill();                  // 体
+  c.beginPath(); c.arc(14, -20, 6.5, 0, 6.283); c.fill();                                                    // 頭
+  c.beginPath(); c.moveTo(9, -24); c.lineTo(10, -31); c.lineTo(14, -25); c.closePath(); c.fill();            // 耳
+  c.beginPath(); c.moveTo(15, -25); c.lineTo(19, -31); c.lineTo(20, -22); c.closePath(); c.fill();
+  c.fillStyle = INK; c.beginPath(); c.arc(17, -21, 1.3, 0, 6.283); c.fill();
+  c.restore();
+}
+
+/* ---------- 顔を出す動き ---------- */
+const easeOut = x => 1 - (1 - x) * (1 - x);
+// 顔の出具合 0(隠れている)〜1(顔を出している)
+function reveal(a) {
+  if (a.t < EM) return easeOut(a.t / EM);
+  if (a.t < EM + a.hold) return 1;
+  return Math.max(0, 1 - (a.t - EM - a.hold) / RET);
+}
+// 場所ごとの顔を出す位置の基準(掛け軸・襖は端の位置と向き)
+function edgeOf(a) {
+  const sp = a.spot;
+  if (sp.type === 'scroll') return { side: a.side, edge: sp.x + a.side * SCROLL_HALF };
+  return { side: sp.side, edge: sp.edge };
+}
+function drawPeek(c, a) {
+  const r = reveal(a);
+  if (r < 0.01) return;
+  const sp = a.spot, s = 1.15, look = Math.sin(a.t * 4 + a.ph);
+  c.save();
+  if (sp.type === 'ceil') {            // 天井裏: 穴から逆さまにぶら下がる
+    c.beginPath(); c.rect(sp.x - 60, sp.y - 14, 120, 400); c.clip();
+    c.translate(sp.x, sp.y);
+    c.rotate(Math.sin(a.t * 3 + a.ph) * 0.05 * r);
+    c.translate(0, -(1 - r) * 72);
+    c.rotate(Math.PI);
+    ninjaFront(c, s, look);
+  } else if (sp.type === 'tatami') {   // 畳の下: 穴から頭を出す
+    c.beginPath(); c.rect(sp.x - 70, 0, 140, sp.y + 2); c.clip();
+    c.translate(sp.x, sp.y + 30 + (1 - r) * 56 + Math.sin(a.t * 5) * 1.2 * r);
+    ninjaFront(c, s, look);
+  } else {                              // 掛け軸の裏・襖の陰: 端から顔を半分のぞかせる
+    const e = edgeOf(a);
+    c.translate(e.edge - e.side * (14 - 20 * r), sp.y);
+    ninjaFront(c, s, look);
+  }
+  c.restore();
+}
+// 端をつかむ手(掛け軸・襖の手前に描く)
+function drawHand(c, a) {
+  const r = reveal(a);
+  if (r < 0.4) return;
+  const e = edgeOf(a), k = Math.min(1, (r - 0.4) / 0.3);
+  c.save();
+  c.translate(e.edge + e.side * 1, a.spot.y - 36);
+  c.scale(k, k);
+  c.fillStyle = INK; c.strokeStyle = RIM; c.lineWidth = 1.2;
+  c.beginPath(); c.ellipse(0, 0, 6.5, 8, 0, 0, 6.283); c.fill(); c.stroke();
+  c.restore();
+}
+
+// 煙
+function addPuff(x, y, sc) {
+  for (let i = 0; i < 6; i++) puffs.push({ x: x + (Math.random() - 0.5) * 50 * sc, y: y - 4 - Math.random() * 18 * sc, r: (8 + Math.random() * 8) * sc, t: 0 });
+}
+function drawPuffs(c) {
+  for (const p of puffs) {
+    const k = p.t / 0.55;
+    c.fillStyle = 'rgba(232,224,203,' + (0.7 * (1 - k)).toFixed(3) + ')';
+    c.beginPath(); c.arc(p.x, p.y - k * 8, p.r * (0.6 + 1.2 * k), 0, 6.283); c.fill();
+  }
+}
+
+function draw() {
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  if (bg) g.drawImage(bg, 0, 0);
+  g.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  // 1. 壁側の忍者(天井・掛け軸・襖)
+  for (const a of actors) if (a.k === 'peek' && a.spot.type !== 'tatami') drawPeek(g, a);
+  // 2. 襖の戸板(忍者の手前)
+  if (fg) g.drawImage(fg, 0, 0, W, H);
+  // 3. 掛け軸(揺れる)と、端をつかむ手
+  drawScroll(g, sway.amp * Math.exp(-sway.t * 2.2) * Math.sin(sway.t * 11));
+  for (const a of actors) if (a.k === 'peek' && (a.spot.type === 'scroll' || a.spot.type === 'fusuma')) drawHand(g, a);
+  // 4. 床の上(畳から出る忍者と走る忍者・猫)を奥から順に
+  const fl = actors.filter(a => a.k === 'run' || a.spot.type === 'tatami');
+  fl.sort((p, q) => (p.k === 'run' ? p.y : p.spot.y) - (q.k === 'run' ? q.y : q.spot.y));
+  for (const a of fl) {
+    if (a.k === 'peek') drawPeek(g, a);
+    else if (a.who === 'ninja') drawNinja(g, a);
+    else drawCat(g, a);
+  }
+  drawPuffs(g);
+}
+
+/* ============================================================
+   ゲーム進行
+   ============================================================ */
+// その問題の出現スケジュールを作る(q=0〜4)
+function makePlan(q) {
+  const C = COURSES[S.course], k = q / (QN - 1);
+  const n = Math.round(lerp(C.n[0], C.n[1], k)) + (Math.random() < 0.5 ? 1 : 0);   // 忍者の人数
+  const gap = lerp(C.gap[0], C.gap[1], k), hold0 = lerp(C.hold[0], C.hold[1], k);
+  const busy = {};                      // 場所ごとの「次に使える時刻」(同じ場所から続けて出ないようにする)
+  const plan = [];
+  let t = 0, made = 0;
+  while (made < n) {
+    let ev = null;
+    if (Math.random() < C.run) {        // 走って座敷を横切る
+      const dir = Math.random() < 0.5 ? 1 : -1;       // +1=左の襖から右へ
+      const gid = dir > 0 ? 'fusumaL' : 'fusumaR';
+      if ((busy[gid] || 0) <= t) { busy[gid] = t + 0.9; ev = { t, type: 'run', who: 'ninja', dir }; }
+    }
+    if (!ev) {                          // 顔を出して戻る
+      const free = SPOTS.filter(s => (busy[s.id] || 0) <= t);
+      if (!free.length) { t = Math.min(...SPOTS.map(s => busy[s.id] || 0)) + 0.01; continue; }   // 空きがなければ待つ
+      const sp = free[Math.floor(Math.random() * free.length)];
+      const hold = hold0 * (0.85 + Math.random() * 0.3);
+      busy[sp.id] = t + EM + hold + RET + 0.7;
+      ev = { t, type: 'peek', who: 'ninja', spot: sp, hold };
+    }
+    plan.push(ev); made++;
+    if (!(Math.random() < C.burst)) t += gap * (0.6 + Math.random() * 0.8);   // 同時に出る場合は時間を進めない
+  }
+  const nc = Math.round(lerp(C.cat[0], C.cat[1], k));                          // 猫(数えない)
+  for (let i = 0; i < nc; i++) plan.push({ t: Math.random() * t, type: 'run', who: 'cat', dir: Math.random() < 0.5 ? 1 : -1 });
+  plan.sort((p, q2) => p.t - q2.t);
+  S.answer = n;
+  return plan;
+}
+
+function newPeek(sp, hold) {
+  return { k: 'peek', spot: sp, t: 0, hold, ph: Math.random() * 6, side: Math.random() < 0.5 ? -1 : 1, rt: false };
+}
+
+// 予定の1件を実行する
+function spawn(e) {
+  if (e.type === 'peek') {
+    actors.push(newPeek(e.spot, e.hold));
+    SE.appear();
+    if (e.spot.type === 'tatami') addPuff(e.spot.x, e.spot.y, 0.9);
+    if (e.spot.type === 'scroll') { sway.amp = 0.06; sway.t = 0; }
+  } else {
+    const C = COURSES[S.course], x0 = e.dir > 0 ? GAP_L : GAP_R, x1 = e.dir > 0 ? GAP_R : GAP_L;
+    actors.push({
+      k: 'run', who: e.who, dir: e.dir, x0, x1, x: x0, y: FLOOR_TOP, sc: 0.8, t: 0, ph: Math.random() * 6,
+      lane: 498 + Math.random() * 44,   // 座敷の奥行き(手前ほど大きく描く)
+      sp: e.who === 'ninja' ? lerp(C.sp[0], C.sp[1], Math.random()) : 120 + Math.random() * 40,
+    });
+    if (e.who === 'ninja') SE.appear(); else SE.cat();
+  }
+}
+
+function updateActors(dt) {
+  for (let i = actors.length - 1; i >= 0; i--) {
+    const a = actors[i];
+    a.t += dt;
+    if (a.k === 'peek') {
+      if (!a.rt && a.t >= EM + a.hold) {                 // 引っ込み始め: 掛け軸が揺れる
+        a.rt = true;
+        if (a.spot.type === 'scroll') { sway.amp = 0.05; sway.t = 0; }
+      }
+      if (a.t >= EM + a.hold + RET) actors.splice(i, 1);
+    } else {
+      a.x += a.dir * a.sp * dt;
+      a.ph += dt * a.sp * 0.09;
+      const p = (a.x - a.x0) / (a.x1 - a.x0);            // 0(出発)〜1(反対側の襖)
+      const edge = Math.max(0, Math.min(1, p / 0.1, (1 - p) / 0.1));
+      a.y = FLOOR_TOP + (a.lane - FLOOR_TOP) * edge;
+      a.sc = 0.8 + (a.y - 470) / 80 * 0.35;
+      if (p >= 1) actors.splice(i, 1);
+    }
+  }
+  for (let i = puffs.length - 1; i >= 0; i--) { puffs[i].t += dt; if (puffs[i].t >= 0.55) puffs.splice(i, 1); }
+  sway.t += dt;
+}
+
+function update(dt) {
+  updateActors(dt);
+  if (S.mode === 'title') {              // タイトル画面では飾りの忍者がときどき顔を出す
+    S.idle -= dt;
+    if (S.idle <= 0 && actors.length < 2) {
+      S.idle = 1.4 + Math.random() * 1.6;
+      const sp = SPOTS[Math.floor(Math.random() * SPOTS.length)];
+      if (!actors.some(a => a.k === 'peek' && a.spot === sp)) actors.push(newPeek(sp, 1.0));
+    }
+  } else if (S.mode === 'ready') {
+    S.timer -= dt;
+    if (S.timer <= 0) { S.mode = 'watch'; S.clock = 0; S.planIdx = 0; }
+  } else if (S.mode === 'watch') {
+    S.clock += dt;
+    while (S.planIdx < S.plan.length && S.plan[S.planIdx].t <= S.clock) spawn(S.plan[S.planIdx++]);
+    if (S.planIdx >= S.plan.length && actors.length === 0) { S.mode = 'settle'; S.timer = 0.5; }
+  } else if (S.mode === 'settle') {
+    S.timer -= dt;
+    if (S.timer <= 0) showAnswer();
+  } else if (S.mode === 'verdict') {
+    S.timer -= dt;
+    if (S.timer <= 0) { $('#verdict').hidden = true; S.round++; if (S.round > QN) gameOver(); else startRound(); }
+  }
+}
+
+/* ---------- 画面の表示切り替え ---------- */
+const el = {
+  hud: $('#hud'), roundNo: $('#roundNo'), banner: $('#banner'),
+  btnPause: $('#btnPause'), answer: $('#answer'), choices: $('#choices'), verdict: $('#verdict'),
+  title: $('#title'), courseList: $('#courseList'),
+  pausePanel: $('#pausePanel'), overPanel: $('#overPanel'), overStars: $('#overStars'),
+};
+function renderHud() { el.roundNo.textContent = COURSES[S.course].name + '　' + S.round + ' / ' + QN; }
+
+// 手裏剣5つの評価(n個が光る)。size は論理pxでの1つの大きさ
+function starsHtml(n, size) {
+  let h = '';
+  for (let i = 0; i < 5; i++) {
+    h += '<svg class="shu' + (i < n ? ' on' : '') + '" style="--i:' + i + ';width:calc(var(--u)*' + size + ');height:calc(var(--u)*' + size + ')" viewBox="0 0 100 100">'
+      + '<path fill-rule="evenodd" d="M50 4 Q55 39 96 50 Q55 61 50 96 Q45 61 4 50 Q45 39 50 4 Z M50 43 a7 7 0 1 0 0.01 0 Z"/></svg>';
+  }
+  return h;
+}
+
+// タイトル画面の難易度ボタンを作る(最高記録を手裏剣で表示)
+function renderCourses() {
+  el.courseList.innerHTML = '';
+  COURSES.forEach((C, i) => {
+    const b = document.createElement('button');
+    b.className = 'course'; b.style.setProperty('--c', C.color);
+    b.innerHTML = '<b>' + C.name + '</b><span class="stars">' + starsHtml(best[i], 22) + '</span>';
+    b.addEventListener('click', () => { initAudio(); SE.click(); startGame(i); });
+    el.courseList.appendChild(b);
+  });
+}
+
+function startGame(ci) {
+  initAudio();
+  S.course = ci; S.round = 1; S.score = 0; S.paused = false;
+  [el.title, el.overPanel, el.pausePanel].forEach(e => e.hidden = true);
+  el.hud.hidden = false; el.btnPause.hidden = false;
+  startBgm();
+  startRound();
+}
+
+function startRound() {
+  actors.length = 0; puffs.length = 0;
+  S.plan = makePlan(S.round - 1); S.planIdx = 0; S.clock = 0;
+  S.mode = 'ready'; S.timer = 1.1;
+  renderHud();
+  el.banner.textContent = '第' + S.round + '問';
+  el.banner.classList.remove('show'); void el.banner.offsetWidth; el.banner.classList.add('show');
+}
+
+// 4択を作る(正解±spread の範囲、1以上。上忍ほど正解に近い数字ばかりで紛らわしい)
+function showAnswer() {
+  S.mode = 'answer';
+  const c = S.answer, sp = COURSES[S.course].spread, set = new Set([c]);
+  while (set.size < 4) { const v = c + Math.floor(Math.random() * (sp * 2 + 1)) - sp; if (v >= 1) set.add(v); }
+  const opts = Array.from(set).sort((p, q) => p - q);
+  el.choices.innerHTML = '';
+  for (const v of opts) {
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.appendChild(document.createTextNode(v));
+    const u = document.createElement('small'); u.textContent = '人'; b.appendChild(u);
+    b.addEventListener('click', () => choose(v));
+    el.choices.appendChild(b);
+  }
+  el.answer.hidden = false;
+}
+
+function choose(v) {
+  if (S.mode !== 'answer' || S.paused) return;
+  el.answer.hidden = true;
+  S.correct = v === S.answer;
+  if (S.correct) { S.score++; SE.ok(); }
+  else { SE.ng(); try { navigator.vibrate && navigator.vibrate(120); } catch (e) {} }
+  el.verdict.className = S.correct ? 'ok' : 'ng';
+  el.verdict.querySelector('.lab').textContent = S.correct ? '正解' : '残念';
+  el.verdict.querySelector('.big').innerHTML = S.answer + '<small>人</small>';
+  el.verdict.hidden = false;
+  S.mode = 'verdict'; S.timer = 1.4;
+}
+
+// 5問終わったら結果表示(正解数と同じ数の手裏剣が光る。最高記録は難易度ごとに保存)
+function gameOver() {
+  S.mode = 'over';
+  stopBgm();
+  if (S.score > best[S.course]) { best[S.course] = S.score; try { localStorage.setItem('ninja_best2', JSON.stringify(best)); } catch (e) {} }
+  $('#overCourse').textContent = COURSES[S.course].name;
+  el.overStars.innerHTML = starsHtml(S.score, 46);
+  $('#overScore').textContent = S.score;
+  el.btnPause.hidden = true; el.hud.hidden = true;
+  el.overPanel.hidden = false;
+  if (S.score >= 3) SE.ok(); else SE.over();
+}
+
+function toTitle() {
+  S.mode = 'title'; S.paused = false; S.idle = 0.6;
+  actors.length = 0; puffs.length = 0;
+  stopBgm();
+  if (ac && ac.state === 'suspended') ac.resume();
+  [el.hud, el.answer, el.verdict, el.pausePanel, el.overPanel, el.btnPause].forEach(e => e.hidden = true);
+  el.banner.classList.remove('show');
+  renderCourses();
+  el.title.hidden = false;
+}
+
+/* ---------- ポーズ ---------- */
+const canPause = () => ['ready', 'watch', 'settle', 'answer', 'verdict'].includes(S.mode);
+function pauseGame() {
+  if (!canPause() || S.paused) return;
+  S.paused = true;
+  if (ac) ac.suspend();            // BGMも止まる
+  el.pausePanel.hidden = false;
+}
+function resumeGame() {
+  if (!S.paused) return;
+  S.paused = false;
+  if (ac) ac.resume();
+  el.pausePanel.hidden = true;
+}
+
+/* ---------- ボタン ---------- */
+$('#btnRetry').addEventListener('click', () => { SE.click(); startGame(S.course); });
+$('#btnHome').addEventListener('click', () => { SE.click(); toTitle(); });
+el.btnPause.addEventListener('click', () => { SE.click(); pauseGame(); });
+$('#btnResume').addEventListener('click', () => { resumeGame(); SE.click(); });
+$('#btnQuit').addEventListener('click', () => { toTitle(); SE.click(); });
+// 画面を離れたら自動でポーズ
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+/* ---------- メインループ(経過時間はdtで管理。ポーズ中は更新しない) ---------- */
+let last = 0;
+function frame(t) {
+  const dt = Math.min(0.05, (t - last) / 1000 || 0);
+  last = t;
+  if (!S.paused) update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+window.addEventListener('resize', resize);
+resize();
+renderCourses();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>

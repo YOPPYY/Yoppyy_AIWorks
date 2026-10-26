@@ -1,0 +1,612 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>10JQKAブラックジャック</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@800&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+/* 配置: 上にディーラー、中央に結果と山札、下にプレイヤー。操作は最下段。フェルトの台に真鍮色の差し色 */
+:root{
+  --felt:#0d3b34; --felt-deep:#072723; --felt-hi:#17554b; --line:rgba(227,176,75,.3);
+  --brass:#e3b04b; --brass-ink:#2a1d05; --ink:#eef5f0; --mute:#9cbdb2;
+  --paper:#fbfaf4; --red:#c62f2b; --blk:#171b20; --win:#8ee6ab; --lose:#ff9d8c;
+  --f-card:'Roboto Slab',Georgia,serif;
+  --f-ui:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Hiragino Sans','Noto Sans JP',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--felt-deep) radial-gradient(120% 75% at 50% 46%,var(--felt-hi) 0,var(--felt) 48%,var(--felt-deep) 100%);
+  color:var(--ink);font-family:var(--f-ui);font-weight:500;font-size:15px;overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;overscroll-behavior:none;
+}
+button{font-family:inherit}
+button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+#app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:8px 8px}
+.bank{display:flex;align-items:center;gap:9px}
+#chips{font:800 27px/1 var(--f-card);font-variant-numeric:tabular-nums}
+.goal{color:var(--mute);font:800 13px var(--f-card);align-self:flex-end;padding-bottom:3px}
+.tools{display:flex;gap:8px}
+.ib{width:46px;height:46px;border-radius:12px;border:1.5px solid var(--line);background:rgba(0,0,0,.2);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.ib svg{width:24px;height:24px}
+#snd .x{display:none}
+#snd.off .wave{display:none}
+#snd.off .x{display:inline}
+.meter{height:4px;border-radius:2px;background:rgba(0,0,0,.32);overflow:hidden}
+.meter i{display:block;height:100%;width:25%;background:var(--brass);transition:width .5s}
+
+.table{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.table::before{content:"";position:absolute;left:50%;transform:translateX(-50%);top:47%;bottom:-3%;width:118%;
+  border:2px solid var(--line);border-top:0;border-radius:0 0 50% 50%/0 0 100% 100%;pointer-events:none}
+.zone,.mid{position:relative;z-index:1}
+.zone{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.hands{display:flex;gap:10px;justify-content:center;align-items:flex-start;width:100%}
+.hand{--cw:clamp(54px,17vw,72px);display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;border:1.5px solid transparent;min-width:0}
+.hands.split .hand{--cw:clamp(40px,12.5vw,54px);padding:6px 4px}
+.hand.active{border-color:var(--brass);background:rgba(227,176,75,.09)}
+.row{display:flex;align-items:center;min-height:calc(var(--cw)*1.42)}
+.hh{display:flex;align-items:center;gap:8px;min-height:30px;flex-wrap:wrap;justify-content:center}
+.lab{color:var(--mute);font-size:13px;font-weight:700;letter-spacing:.08em}
+.tot{min-width:36px;height:30px;padding:0 10px;border-radius:15px;background:var(--felt-deep);border:1.5px solid var(--line);font:800 17px/27px var(--f-card);text-align:center;font-variant-numeric:tabular-nums}
+.tot.bust{color:var(--lose);border-color:var(--lose)}
+.bet{font:800 13px/1 var(--f-card);color:var(--brass);display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
+.bet::before{content:"";width:13px;height:13px;border-radius:50%;border:3px dashed var(--brass)}
+.tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:10px;border:1.5px solid currentColor;white-space:nowrap}
+.tag.win{color:var(--win)}.tag.lose{color:var(--lose)}.tag.push{color:var(--mute)}
+.ghost{width:var(--cw);height:calc(var(--cw)*1.42);border:2px dashed var(--line);border-radius:calc(var(--cw)*.11)}
+.ghost+.ghost{margin-left:10px}
+
+.card{position:relative;flex:none;width:var(--cw);height:calc(var(--cw)*1.42);border-radius:calc(var(--cw)*.11);background:var(--paper);color:var(--blk);
+  box-shadow:0 2px 0 rgba(0,0,0,.28),0 7px 12px rgba(0,0,0,.32)}
+.card.red{color:var(--red)}
+.card+.card{margin-left:calc(var(--cw)*var(--ov,.16)*-1)}
+.card .rk{position:absolute;left:calc(var(--cw)*.09);top:calc(var(--cw)*.05);font:800 calc(var(--cw)*.4)/1 var(--f-card);letter-spacing:-.04em}
+.card .st{position:absolute;left:calc(var(--cw)*.12);top:calc(var(--cw)*.5);width:calc(var(--cw)*.22);height:calc(var(--cw)*.22);fill:currentColor}
+.card .big{position:absolute;right:calc(var(--cw)*.07);bottom:calc(var(--cw)*.07);width:calc(var(--cw)*.5);height:calc(var(--cw)*.5);fill:currentColor}
+.card.back{background:repeating-linear-gradient(45deg,#2a4585 0 6px,#233a73 6px 12px);border:calc(var(--cw)*.06) solid var(--paper)}
+.card.fresh{animation:deal .34s cubic-bezier(.2,.8,.2,1) both}
+@keyframes deal{from{transform:translate(70%,-130%) rotate(14deg) scale(.8);opacity:0}to{transform:none;opacity:1}}
+
+.mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:78px}
+#msg{height:38px;font:800 34px/38px var(--f-card);font-variant-numeric:tabular-nums;text-align:center}
+#msg.win{color:var(--win)}#msg.lose{color:var(--lose)}
+#msg.neu{color:var(--mute);font:700 19px/38px var(--f-ui)}
+#msg.pop{animation:pop .38s ease-out}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:none}}
+.tally{display:flex;gap:8px;font:700 13px var(--f-ui)}
+.tally span{padding:3px 11px;border-radius:10px;background:rgba(0,0,0,.28);border:1px solid var(--line);color:var(--mute)}
+.tally b{margin-left:6px;color:var(--ink);font:800 14px var(--f-card);font-variant-numeric:tabular-nums}
+
+.ctl{min-height:150px;padding-block:6px 16px;display:flex;flex-direction:column;justify-content:flex-end;gap:14px}
+.chiprow{display:flex;justify-content:center;gap:14px;padding-top:6px}
+.cb{--c:#3d6ab0;position:relative;width:58px;height:58px;border-radius:50%;border:0;padding:0;background:var(--c);color:#fff;font:800 16px var(--f-card);cursor:pointer;
+  box-shadow:0 4px 0 rgba(0,0,0,.42);transition:transform .12s,box-shadow .12s}
+.cb::before{content:"";position:absolute;inset:4px;border-radius:50%;border:3px dashed rgba(255,255,255,.85)}
+.cb span{position:relative}
+.cb[aria-pressed="true"]{transform:translateY(-7px);box-shadow:0 11px 0 rgba(0,0,0,.3),0 0 0 3px var(--brass)}
+.cb:disabled{opacity:.28;cursor:default}
+.btn{height:54px;border-radius:12px;border:1.5px solid var(--line);background:var(--felt-hi);color:var(--ink);font:700 16px var(--f-ui);cursor:pointer;padding:0 6px}
+.btn.pri{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
+.btn:disabled{opacity:.3;cursor:default}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.acts .btn{font-size:14px;padding:0 2px;white-space:nowrap}
+#dealBtn{width:100%;font-size:18px}
+
+.ov{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(5,28,24,.93);
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.panel{width:min(100%,380px);max-height:100%;overflow-y:auto;display:flex;flex-direction:column;gap:14px;text-align:center}
+.ttl{font:800 clamp(46px,16vw,66px)/1 var(--f-card);color:var(--brass);letter-spacing:.02em;margin:0}
+.sub{font-size:20px;font-weight:700;letter-spacing:.14em;margin:0}
+.fan{--cw:62px;--ov:.5;display:flex;justify-content:center;height:130px;align-items:flex-end;padding-bottom:6px}
+.fan .card{transform-origin:50% 130%}
+.end-h{font:800 40px/1.1 var(--f-ui);margin:0}
+.end-h.win{color:var(--win)}.end-h.lose{color:var(--lose)}
+.end-s{color:var(--mute);margin:0}
+.rules{margin:0;padding:0;list-style:none;text-align:left;display:flex;flex-direction:column;gap:7px;font-size:14px;line-height:1.5;color:var(--mute)}
+.rules li{padding-left:14px;position:relative}
+.rules li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--brass)}
+.menu-row{display:grid;gap:10px}
+
+@media (prefers-reduced-motion:reduce){.card.fresh,#msg.pop{animation:none}.meter i,.cb{transition:none}}
+@media (max-height:640px){.ctl{min-height:130px}.mid{min-height:64px}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="s-s" viewBox="0 0 24 24"><path d="M12 2C9 7 4 9.5 4 14a4 4 0 0 0 7 2.500c-.2 2-1 3.500-2.500 5.500h7C14 20 13.200 18.500 13 16.500A4 4 0 0 0 20 14c0-4.500-5-7-8-12z"/></symbol>
+    <symbol id="s-h" viewBox="0 0 24 24"><path d="M12 21C5 15.500 3 12 3 8.500A4.500 4.500 0 0 1 12 6.500 4.500 4.500 0 0 1 21 8.500C21 12 19 15.500 12 21z"/></symbol>
+    <symbol id="s-d" viewBox="0 0 24 24"><path d="M12 2l7 10-7 10-7-10z"/></symbol>
+    <symbol id="s-c" viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 0-3.500 6A4 4 0 1 0 11 15.500c-.1 2-.8 3.500-2.500 5.500h7C13.800 19 13.100 17.500 13 15.500A4 4 0 1 0 15.500 9 4 4 0 0 0 12 3z"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <header class="top">
+    <div class="bank">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="13" fill="#b73a30"/><circle cx="15" cy="15" r="9.500" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 3.200"/></svg>
+      <b id="chips">500</b><span class="goal">/ 2000</span>
+    </div>
+    <div class="tools">
+      <button class="ib" id="snd" type="button" aria-label="サウンド">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="wave" d="M16 8.500a5 5 0 0 1 0 7M18.500 6a8.500 8.500 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="x" d="M16.500 9.500l5 5M21.500 9.500l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="ib" id="menuBtn" type="button" aria-label="メニュー">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="meter"><i id="meter"></i></div>
+
+  <main class="table">
+    <section class="zone"><div class="hands" id="dHands"></div></section>
+    <div class="mid">
+      <div id="msg" aria-live="polite"></div>
+      <div class="tally" id="tally"></div>
+    </div>
+    <section class="zone"><div class="hands" id="pHands"></div></section>
+  </main>
+
+  <footer class="ctl">
+    <div id="betBox">
+      <div class="chiprow" id="chipRow"></div>
+    </div>
+    <button class="btn pri" id="dealBtn" type="button">ディール</button>
+    <div class="acts" id="actBox" hidden>
+      <button class="btn pri" id="hitBtn" type="button">ヒット</button>
+      <button class="btn" id="standBtn" type="button">スタンド</button>
+      <button class="btn" id="dblBtn" type="button">ダブル</button>
+      <button class="btn" id="splitBtn" type="button">スプリット</button>
+    </div>
+  </footer>
+</div>
+
+<div class="ov" id="title">
+  <div class="panel">
+    <div class="fan" id="fan"></div>
+    <h1 class="ttl">10JQKA</h1>
+    <p class="sub">ブラックジャック</p>
+    <button class="btn pri" id="startBtn" type="button" style="height:58px;font-size:19px">はじめる</button>
+  </div>
+</div>
+
+<div class="ov" id="menu" hidden>
+  <div class="panel">
+    <ul class="rules">
+      <li>10・J・Q・K・A の20枚だけを使う</li>
+      <li>10・J・Q・K は10点、A は1点か11点</li>
+      <li>21を超えずにディーラーより高くしよう</li>
+      <li>A と10点札の2枚はブラックジャック(1.5倍)</li>
+      <li>同じ点の2枚はスプリットで分けられる</li>
+      <li>ディーラーは17以上で止まる</li>
+      <li>チップが2000でクリア、なくなるとゲームオーバー</li>
+    </ul>
+    <div class="menu-row">
+      <button class="btn pri" id="resumeBtn" type="button">続ける</button>
+      <button class="btn" id="restartBtn" type="button">はじめから</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="end" hidden>
+  <div class="panel">
+    <h2 class="end-h" id="endH"></h2>
+    <p class="end-s" id="endS"></p>
+    <button class="btn pri" id="againBtn" type="button" style="height:58px;font-size:18px">もう一度</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const SUITS=['s','h','d','c'], RANKS=['10','J','Q','K','A'];
+const GOAL=2000, START=500, BETS=[10,50,100,250], MINBET=10;
+const CHIPCOL={10:'#3d6ab0',50:'#b73a30',100:'#23282f',250:'#9a6d17'};
+let S=null, token=0;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- ルール ---------- */
+const pt=c=>c.r==='A'?1:10;
+function val(cards){
+  let t=0,a=0;
+  for(const c of cards){t+=pt(c);if(c.r==='A')a++;}
+  let soft=false;
+  if(a&&t+10<=21){t+=10;soft=true;}
+  return {t,soft};
+}
+const isBJ=cards=>cards.length===2&&val(cards).t===21;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mkDeck(skip){
+  const d=[];
+  for(const s of SUITS)for(const r of RANKS){if(skip&&skip.has(r+s))continue;d.push({r,s});}
+  return shuffle(d);
+}
+function onTable(){
+  const set=new Set();
+  S.dealer.concat(...S.hands.map(h=>h.cards)).forEach(c=>set.add(c.r+c.s));
+  return set;
+}
+function draw(delay){
+  if(!S.deck.length)S.deck=mkDeck(onTable());
+  const c=S.deck.pop();
+  c.fresh=true;c.delay=delay||0;
+  return c;
+}
+function newState(){
+  token++;
+  return {chips:START,bet:50,deck:mkDeck(),hands:[],dealer:[],hole:false,active:0,phase:'bet',msg:'',cls:'',rounds:0,lock:false,paused:false,over:false,popMsg:false};
+}
+function clampBet(){
+  const ok=BETS.filter(b=>b<=S.chips);
+  if(!ok.length)return;
+  if(!ok.includes(S.bet)){const lower=ok.filter(b=>b<=S.bet);S.bet=lower.length?lower[lower.length-1]:ok[0];}
+}
+const canDouble=h=>S.phase==='play'&&!S.lock&&h&&h.cards.length===2&&!h.split&&S.chips>=h.bet;
+const canSplit=h=>S.phase==='play'&&!S.lock&&h&&S.hands.length===1&&h.cards.length===2&&pt(h.cards[0])===pt(h.cards[1])&&S.chips>=h.bet;
+
+function deal(){
+  if(S.lock||S.over||(S.phase!=='bet'&&S.phase!=='end'))return;
+  clampBet();
+  if(S.chips<S.bet)return;
+  const tok=token;
+  se('chip');
+  let note='';
+  if(S.deck.length<10){S.deck=mkDeck();note='シャッフル';}
+  S.chips-=S.bet;S.rounds++;
+  S.msg=note;S.cls=note?'neu':'';S.popMsg=false;
+  S.hands=[{cards:[],bet:S.bet,done:false,split:false,bj:false,bust:false,tag:'',res:''}];
+  S.dealer=[];S.hole=true;S.active=0;
+  S.hands[0].cards.push(draw(0));
+  S.dealer.push(draw(150));
+  S.hands[0].cards.push(draw(300));
+  S.phase='play';S.lock=true;
+  setTimeout(()=>se('deal'),0);setTimeout(()=>se('deal'),150);setTimeout(()=>se('deal'),300);
+  render();
+  setTimeout(()=>{
+    if(tok!==token)return;
+    S.lock=false;
+    const h=S.hands[0];
+    if(isBJ(h.cards)){h.bj=true;h.done=true;h.tag='ブラックジャック';h.res='win';render();dealerPlay();}
+    else render();
+  },680);
+}
+function unlockSoon(ms){const tok=token;S.lock=true;setTimeout(()=>{if(tok===token){S.lock=false;render();}},ms||320);}
+function advance(){
+  const i=S.hands.findIndex(h=>!h.done);
+  if(i>=0){S.active=i;render();return;}
+  render();dealerPlay();
+}
+function hit(){
+  const h=S.hands[S.active];
+  if(S.phase!=='play'||S.lock||!h)return;
+  h.cards.push(draw(0));se('deal');
+  const v=val(h.cards).t;
+  if(v>21){h.done=true;h.bust=true;h.tag='バースト';h.res='lose';se('bust');}
+  else if(v===21)h.done=true;
+  unlockSoon(300);
+  if(h.done)advance();else render();
+}
+function stand(){
+  const h=S.hands[S.active];
+  if(S.phase!=='play'||S.lock||!h)return;
+  h.done=true;se('click');advance();
+}
+function dbl(){
+  const h=S.hands[S.active];
+  if(!canDouble(h))return;
+  S.chips-=h.bet;h.bet*=2;h.doubled=true;se('chip');
+  h.cards.push(draw(0));setTimeout(()=>se('deal'),80);
+  h.done=true;
+  if(val(h.cards).t>21){h.bust=true;h.tag='バースト';h.res='lose';setTimeout(()=>se('bust'),300);}
+  unlockSoon(300);advance();
+}
+function split(){
+  const h=S.hands[S.active];
+  if(!canSplit(h))return;
+  S.chips-=h.bet;se('chip');
+  const c2=h.cards.pop();
+  h.split=true;
+  const h2={cards:[c2],bet:h.bet,done:false,split:true,bj:false,bust:false,tag:'',res:''};
+  S.hands.push(h2);
+  h.cards.push(draw(0));h2.cards.push(draw(160));
+  setTimeout(()=>se('deal'),60);setTimeout(()=>se('deal'),220);
+  for(const x of S.hands)if(val(x.cards).t===21)x.done=true;
+  S.active=0;
+  unlockSoon(520);advance();
+}
+
+async function dealerPlay(){
+  const tok=token;
+  S.phase='dealer';render();
+  const wait=async ms=>{await sleep(ms);while(S.paused&&tok===token)await sleep(120);return tok===token;};
+  if(!await wait(520))return;
+  const live=S.hands.some(h=>val(h.cards).t<=21);
+  if(live){
+    S.hole=false;S.dealer.push(draw(0));se('deal');render();
+    while(val(S.dealer).t<17){
+      if(!await wait(720))return;
+      S.dealer.push(draw(0));se('deal');render();
+    }
+    if(!await wait(560))return;
+  }
+  settle();
+}
+function settle(){
+  const tok=token;
+  const dv=val(S.dealer).t, dbj=isBJ(S.dealer);
+  let net=0,anyBJ=false,anyBust=false;
+  for(const h of S.hands){
+    const pv=val(h.cards).t;
+    if(pv>21){h.res='lose';h.tag='バースト';net-=h.bet;anyBust=true;}
+    else if(h.bj){
+      if(dbj){h.res='push';h.tag='引分';S.chips+=h.bet;}
+      else{h.res='win';h.tag='ブラックジャック';S.chips+=h.bet*2.5;net+=h.bet*1.5;anyBJ=true;}
+    }
+    else if(dbj){h.res='lose';h.tag='負け';net-=h.bet;}
+    else if(dv>21||pv>dv){h.res='win';h.tag='勝ち';S.chips+=h.bet*2;net+=h.bet;}
+    else if(pv===dv){h.res='push';h.tag='引分';S.chips+=h.bet;}
+    else{h.res='lose';h.tag='負け';net-=h.bet;}
+  }
+  S.phase='end';
+  if(net>0){S.msg='+'+net;S.cls='win';}
+  else if(net<0){S.msg='−'+(-net);S.cls='lose';}
+  else{S.msg='±0';S.cls='neu';}
+  S.popMsg=true;
+  clampBet();
+  if(anyBJ)se('bj');else if(net>0)se('win');else if(net<0)se(anyBust&&S.hands.every(h=>h.bust)?'bust':'lose');else se('push');
+  if(S.chips>=GOAL||S.chips<MINBET){
+    S.over=true;
+    render();
+    setTimeout(()=>{if(tok===token)showEnd();},1200);
+    return;
+  }
+  render();
+}
+function showEnd(){
+  const clear=S.chips>=GOAL;
+  $('#endH').textContent=clear?'クリア!':'ゲームオーバー';
+  $('#endH').className='end-h '+(clear?'win':'lose');
+  $('#endS').textContent=S.rounds+' ラウンド';
+  $('#end').hidden=false;
+  se(clear?'clear':'over');
+}
+
+/* ---------- 描画 ---------- */
+function cardEl(c){
+  const d=document.createElement('div');
+  d.className='card'+(c.s==='h'||c.s==='d'?' red':'');
+  d.innerHTML='<span class="rk">'+c.r+'</span><svg class="st"><use href="#s-'+c.s+'"/></svg><svg class="big"><use href="#s-'+c.s+'"/></svg>';
+  if(c.fresh){d.classList.add('fresh');d.style.animationDelay=(c.delay||0)+'ms';c.fresh=false;}
+  return d;
+}
+function rowEl(cards,hole){
+  const row=document.createElement('div');row.className='row';
+  const n=cards.length+(hole?1:0);
+  row.style.setProperty('--ov',n<=2?.16:n===3?.3:.44);
+  cards.forEach(c=>row.appendChild(cardEl(c)));
+  if(hole){const b=document.createElement('div');b.className='card back';row.appendChild(b);}
+  return row;
+}
+function ghostRow(n){
+  const row=document.createElement('div');row.className='row';
+  for(let i=0;i<n;i++){const g=document.createElement('div');g.className='ghost';row.appendChild(g);}
+  return row;
+}
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+
+function renderTable(){
+  /* ディーラー */
+  const dz=$('#dHands');dz.innerHTML='';
+  const dh=el('div','hand');
+  const dhh=el('div','hh');
+  dhh.appendChild(el('span','lab','ディーラー'));
+  if(S.dealer.length){
+    const v=val(S.dealer).t;
+    dhh.appendChild(el('span','tot'+(v>21?' bust':''),v));
+    if(S.dealer.length>=2){
+      if(v>21)dhh.appendChild(el('span','tag win','バースト'));
+      else if(isBJ(S.dealer))dhh.appendChild(el('span','tag lose','ブラックジャック'));
+    }
+  }
+  dh.appendChild(dhh);
+  dh.appendChild(S.dealer.length?rowEl(S.dealer,S.hole):ghostRow(2));
+  dz.appendChild(dh);
+
+  /* プレイヤー */
+  const pz=$('#pHands');pz.innerHTML='';
+  pz.className='hands'+(S.hands.length>1?' split':'');
+  if(!S.hands.length){
+    const h=el('div','hand');
+    h.appendChild(ghostRow(2));
+    pz.appendChild(h);
+  }
+  S.hands.forEach((h,i)=>{
+    const box=el('div','hand'+(S.phase==='play'&&S.hands.length>1&&i===S.active?' active':''));
+    box.appendChild(rowEl(h.cards,false));
+    const hh=el('div','hh');
+    const v=val(h.cards).t;
+    hh.appendChild(el('span','tot'+(v>21?' bust':''),v));
+    hh.appendChild(el('span','bet',h.bet));
+    if(h.tag)hh.appendChild(el('span','tag '+h.res,h.tag));
+    box.appendChild(hh);
+    pz.appendChild(box);
+  });
+}
+function renderTally(){
+  const t=$('#tally');
+  const a=S.deck.filter(c=>c.r==='A').length;
+  const n=S.deck.length;
+  t.innerHTML='<span>山札<b>'+n+'</b></span><span>A<b>'+a+'</b></span><span>10点<b>'+(n-a)+'</b></span>';
+}
+function renderCtl(){
+  const inBet=S.phase==='bet'||S.phase==='end';
+  $('#betBox').hidden=!inBet;$('#dealBtn').hidden=!inBet;$('#actBox').hidden=inBet;
+  document.querySelectorAll('.cb').forEach(b=>{
+    const v=+b.dataset.bet;
+    b.setAttribute('aria-pressed',String(v===S.bet));
+    b.disabled=v>S.chips||S.over;
+  });
+  $('#dealBtn').disabled=S.chips<S.bet||S.over||S.lock;
+  const h=S.hands[S.active];
+  const playing=S.phase==='play'&&!S.lock&&h&&!h.done;
+  $('#hitBtn').disabled=!playing;
+  $('#standBtn').disabled=!playing;
+  $('#dblBtn').disabled=!canDouble(h);
+  $('#splitBtn').disabled=!canSplit(h);
+}
+function render(){
+  $('#chips').textContent=S.chips;
+  $('#meter').style.width=Math.max(0,Math.min(100,S.chips/GOAL*100))+'%';
+  const m=$('#msg');
+  m.textContent=S.msg;
+  m.className=S.cls+(S.popMsg&&S.msg?' pop':'');
+  S.popMsg=false;
+  renderTable();renderTally();renderCtl();
+}
+
+/* ---------- サウンド ---------- */
+let AC=null,master=null,seG=null,bgG=null,nbuf=null,soundOn=true;
+try{if(localStorage.getItem('jqka_snd')==='0')soundOn=false;}catch(e){}
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function initAudio(){
+  if(AC)return;
+  const C=window.AudioContext||window.webkitAudioContext;
+  if(!C)return;
+  AC=new C();
+  const comp=AC.createDynamicsCompressor();
+  master=AC.createGain();master.gain.value=.9;
+  master.connect(comp);comp.connect(AC.destination);
+  seG=AC.createGain();seG.gain.value=.75;seG.connect(master);
+  bgG=AC.createGain();bgG.gain.value=.34;bgG.connect(master);
+  nbuf=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);
+  const d=nbuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+}
+function applySound(){
+  if(!AC)return;
+  if(soundOn&&!document.hidden)AC.resume();else AC.suspend();
+}
+function tone(f,t,d,type,v,dest,f2){
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+  if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(v,t+.012);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(dest||seG);o.start(t);o.stop(t+d+.03);
+}
+function noise(t,d,v,hp,dest){
+  const s=AC.createBufferSource();s.buffer=nbuf;
+  const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=hp;
+  const g=AC.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  s.connect(f);f.connect(g);g.connect(dest||seG);s.start(t);s.stop(t+d+.03);
+}
+function se(name){
+  if(!AC||!soundOn||AC.state!=='running')return;
+  const t=AC.currentTime+.01;
+  switch(name){
+    case 'click':tone(880,t,.05,'sine',.16);break;
+    case 'chip':tone(1900,t,.04,'triangle',.2);tone(2500,t+.05,.05,'triangle',.16);break;
+    case 'deal':noise(t,.07,.32,1800);tone(300,t,.05,'triangle',.07);break;
+    case 'win':[523,659,784].forEach((f,i)=>tone(f,t+i*.09,.18,'triangle',.22));break;
+    case 'bj':[392,523,659,784,1047].forEach((f,i)=>tone(f,t+i*.08,.26,'triangle',.22));tone(1568,t+.45,.5,'sine',.12);break;
+    case 'lose':tone(330,t,.2,'triangle',.22);tone(247,t+.16,.3,'triangle',.22);break;
+    case 'bust':tone(180,t,.38,'sawtooth',.14,seG,70);break;
+    case 'push':tone(587,t,.14,'triangle',.18);tone(587,t+.15,.14,'triangle',.14);break;
+    case 'clear':[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,t+i*.11,.3,'triangle',.22));break;
+    case 'over':[392,330,262,196].forEach((f,i)=>tone(f,t+i*.2,.4,'triangle',.22));break;
+  }
+}
+/* BGM: 92BPMのスウィング。Cmaj7 A7 Dm7 G7 Em7 A7 Dm7 G7 の8小節 */
+const B=60/92;
+const BASS=[[36,40,43,47],[33,37,40,43],[38,41,45,48],[31,35,38,41],[40,43,47,50],[33,37,40,43],[38,41,45,48],[31,35,38,35]];
+const CHORDS=[[60,64,67,71],[61,64,67,69],[62,65,69,72],[59,62,65,67],[59,62,64,67],[61,64,67,69],[62,65,69,72],[59,62,65,67]];
+const MEL=[
+  [[0,79],[3,76],[5,74]],[[0,76],[2,73],[4,76],[6,79]],[[0,77],[3,74],[6,72]],[[0,71],[2,74],[4,77],[6,74]],
+  [[0,76],[3,79],[5,76]],[[0,81],[2,79],[4,76],[6,73]],[[0,74],[3,77],[5,81]],[[0,79],[2,77],[4,74],[6,71]]
+];
+let bgmN=0,bgmT0=0,bgmTimer=null;
+const stepTime=n=>bgmT0+Math.floor(n/2)*B+((n&1)?B*2/3:0);
+function playStep(n,t){
+  const bar=(n>>3)&7,s=n&7;
+  if(s%2===0)tone(mtof(BASS[bar][s>>1]),t,B*.92,'triangle',.34,bgG);
+  if(s===0||s===3){
+    CHORDS[bar].forEach(m=>{tone(mtof(m),t,s===0?.9:.35,'sine',.05,bgG);tone(mtof(m)*2,t,.25,'sine',.012,bgG);});
+  }
+  if(s===2||s===6)noise(t,.07,.07,5500,bgG);else if(s%2===0)noise(t,.04,.03,7000,bgG);
+  for(const p of MEL[bar])if(p[0]===s){tone(mtof(p[1]),t,.7,'sine',.09,bgG);tone(mtof(p[1])*3,t,.22,'sine',.02,bgG);}
+}
+function sched(){
+  if(!AC||AC.state!=='running')return;
+  const lim=AC.currentTime+.3;
+  while(stepTime(bgmN)<lim){
+    const t=stepTime(bgmN);
+    if(t>AC.currentTime-.15)playStep(bgmN,t);
+    bgmN++;
+  }
+}
+function startBgm(){
+  if(!AC||bgmTimer)return;
+  bgmT0=AC.currentTime+.15;bgmN=0;
+  bgmTimer=setInterval(sched,60);
+}
+function paintSnd(){$('#snd').classList.toggle('off',!soundOn);}
+document.addEventListener('visibilitychange',applySound);
+
+/* ---------- 操作 ---------- */
+function openMenu(){S.paused=true;$('#menu').hidden=false;se('click');}
+function closeMenu(){S.paused=false;$('#menu').hidden=true;se('click');}
+function restart(){
+  S=newState();
+  $('#menu').hidden=true;$('#end').hidden=true;
+  render();
+}
+function init(){
+  /* 掛け金ボタン */
+  const row=$('#chipRow');
+  BETS.forEach(b=>{
+    const c=document.createElement('button');
+    c.type='button';c.className='cb';c.dataset.bet=b;c.style.setProperty('--c',CHIPCOL[b]);
+    c.setAttribute('aria-label','賭け '+b);
+    c.innerHTML='<span>'+b+'</span>';
+    c.addEventListener('click',()=>{if(S.lock||S.over)return;S.bet=b;se('chip');renderCtl();});
+    row.appendChild(c);
+  });
+  /* タイトルの札 */
+  const fan=$('#fan');
+  [['A','s'],['K','h'],['Q','c'],['J','d'],['10','s']].forEach((x,i)=>{
+    const c=cardEl({r:x[0],s:x[1]});
+    c.style.transform='rotate('+((i-2)*13)+'deg) translateY('+(Math.abs(i-2)*5)+'px)';
+    fan.appendChild(c);
+  });
+  S=newState();
+  render();
+  paintSnd();
+  $('#startBtn').addEventListener('click',()=>{
+    initAudio();applySound();startBgm();se('click');
+    $('#title').hidden=true;
+  });
+  $('#dealBtn').addEventListener('click',deal);
+  $('#hitBtn').addEventListener('click',hit);
+  $('#standBtn').addEventListener('click',stand);
+  $('#dblBtn').addEventListener('click',dbl);
+  $('#splitBtn').addEventListener('click',split);
+  $('#menuBtn').addEventListener('click',openMenu);
+  $('#resumeBtn').addEventListener('click',closeMenu);
+  $('#restartBtn').addEventListener('click',()=>{se('click');restart();});
+  $('#againBtn').addEventListener('click',()=>{se('click');restart();});
+  $('#snd').addEventListener('click',()=>{
+    soundOn=!soundOn;
+    try{localStorage.setItem('jqka_snd',soundOn?'1':'0');}catch(e){}
+    paintSnd();applySound();
+    if(soundOn)setTimeout(()=>se('click'),60);
+  });
+}
+init();
+})();
+</script>
+
+</body></html>

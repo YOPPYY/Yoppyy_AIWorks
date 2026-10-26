@@ -1,0 +1,550 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>おはじき将棋</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== 配色・書体トークン =====
+   レイアウト: 上に細いバー(メニュー/状態/サウンド)、残り全面が盤。盤は縦横の短い方に収め、外側の暗い余白が「落ちる先」 */
+:root {
+  --bg: #12151b;        /* 盤の外(奈落) */
+  --panel: #1c212b;     /* ボタン・カード */
+  --line2: #2c3342;     /* パネルの縁 */
+  --ink: #efe6d2;       /* 主な文字 */
+  --ink2: #a39b88;      /* 補助文字 */
+  --accent: #e8c15a;    /* 強調(狙いの線・主ボタン) */
+  --me: #2f8a73;        /* 自分の駒の縁 */
+  --cpu: #b5372d;       /* CPUの駒の縁 */
+  --serif: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html { box-sizing: border-box; height: 100%; }
+body {
+  box-sizing: border-box; height: 100%; margin: 0;
+  display: flex; flex-direction: column; overflow: hidden;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bg); color: var(--ink); font-family: var(--sans);
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+#bar { flex: none; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+.ib {
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; padding: 0;
+  background: var(--panel); border: 1px solid var(--line2); color: var(--ink); cursor: pointer;
+}
+.ib:focus-visible, .btn:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ib svg { width: 22px; height: 22px; }
+#status { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; letter-spacing: .06em; }
+#dot { width: 10px; height: 10px; border-radius: 50%; background: var(--me); }
+#stage { position: relative; flex: 1; min-height: 0; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+
+/* メニュー・タイトル・結果を兼ねるオーバーレイ */
+.ov { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+  background: rgba(8, 10, 14, .78);
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.card { width: min(320px, 100%); background: var(--panel); border: 1px solid var(--line2); border-radius: 14px;
+  padding: 26px 22px 22px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.card h1 { margin: 0; font-family: var(--serif); font-weight: 800; font-size: 34px; letter-spacing: .12em; text-indent: .12em; }
+.card h1.big { font-size: 52px; }
+.how { margin: 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.8; color: var(--ink2); text-align: center; }
+.chips { display: flex; width: 100%; border: 1px solid var(--line2); border-radius: 10px; overflow: hidden; }
+.chip { flex: 1; padding: 11px 0; background: transparent; color: var(--ink2); border: 0; font: 700 14px var(--sans); cursor: pointer; }
+.chip + .chip { border-left: 1px solid var(--line2); }
+.chip[aria-pressed="true"] { background: var(--accent); color: #1b1405; }
+.btn { width: 100%; padding: 14px 0; border-radius: 10px; font: 700 16px var(--sans); letter-spacing: .1em; cursor: pointer;
+  background: transparent; color: var(--ink); border: 1px solid var(--line2); }
+.btn.main { background: var(--accent); color: #1b1405; border-color: var(--accent); }
+</style>
+
+<header id="bar">
+  <button class="ib" id="btnMenu" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div id="status"><i id="dot"></i><span id="stxt"></span></div>
+  <button class="ib" id="btnSnd" aria-label="サウンド" aria-pressed="true">
+    <svg id="icoOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+    <svg id="icoOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+  </button>
+</header>
+<main id="stage"><canvas id="cv"></canvas></main>
+
+<div class="ov" id="ov" hidden>
+  <div class="card">
+    <h1 id="ovTitle"></h1>
+    <ul class="how" id="ovHow">
+      <li>駒を引いて離すと、おはじきで弾ける</li>
+      <li>弾けるのは、その駒が進める向きだけ</li>
+      <li>王を盤から落とされたら負け</li>
+    </ul>
+    <div class="chips" id="chips" role="group" aria-label="強さ">
+      <button class="chip" data-lv="0" aria-pressed="false">よわい</button>
+      <button class="chip" data-lv="1" aria-pressed="true">ふつう</button>
+      <button class="chip" data-lv="2" aria-pressed="false">つよい</button>
+    </div>
+    <button class="btn main" id="btnStart">はじめる</button>
+    <button class="btn" id="btnResume" hidden>つづける</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), g = cv.getContext('2d');
+
+/* ===================== ゲーム定数 ===================== */
+const N = 9;                 // 盤は 9x9 マス。座標の単位は「マス」(1マス = 1.0)
+const R = 0.40;              // 駒の当たり判定の半径(円で近似)
+const DEC = 4.5;             // 直進の減速(マス/秒²)。一定の摩擦で止まる
+const WDEC = 5;              // 回転の減速(rad/秒²)
+const REST = 0.8;            // 反発係数
+const SPIN = 1.0;            // 衝突で回転が生まれる強さ
+const DT = 1 / 90;           // 物理の固定刻み(CPUの先読みと実機で同じ値を使う)
+const TOL = 26 * Math.PI / 180;   // 狙いが進める向きから何度ずれても許すか
+const MINPULL = 0.35, PULL = 2.2; // 引き幅(マス): これ未満は取り消し / これで最大パワー
+
+/* 駒の種類。dirs は「駒の前方」を0°とした時計回りの角度(度)。
+   駒が回転するとこの向きも一緒に回る。max は最大パワーで滑る距離(マス) */
+const TYPES = {
+  fu: { k: '歩', dirs: [0],                              max: 2.4, val: 1 },
+  ky: { k: '香', dirs: [0],                              max: 8,   val: 3 },   // 香車は遠くまで
+  ke: { k: '桂', dirs: [-26.565, 26.565],                max: 3.2, val: 3 },   // 桂馬は前方斜め(1,2)の向き
+  gi: { k: '銀', dirs: [0, 45, -45, 135, -135],          max: 3.2, val: 4 },
+  ki: { k: '金', dirs: [0, 45, -45, 90, -90, 180],       max: 3.2, val: 5 },
+  ka: { k: '角', dirs: [45, -45, 135, -135],             max: 8,   val: 7 },   // 角は遠くまで
+  hi: { k: '飛', dirs: [0, 90, 180, -90],                max: 8,   val: 8 },   // 飛車は遠くまで
+  ou: { k: '王', dirs: [0, 45, 90, 135, 180, -135, -90, -45], max: 2.8, val: 1000 }
+};
+/* CPUの強さ: powers=試すパワー段階 / noise=評価のばらつき / jit=狙いのぶれ(rad) / rnd=ランダムに指す確率 */
+const LEVELS = [
+  { powers: [0.45, 0.8, 1],                       noise: 5,    jit: 7 * Math.PI / 180,   rnd: 0.25 },
+  { powers: [0.35, 0.55, 0.75, 1],                noise: 1.5,  jit: 2.5 * Math.PI / 180, rnd: 0 },
+  { powers: [0.3, 0.45, 0.6, 0.75, 0.9, 1],       noise: 0.25, jit: 0.5 * Math.PI / 180, rnd: 0 }
+];
+
+/* ===================== 角度・向きの補助 ===================== */
+// 角度は「上向きが0、時計回りが正」。画面は y が下向きなので ベクトルは (sin, -cos)
+const vec = a => [Math.sin(a), -Math.cos(a)];
+const norm = d => ((d + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+// 駒がいま打てる向き(駒の回転を反映した世界角度)の一覧
+const dirsOf = p => TYPES[p.t].dirs.map(d => p.a + d * Math.PI / 180);
+
+/* ===================== 物理 ===================== */
+// 1ステップ進める。ev があれば衝突音・落下の通知を出す(CPUの先読みでは null)
+function step(ps, dt, ev) {
+  const n = ps.length;
+  for (let i = 0; i < n; i++) {
+    const p = ps[i];
+    if (!p.alive) continue;
+    // 直進: 一定の減速で止まる
+    const sp = Math.hypot(p.vx, p.vy);
+    if (sp > 0) {
+      const ns = sp - DEC * dt;
+      if (ns <= 0.05) { p.vx = 0; p.vy = 0; }
+      else { const f = ns / sp; p.vx *= f; p.vy *= f; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    // 回転
+    if (p.w !== 0) {
+      const aw = Math.abs(p.w) - WDEC * dt;
+      p.w = aw <= 0.05 ? 0 : Math.sign(p.w) * aw;
+      p.a += p.w * dt;
+    }
+    // 駒の中心が盤の外に出たら落ちる
+    if (p.x < 0 || p.x > N || p.y < 0 || p.y > N) { p.alive = false; if (ev) ev.fall(p); }
+  }
+  // 衝突: 動いている駒だけを相手に判定する(止まっている駒どうしは重ならない)
+  const mv = ps.map(p => p.alive && (p.vx !== 0 || p.vy !== 0));
+  for (let i = 0; i < n; i++) {
+    if (!mv[i]) continue;
+    const a = ps[i];
+    if (!a.alive) continue;
+    for (let j = 0; j < n; j++) {
+      if (j === i) continue;
+      const b = ps[j];
+      if (!b.alive || (mv[j] && j < i)) continue;
+      collide(a, b, ev);
+    }
+  }
+}
+// 等質量の円どうしの衝突。法線方向は反発、接線方向の摩擦で回転(w)が生まれる
+function collide(a, b, ev) {
+  const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy, D = 2 * R;
+  if (d2 >= D * D || d2 === 0) return;
+  const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, pen = D - d;
+  a.x -= nx * pen / 2; a.y -= ny * pen / 2; b.x += nx * pen / 2; b.y += ny * pen / 2; // めり込みを解消
+  const rvx = b.vx - a.vx, rvy = b.vy - a.vy, vn = rvx * nx + rvy * ny;
+  if (vn >= 0) return;                                   // すでに離れていく向き
+  const j = -(1 + REST) * vn / 2;
+  a.vx -= j * nx; a.vy -= j * ny; b.vx += j * nx; b.vy += j * ny;
+  const tx = -ny, ty = nx;                               // 接線
+  const rel = rvx * tx + rvy * ty - R * (a.w + b.w);     // 接触点のすべり速度
+  const lim = 0.5 * j;
+  const jt = Math.max(-lim, Math.min(lim, -rel * 0.25)); // 摩擦力積(クーロン摩擦で頭打ち)
+  a.vx -= jt * tx; a.vy -= jt * ty; b.vx += jt * tx; b.vy += jt * ty;
+  a.w = clampW(a.w - 2 * jt / R * SPIN);                 // 円板の慣性モーメントから回転を付与
+  b.w = clampW(b.w - 2 * jt / R * SPIN);
+  if (ev) ev.hit(-vn);
+}
+const clampW = w => Math.max(-14, Math.min(14, w));
+const settled = ps => ps.every(p => !p.alive || (p.vx === 0 && p.vy === 0 && p.w === 0));
+
+// 駒を弾く。power(0〜1)から「滑る距離」を決め、距離から初速を逆算する (d = v²/2DEC)
+function launch(p, ang, power) {
+  const d = TYPES[p.t].max * (0.1 + 0.9 * power);
+  const v = Math.sqrt(2 * DEC * d), [dx, dy] = vec(ang);
+  p.vx = dx * v; p.vy = dy * v;
+}
+
+/* ===================== 状態 ===================== */
+let G = null, level = 1, paused = true;
+function newGame() {
+  const ps = []; let id = 0;
+  const add = (s, t, c, r) => ps.push({ id: id++, t, s, x: c + .5, y: r + .5, vx: 0, vy: 0,
+    a: s === 0 ? 0 : Math.PI, w: 0, alive: true, fallT: 0 });
+  const back = ['ky', 'ke', 'gi', 'ki', 'ou', 'ki', 'gi', 'ke', 'ky'];
+  for (let c = 0; c < 9; c++) {
+    add(0, back[c], c, 8);  add(0, 'fu', c, 6);          // 自分(下側)
+    add(1, back[c], 8 - c, 0); add(1, 'fu', 8 - c, 2);   // CPU(上側・向きは180°)
+  }
+  add(0, 'hi', 7, 7); add(0, 'ka', 1, 7);                // 通常の将棋と同じ飛・角の位置
+  add(1, 'hi', 1, 1); add(1, 'ka', 7, 1);
+  G = { ps, turn: 0, phase: 'aim', shooter: 0, kf: [], over: false, endT: 0, result: null, drag: null, acc: 0, timer: 0, ended: false };
+  setStatus();
+}
+
+/* ===================== CPU ===================== */
+function runSim(ps) { for (let i = 0; i < 520; i++) { step(ps, DT, null); if (settled(ps)) break; } }
+// 結果の評価(CPU視点)。落とした駒の価値 − 落とされた駒の価値 + 盤の端に寄せた度合い
+function evalSim(sim) {
+  let s = 0;
+  for (const p of sim) {
+    const v = TYPES[p.t].val, e = p.alive ? Math.min(p.x, N - p.x, p.y, N - p.y) : 0, w = p.t === 'ou' ? 3 : 1;
+    if (p.s === 1) s += p.alive ? 0.03 * e * w : -v;
+    else s += p.alive ? -0.03 * e * w : v;
+  }
+  return s;
+}
+// 全候補(駒×向き×パワー)を実際に物理シミュレーションして最善手を選ぶ
+function cpuMove() {
+  const L = LEVELS[level], base = G.ps.filter(p => p.alive), cands = [];
+  base.forEach((p, i) => {
+    if (p.s !== 1) return;
+    for (const ang of dirsOf(p)) for (const pw of L.powers) {
+      const sim = base.map(q => ({ t: q.t, s: q.s, x: q.x, y: q.y, vx: 0, vy: 0, a: q.a, w: 0, alive: true }));
+      launch(sim[i], ang, pw); runSim(sim);
+      cands.push({ i, ang, pw, sc: evalSim(sim) + (Math.random() - .5) * 2 * L.noise });
+    }
+  });
+  cands.sort((a, b) => b.sc - a.sc);
+  let c = cands[0];
+  if (L.rnd && Math.random() < L.rnd) c = cands[Math.floor(Math.random() * cands.length)];
+  launch(base[c.i], c.ang + (Math.random() - .5) * 2 * L.jit, c.pw);
+  SFX.shot(c.pw);
+  G.shooter = 1; G.phase = 'run'; G.acc = 0;
+}
+
+/* ===================== 進行 ===================== */
+const EV = {
+  hit(v) { SFX.hit(v); },
+  fall(p) { p.fallT = 0; SFX.fall(); if (p.t === 'ou') G.kf.push(p.s); }
+};
+function update(dt) {
+  if (paused || !G) return;
+  // 落ちた駒は勢いのまま滑りながら小さくなる
+  for (const p of G.ps) if (!p.alive && p.fallT < 1) { p.fallT += dt / 0.55; p.x += p.vx * dt; p.y += p.vy * dt; p.a += p.w * dt; }
+  if (G.phase === 'run') {
+    G.acc = Math.min(G.acc + dt, 0.1);
+    while (G.acc >= DT) {
+      step(G.ps, DT, EV); G.acc -= DT;
+      if (G.kf.length && !G.over) kingFell();
+      if (settled(G.ps)) { finishRun(); break; }
+    }
+  } else if (G.phase === 'cpuwait') {
+    G.timer -= dt;
+    if (G.timer <= 0) cpuMove();
+  }
+  if (G.over && !G.ended) { G.endT -= dt; if (G.endT <= 0) { G.ended = true; showOv('end'); } }
+}
+// 王が落ちたら決着。同時に落ちたら、弾いた側の負け(自滅)
+function kingFell() {
+  const loser = G.kf.includes(G.shooter) ? G.shooter : G.kf[0];
+  G.over = true; G.endT = 1.1; G.result = loser === 1 ? 'win' : 'lose';
+  setStatus(); setTimeout(() => SFX.end(G.result === 'win'), 500);
+}
+function finishRun() {
+  if (G.over) { G.phase = 'end'; return; }
+  G.turn = 1 - G.turn;
+  if (G.turn === 1) { G.phase = 'cpuwait'; G.timer = 0.6; } else G.phase = 'aim';
+  setStatus();
+}
+function setStatus() {
+  const dot = $('#dot'), t = $('#stxt');
+  if (G.over) { t.textContent = G.result === 'win' ? '勝ち' : '負け'; dot.style.background = G.result === 'win' ? 'var(--me)' : 'var(--cpu)'; return; }
+  t.textContent = G.turn === 0 ? 'あなたの番' : 'CPUの番';
+  dot.style.background = G.turn === 0 ? 'var(--me)' : 'var(--cpu)';
+}
+
+/* ===================== 入力(引いて離して弾く) ===================== */
+// 引いた量と向きから、打てる向きへのスナップを計算する
+function aimOf(p, px, py) {
+  const sx = p.x - px, sy = p.y - py, L = Math.hypot(sx, sy);   // 弾く向き = 指と反対側
+  if (L < MINPULL) return null;
+  const want = Math.atan2(sx, -sy);
+  let best = 0, bd = 1e9;
+  for (const a of dirsOf(p)) { const d = Math.abs(norm(a - want)); if (d < bd) { bd = d; best = a; } }
+  return { ang: best, ok: bd <= TOL, power: Math.min(1, (L - MINPULL) / (PULL - MINPULL)) };
+}
+const toWorld = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left - OX) / C, (e.clientY - r.top - OY) / C]; };
+cv.addEventListener('pointerdown', e => {
+  if (paused || !G || G.over || G.phase !== 'aim' || G.turn !== 0 || G.drag) return;
+  const [wx, wy] = toWorld(e);
+  let best = null, bd = 0.7;                                     // 指に近い自分の駒を選ぶ
+  for (const p of G.ps) if (p.alive && p.s === 0) { const d = Math.hypot(p.x - wx, p.y - wy); if (d < bd) { bd = d; best = p; } }
+  if (!best) return;
+  G.drag = { p: best, px: wx, py: wy, id: e.pointerId };
+  cv.setPointerCapture(e.pointerId); SFX.tick();
+});
+cv.addEventListener('pointermove', e => {
+  if (!G || !G.drag || e.pointerId !== G.drag.id) return;
+  [G.drag.px, G.drag.py] = toWorld(e);
+});
+function endDrag(e, fire) {
+  if (!G || !G.drag || e.pointerId !== G.drag.id) return;
+  const d = G.drag; G.drag = null;
+  if (!fire) return;
+  [d.px, d.py] = toWorld(e);
+  const info = aimOf(d.p, d.px, d.py);
+  if (!info || !info.ok) return;                                  // 打てない向き・引き幅不足は取り消し
+  launch(d.p, info.ang, info.power); SFX.shot(info.power);
+  G.shooter = 0; G.phase = 'run'; G.acc = 0;
+}
+cv.addEventListener('pointerup', e => endDrag(e, true));
+cv.addEventListener('pointercancel', e => endDrag(e, false));
+
+/* ===================== 描画 ===================== */
+let W = 0, H = 0, DPR = 1, C = 40, OX = 0, OY = 0, boardImg = null;
+function resize() {
+  const r = $('#stage').getBoundingClientRect();
+  W = r.width; H = r.height; DPR = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  C = (Math.min(W, H) - 12) / 9.56;                 // 枠(各0.28マス)込みで短辺に収める
+  OX = (W - 9 * C) / 2; OY = (H - 9 * C) / 2;
+  buildBoard();
+}
+// 盤は毎フレーム描かず、オフスクリーンに1回だけ作る
+function buildBoard() {
+  const o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height;
+  const b = o.getContext('2d'); b.scale(DPR, DPR);
+  b.fillStyle = '#12151b'; b.fillRect(0, 0, W, H);
+  const f = 0.28 * C;
+  b.save(); b.shadowColor = 'rgba(0,0,0,.6)'; b.shadowBlur = 24; b.shadowOffsetY = 6;
+  b.fillStyle = '#6e4719'; b.fillRect(OX - f, OY - f, 9 * C + 2 * f, 9 * C + 2 * f); b.restore();
+  const gr = b.createLinearGradient(OX, OY, OX + 9 * C, OY + 9 * C);
+  gr.addColorStop(0, '#e6bf74'); gr.addColorStop(1, '#d4a559');
+  b.fillStyle = gr; b.fillRect(OX, OY, 9 * C, 9 * C);
+  // 木目(固定シードの擬似乱数)
+  let sd = 7; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  b.save(); b.beginPath(); b.rect(OX, OY, 9 * C, 9 * C); b.clip();
+  for (let i = 0; i < 90; i++) {
+    const y = OY + rnd() * 9 * C, x = OX + rnd() * 9 * C, l = (1 + rnd() * 4) * C;
+    b.strokeStyle = `rgba(90,52,10,${0.04 + rnd() * 0.06})`; b.lineWidth = 0.4 + rnd() * 1.2;
+    b.beginPath(); b.moveTo(x, y); b.bezierCurveTo(x + l / 3, y + rnd() * 3 - 1.5, x + 2 * l / 3, y + rnd() * 3 - 1.5, x + l, y); b.stroke();
+  }
+  b.restore();
+  // 格子と星
+  b.strokeStyle = 'rgba(52,32,8,.85)'; b.lineWidth = Math.max(1, C * 0.025);
+  for (let i = 0; i <= 9; i++) {
+    b.beginPath(); b.moveTo(OX + i * C, OY); b.lineTo(OX + i * C, OY + 9 * C); b.stroke();
+    b.beginPath(); b.moveTo(OX, OY + i * C); b.lineTo(OX + 9 * C, OY + i * C); b.stroke();
+  }
+  b.lineWidth = Math.max(2, C * 0.06); b.strokeRect(OX, OY, 9 * C, 9 * C);
+  b.fillStyle = 'rgba(52,32,8,.9)';
+  for (const [x, y] of [[3, 3], [3, 6], [6, 3], [6, 6]]) { b.beginPath(); b.arc(OX + x * C, OY + y * C, C * 0.07, 0, 7); b.fill(); }
+  boardImg = o;
+}
+
+// 将棋駒の五角形(前方が上)。コレジョンの円より少し小さめに描く
+const SHAPE = [[0, -.42], [.27, -.21], [.34, .36], [-.34, .36], [-.27, -.21]];
+function pent(ctx, k) { ctx.beginPath(); SHAPE.forEach(([x, y], i) => i ? ctx.lineTo(x * k, y * k) : ctx.moveTo(x * k, y * k)); ctx.closePath(); }
+function drawPiece(p) {
+  const sc = p.alive ? 1 : Math.max(0, 1 - p.fallT * p.fallT);     // 落ちるほど小さく
+  if (sc <= 0.02) return;
+  const px = OX + p.x * C, py = OY + p.y * C, k = C * sc;
+  g.save(); g.globalAlpha = p.alive ? 1 : Math.max(0, 1 - p.fallT);
+  // 影
+  g.save(); g.translate(px + 0.05 * C, py + 0.07 * C); g.rotate(p.a); pent(g, k); g.fillStyle = 'rgba(0,0,0,.38)'; g.fill(); g.restore();
+  g.translate(px, py); g.rotate(p.a);
+  pent(g, k);
+  const gr = g.createLinearGradient(-.3 * k, -.4 * k, .3 * k, .4 * k);
+  gr.addColorStop(0, '#f6e1ac'); gr.addColorStop(1, '#e3c07c');
+  g.fillStyle = gr; g.fill();
+  g.lineJoin = 'round'; g.lineWidth = Math.max(1.5, 0.07 * k); g.strokeStyle = p.s === 0 ? '#2f8a73' : '#b5372d'; g.stroke();
+  g.fillStyle = '#21160a'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `800 ${0.46 * k}px "Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif`;
+  g.fillText(p.t === 'ou' && p.s === 1 ? '玉' : TYPES[p.t].k, 0, 0.1 * k);
+  g.restore();
+}
+// 狙いの表示: 打てる向み(点線)、引いた線、確定した向きと止まる目安
+function drawAim() {
+  const d = G.drag; if (!d) return;
+  const p = d.p, mx = TYPES[p.t].max, X = x => OX + x * C, Y = y => OY + y * C;
+  const info = aimOf(p, d.px, d.py);
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  g.beginPath(); g.arc(X(p.x), Y(p.y), 0.62 * C, 0, 7); g.strokeStyle = 'rgba(232,193,90,.9)'; g.lineWidth = 2; g.stroke();
+  for (const a of dirsOf(p)) {
+    const [dx, dy] = vec(a), on = info && info.ok && info.ang === a;
+    g.setLineDash([C * 0.12, C * 0.18]); g.lineWidth = Math.max(1.5, C * 0.05);
+    g.strokeStyle = on ? 'rgba(232,193,90,.5)' : 'rgba(239,230,210,.26)';
+    g.beginPath(); g.moveTo(X(p.x + dx * 0.7), Y(p.y + dy * 0.7)); g.lineTo(X(p.x + dx * mx), Y(p.y + dy * mx)); g.stroke();
+    g.setLineDash([]);                                         // 矢じり
+    const ax = p.x + dx * 0.95, ay = p.y + dy * 0.95, nx = -dy, ny = dx, s = 0.13;
+    g.beginPath(); g.moveTo(X(ax + dx * s), Y(ay + dy * s)); g.lineTo(X(ax - dx * s + nx * s), Y(ay - dy * s + ny * s)); g.lineTo(X(ax - dx * s - nx * s), Y(ay - dy * s - ny * s)); g.closePath();
+    g.fillStyle = on ? '#e8c15a' : 'rgba(239,230,210,.4)'; g.fill();
+  }
+  // 引いた線(ゴムのイメージ)
+  g.setLineDash([]); g.lineWidth = Math.max(2, C * 0.06);
+  g.strokeStyle = info && !info.ok ? 'rgba(229,96,79,.8)' : 'rgba(239,230,210,.45)';
+  g.beginPath(); g.moveTo(X(p.x), Y(p.y)); g.lineTo(X(d.px), Y(d.py)); g.stroke();
+  g.beginPath(); g.arc(X(d.px), Y(d.py), 0.16 * C, 0, 7); g.fillStyle = g.strokeStyle; g.fill();
+  if (info && info.ok) {                                      // 止まる目安(衝突は考えない)
+    const dist = mx * (0.1 + 0.9 * info.power), [dx, dy] = vec(info.ang);
+    g.strokeStyle = '#e8c15a'; g.lineWidth = Math.max(3, C * 0.09);
+    g.beginPath(); g.moveTo(X(p.x + dx * 0.5), Y(p.y + dy * 0.5)); g.lineTo(X(p.x + dx * dist), Y(p.y + dy * dist)); g.stroke();
+    g.lineWidth = Math.max(2, C * 0.05); g.beginPath(); g.arc(X(p.x + dx * dist), Y(p.y + dy * dist), R * C, 0, 7); g.stroke();
+  }
+  g.restore();
+}
+function draw() {
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g.clearRect(0, 0, W, H); g.drawImage(boardImg, 0, 0, W, H);
+  if (!G) return;
+  for (const p of G.ps) if (!p.alive) drawPiece(p);             // 落下中は盤の外・下に
+  for (const p of G.ps) if (p.alive) drawPiece(p);
+  drawAim();
+}
+let last = 0;
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
+  update(dt); draw(); requestAnimationFrame(frame);
+}
+
+/* ===================== サウンド(BGMとSEをまとめてオン/オフ) ===================== */
+const AU = { ctx: null, master: null, bgm: null, se: null, noise: null, muted: false, step: 0, next: 0, tm: null, lastHit: 0 };
+try { AU.muted = localStorage.getItem('ohajiki-muted') === '1'; } catch (e) {}
+function auInit() {
+  if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  const c = AU.ctx = new AC();
+  AU.master = c.createGain(); AU.master.gain.value = AU.muted ? 0 : 1; AU.master.connect(c.destination);
+  AU.bgm = c.createGain(); AU.bgm.gain.value = 0.32; AU.bgm.connect(AU.master);
+  AU.se = c.createGain(); AU.se.gain.value = 0.9; AU.se.connect(AU.master);
+  const nb = c.createBuffer(1, c.sampleRate * 0.3, c.sampleRate), d = nb.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  AU.noise = nb;
+  AU.next = c.currentTime + 0.15; AU.step = 0;
+  AU.tm = setInterval(sched, 60);
+}
+function setMuted(m) {
+  AU.muted = m;
+  try { localStorage.setItem('ohajiki-muted', m ? '1' : '0'); } catch (e) {}
+  if (AU.master) AU.master.gain.value = m ? 0 : 1;
+  $('#icoOn').hidden = m; $('#icoOff').hidden = !m; $('#btnSnd').setAttribute('aria-pressed', String(!m));
+}
+// 単発の音を鳴らす小さな部品
+function tone(type, f0, f1, t, dur, vol, dest) {
+  const c = AU.ctx, o = c.createOscillator(), gn = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t);
+  if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(vol, t + 0.004); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(gn); gn.connect(dest || AU.se); o.start(t); o.stop(t + dur + 0.02);
+}
+function burst(t, dur, freq, vol, type) {
+  const c = AU.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), gn = c.createGain();
+  s.buffer = AU.noise; f.type = type || 'bandpass'; f.frequency.value = freq;
+  gn.gain.setValueAtTime(vol, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(gn); gn.connect(AU.se); s.start(t); s.stop(t + dur + 0.02);
+}
+const SFX = {
+  ok() { return AU.ctx && AU.ctx.state === 'running'; },
+  tick() { if (!this.ok()) return; tone('sine', 900, 900, AU.ctx.currentTime, 0.05, 0.12); },
+  shot(pw) { if (!this.ok()) return; const t = AU.ctx.currentTime; burst(t, 0.12, 1400, 0.25 + 0.3 * pw, 'lowpass'); tone('sine', 220, 90, t, 0.14, 0.3); },
+  hit(v) {                                                            // 木の駒がぶつかる音(強さで音量が変わる)
+    if (!this.ok()) return; const t = AU.ctx.currentTime; if (t - AU.lastHit < 0.035) return; AU.lastHit = t;
+    const vol = Math.min(1, v / 4) * 0.55 + 0.08;
+    tone('sine', 760 + Math.random() * 260, 320, t, 0.08, vol); burst(t, 0.035, 2400, vol * 0.8);
+  },
+  fall() { if (!this.ok()) return; tone('sine', 560, 110, AU.ctx.currentTime, 0.5, 0.22); },
+  end(win) {
+    if (!this.ok()) return; const t = AU.ctx.currentTime;
+    (win ? [659, 880, 987, 1319] : [523, 440, 349, 330]).forEach((f, i) => pluck(f, t + i * 0.18, 0.5, AU.se));
+  }
+};
+// 琴のような撥弦音
+function pluck(f, t, vol, dest) {
+  const c = AU.ctx, o = c.createOscillator(), o2 = c.createOscillator(), fl = c.createBiquadFilter(), gn = c.createGain(), g2 = c.createGain();
+  o.type = 'triangle'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2; g2.gain.value = 0.3;
+  fl.type = 'lowpass'; fl.frequency.setValueAtTime(3200, t); fl.frequency.exponentialRampToValueAtTime(700, t + 0.8);
+  gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(vol, t + 0.005); gn.gain.exponentialRampToValueAtTime(0.0001, t + 1.0);
+  o.connect(fl); o2.connect(g2); g2.connect(fl); fl.connect(gn); gn.connect(dest || AU.bgm);
+  o.start(t); o2.start(t); o.stop(t + 1.05); o2.stop(t + 1.05);
+}
+/* BGM: 都節(みやこぶし)音階 E F A B C のゆったりしたループ。8分音符×32ステップ=4小節 */
+const SCALE = [329.6, 349.2, 440, 493.9, 523.3, 659.3, 698.5, 880];
+const MEL = [5,-1,-1,3, 2,-1,3,-1, 4,-1,3,-1, 2,-1,-1,-1,
+             1,-1,2,-1, 3,-1,4,5, 4,-1,3,-1, 2,-1,-1,-1];   // 音階の番号(-1は休み)
+const BASS = { 0: 82.4, 8: 110, 16: 87.3, 24: 82.4 };
+const STEP_SEC = 60 / 78 / 2;
+function sched() {
+  const c = AU.ctx; if (!c || c.state !== 'running') return;
+  while (AU.next < c.currentTime + 0.25) {
+    const s = AU.step, t = AU.next;
+    if (MEL[s] >= 0) pluck(SCALE[MEL[s]], t, 0.38);
+    if (BASS[s]) pluck(BASS[s], t, 0.5);
+    if (s === 0 || s === 16) tone('sine', 95, 45, t, 0.3, 0.45, AU.bgm);   // 太鼓の低い一打
+    AU.next += STEP_SEC; AU.step = (AU.step + 1) % 32;
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (!AU.ctx) return;
+  if (document.hidden) AU.ctx.suspend(); else { AU.ctx.resume(); AU.next = AU.ctx.currentTime + 0.1; }
+});
+
+/* ===================== メニュー・オーバーレイ ===================== */
+const ov = $('#ov');
+function showOv(mode) {
+  paused = true; ov.hidden = false;
+  const title = $('#ovTitle'); title.classList.toggle('big', mode === 'end');
+  title.textContent = mode === 'title' ? 'おはじき将棋' : mode === 'menu' ? 'メニュー' : (G.result === 'win' ? '勝ち' : '負け');
+  $('#ovHow').hidden = mode !== 'title';
+  $('#chips').hidden = mode === 'end';
+  $('#btnResume').hidden = mode !== 'menu';
+  $('#btnStart').textContent = mode === 'title' ? 'はじめる' : mode === 'end' ? 'もう一度' : 'はじめから';
+}
+function hideOv() { ov.hidden = true; paused = false; }
+function setLevel(l) {
+  level = l;
+  document.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.lv === l)));
+  try { localStorage.setItem('ohajiki-level', String(l)); } catch (e) {}
+}
+document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => setLevel(+b.dataset.lv)));
+$('#btnStart').addEventListener('click', () => { auInit(); newGame(); hideOv(); });
+$('#btnResume').addEventListener('click', hideOv);
+$('#btnMenu').addEventListener('click', () => { if (ov.hidden && !(G && G.over)) { if (G && G.drag) G.drag = null; showOv('menu'); } });
+$('#btnSnd').addEventListener('click', () => { auInit(); setMuted(!AU.muted); });
+
+/* ===================== 起動 ===================== */
+try { const s = parseInt(localStorage.getItem('ohajiki-level'), 10); if (s >= 0 && s <= 2) level = s; } catch (e) {}
+setLevel(level); setMuted(AU.muted);
+window.addEventListener('resize', resize);
+resize(); newGame(); showOv('title');
+if (document.fonts && document.fonts.load) document.fonts.load('800 20px "Shippori Mincho B1"', '歩香桂銀金王玉角飛').catch(() => {});
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>

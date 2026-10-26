@@ -1,0 +1,1145 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ケロジャンプ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* ==========================================================
+   ケロジャンプ
+   レイアウト: 全画面キャンバスの上に、上端のボタン類(HUD)と中央のメニューパネルを重ねる。
+   見た目: 青い空、草と土の地面、太い丸線の矢印と軌道(橙=軌道・旗 / 黒=矢印)。
+   ========================================================== */
+:root{
+  --paper:#FFFFFF;        /* ボタン・パネルの白 */
+  --ink:#1F2421;          /* 線・文字の黒 */
+  --ground:#FFC107;       /* メニューの主ボタン */
+  --ground-pale:#FFF3C4;  /* クリア済みステージの背景 */
+  --frog:#9CCC3C;         /* カエル */
+  --frog-deep:#4B7A1E;    /* カエルの縁・タイトル文字 */
+  --power:#E53935;        /* パワーメーター(赤) */
+  --accent:#FF5722;       /* 軌道・旗・強調 */
+  --star:#E8A400;         /* 星 */
+  --sky:#7FC8F2;          /* 空(上) */
+  --sky-low:#D6F1FD;      /* 空(地平線側) */
+  --cloud:#FFFFFF;        /* 雲 */
+  --grass:#3FA34D;        /* 草 */
+  --grass-deep:#2A7A35;   /* 草の縁 */
+  --dirt:#B5835A;         /* 土 */
+  --dirt-deep:#7B5232;    /* 土の縁 */
+  --water:#3D93D8;        /* 水(水面側) */
+  --water-deep:#1F5FA6;   /* 水(深い側) */
+  --grass-light:#6FCB5E;  /* 草の明るいハイライト */
+  --dirt-light:#CFA37A;   /* 土の小石 */
+  --foam:#EAF7FF;         /* 水しぶき・波の白 */
+  --font:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+}
+[hidden]{display:none!important}   /* hidden 属性を確実に効かせる */
+html,body{height:100%}
+body{
+  margin:0;position:relative;overflow:hidden;
+  background:var(--sky);color:var(--ink);
+  font-family:var(--font);font-size:18px;font-weight:500;
+  touch-action:none;-webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+/* ---- 上端のHUD(ポーズ・情報・サウンド) ---- */
+#hud{
+  position:absolute;inset:0 0 auto 0;z-index:6;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding-block:32px 12px;                  /* 上端に寄せすぎない */
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  pointer-events:none;
+}
+.ibtn{
+  pointer-events:auto;flex:none;width:52px;height:52px;padding:0;
+  display:grid;place-items:center;cursor:pointer;
+  border:4px solid var(--ink);border-radius:50%;background:var(--paper);color:var(--ink);
+}
+.ibtn svg{width:26px;height:26px}
+.ibtn:active{transform:translateY(2px)}
+.ibtn:focus-visible,.btn:focus-visible,.cell:focus-visible{outline:4px solid var(--accent);outline-offset:3px}
+#info{
+  flex:1;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;
+  column-gap:14px;font-weight:700;font-size:19px;line-height:1.35;padding-top:2px;
+}
+#i-life{color:var(--accent);letter-spacing:2px}   /* ライフ(ハート) */
+#bar{flex-basis:100%;height:14px;box-sizing:border-box;margin-top:6px;border:3px solid var(--ink);border-radius:7px;background:var(--paper);overflow:hidden}
+#bar-fill{display:block;height:100%;width:0;border-radius:5px;background:var(--frog)}
+
+/* ---- ヒントとトースト ---- */
+#hint,#toast{
+  white-space:pre-line;   /* \n で改行できる */
+  position:absolute;left:50%;transform:translateX(-50%);width:max-content;
+  max-width:calc(100% - 32px);text-align:center;pointer-events:none;
+  border:3px solid var(--ink);border-radius:999px;background:var(--paper);
+  padding:10px 18px;font-weight:700;font-size:18px;line-height:1.4;
+}
+#hint{bottom:72px;z-index:3}
+#toast{top:30%;z-index:5;font-size:28px;line-height:1.5;padding:28px 44px;border-radius:32px;border-color:var(--accent);color:var(--accent)}   /* 大きめの窓。余白を広くとる */
+
+/* ---- メニュー(オーバーレイ) ---- */
+.ov{
+  position:absolute;inset:0;z-index:4;display:grid;place-items:center;
+  padding-block:112px 56px;                 /* 上下端に寄せすぎない */
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:color-mix(in srgb,var(--paper) 78%,transparent);
+  touch-action:pan-y;
+}
+.panel{
+  width:min(100%,420px);max-height:100%;overflow-y:auto;
+  display:flex;flex-direction:column;gap:14px;text-align:center;
+}
+.panel h1{
+  margin:0;font-size:clamp(48px,15vw,76px);font-weight:900;line-height:1.1;
+  color:var(--frog-deep);text-wrap:balance;
+}
+.panel h1 span{display:inline-block;padding-bottom:4px;border-bottom:10px solid var(--ground);border-radius:6px}
+.panel h2{margin:0;font-size:32px;font-weight:900;line-height:1.25;text-wrap:balance}
+.panel p{margin:0;font-size:18px;line-height:1.6}
+.btn{
+  font:inherit;font-weight:700;font-size:20px;min-height:56px;padding:8px 20px;cursor:pointer;
+  border:4px solid var(--ink);border-radius:999px;background:var(--paper);color:var(--ink);
+}
+.btn.main{background:var(--ground)}
+.btn:active,.cell:active{transform:translateY(2px)}
+.btn.warn{border-color:var(--accent);color:var(--accent)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn.on{background:var(--ground)}   /* 選択中のページ */
+.btn:disabled{opacity:.35;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.cell{
+  font:inherit;min-height:76px;padding:6px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  border:4px solid var(--ink);border-radius:20px;background:var(--paper);color:var(--ink);
+}
+.cell .num{font-size:30px;font-weight:900;line-height:1}
+.cell .st{font-size:18px;line-height:1.2;color:var(--star)}
+.cell.done{border-color:var(--ground);background:var(--ground-pale)}
+.cell:disabled{opacity:.35;cursor:default}
+#clr-stars{font-size:44px;line-height:1.1;color:var(--star);letter-spacing:4px}
+@media (prefers-reduced-motion:reduce){.btn:active,.cell:active,.ibtn:active{transform:none}}
+</style>
+
+<canvas id="cv"></canvas>
+
+<div id="hud">
+  <button id="btn-pause" class="ibtn" type="button" aria-label="ポーズ">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4.5" width="4.5" height="15" rx="1.5" fill="currentColor"/><rect x="14" y="4.5" width="4.5" height="15" rx="1.5" fill="currentColor"/></svg>
+  </button>
+  <div id="info"><span id="i-stage">ステージ1</span><span id="i-jump">ジャンプ 0</span><span id="i-life" aria-label="ライフ">♥♥♥</span><div id="bar"><i id="bar-fill"></i></div></div>
+  <button id="btn-snd" class="ibtn" type="button" aria-label="サウンド">
+    <svg id="ic-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9v6h4l5.5 4.5V4.5L7.5 9h-4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>
+    <svg id="ic-off" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M3.5 9v6h4l5.5 4.5V4.5L7.5 9h-4z" fill="currentColor"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
+<div id="toast" hidden></div>
+<div id="hint" hidden></div>
+
+<div id="ov" class="ov" hidden>
+  <!-- タイトル -->
+  <section id="p-title" class="panel" hidden>
+    <h1><span>ケロジャンプ</span></h1>
+    <p>タイミングで向きを決めて、長押しでパワーを調整。壁にぶつかると跳ね返るよ。旗までジャンプしていこう。</p>
+    <button class="btn main" type="button" data-act="play" id="b-play">はじめる</button>
+    <button class="btn" type="button" data-act="stages">ステージせんたく</button>
+  </section>
+  <!-- ステージ選択 -->
+  <section id="p-stages" class="panel" hidden>
+    <h2>ステージせんたく</h2>
+    <div class="tabs"><button class="btn" type="button" data-act="page" data-p="1" id="tab1">レベル1</button><button class="btn" type="button" data-act="page" data-p="2" id="tab2">レベル2</button></div>
+    <div class="grid" id="grid"></div>
+    <button class="btn" type="button" data-act="title">タイトルへ</button>
+  </section>
+  <!-- ポーズ -->
+  <section id="p-pause" class="panel" hidden>
+    <h2>ポーズ中</h2>
+    <button class="btn main" type="button" data-act="resume">つづける</button>
+    <button class="btn" type="button" data-act="retry">このステージをやりなおす</button>
+    <button class="btn" type="button" data-act="stages">ステージせんたく</button>
+    <button class="btn" type="button" data-act="title">タイトルへ</button>
+  </section>
+  <!-- クリア -->
+  <section id="p-clear" class="panel" hidden>
+    <h2 id="clr-title">ステージ1 クリア!</h2>
+    <div id="clr-stars">★★★</div>
+    <p id="clr-stats">ジャンプ 0回 / 落下 0回</p>
+    <p id="clr-goal">0回以内にクリアで★★★。</p>
+    <button class="btn main" type="button" data-act="next" id="b-next">つぎのステージ</button>
+    <button class="btn" type="button" data-act="retry">もういちど</button>
+    <button class="btn" type="button" data-act="stages">ステージせんたく</button>
+  </section>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/*PURE-START*/
+/* ==========================================================
+   ここから下は画面に依存しない「ルールと物理」の部分。
+   座標は「タイル」単位で、x は右が正、y は上が正。
+   ========================================================== */
+const G = 30;                    // 重力(タイル/秒²)
+const V_MIN = 4.5, V_MAX = 15;   // ジャンプ初速の最小・最大(パワー0〜1で変化)
+const VY_BOOST = 1.0;            // 上方向の初速に掛ける倍率(1.0=もとの移動力)
+const FW = 0.4;                  // カエルの当たり判定:半幅
+const FH = 0.7;                  // カエルの当たり判定:高さ(足元が y)
+const ANG_LO = 12, ANG_HI = 90;  // 向きの矢印が振れる範囲(度。0=右、90=真上。後ろ向きジャンプはなし)
+const LAND_TOL = 0.22;           // 足場の縁から中心がこれ以内の外側でも、着地として認める(甘め判定)
+const EDGE_IN = 0.1;             // 縁ぎりぎりに着地したとき、中心を縁からこれだけ内側へ寄せる
+const CLIMB_H = 0.8;            // 崖の上端から、足がこの高さ以内の下に当たったら自動でよじ登る(見た目の草より広め)
+const CLIMB_MIN_DIST = 0.9;      // 発射位置から崖まで、これ以上離れていたときだけ自動でよじ登る(崖のすぐ横では登らない)
+const LEVEL_SIZE = 15;           // 1レベルのステージ数
+const STAGE_COUNT = 30;          // 全ステージ数(レベル1:1〜15 / レベル2:16〜30)
+const DEAD_Y = -8;               // これより下に落ちたらミス
+const GRASS_H = 0.5;             // 地面上面の草(緑)の厚み(見た目だけ。当たり判定は変わらない)
+const DT = 1 / 120;              // 物理の刻み(秒)
+
+/* 疑似乱数(ステージ番号から毎回同じ地形を作るため) */
+function rng(seed) {
+  let a = seed | 0;
+  return function () {
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* ステージを組み立てる。地形は「上面の高さ top を持つ長方形」の並び。
+   隣と段差があれば壁になり、離れていれば穴になる。 */
+function buildStage(n) {
+  const r = rng(n * 7919 + 101);
+  const lv2 = n > LEVEL_SIZE;                  // レベル2(いろんな幅の足場)か
+  const m = lv2 ? n - LEVEL_SIZE : n;          // レベル内のステージ番号 1〜15
+  const d = (m - 1) / (LEVEL_SIZE - 1);        // 難しさ 0〜1(レベルごと)
+  const rects = [];
+  const ground = (x0, x1, top) => {
+    const o = { x0, x1, top, bottom: top - 60, float: false };
+    rects.push(o);
+    return o;
+  };
+  ground(-3, 4.5, 0);                          // スタート床
+  let x = 4.5, top = 0;
+  const count = lv2 ? 7 + m : 6 + n;           // 中間の足場の数
+  const gapMax = 2.4 + d * 3.0;                // 穴の最大幅
+  const upMax = lv2 ? (m <= 4 ? 2 : 3) : (n <= 3 ? 1 : (n <= 8 ? 2 : 3)); // 登る段差の最大
+  for (let i = 0; i < count; i++) {
+    let gap, dh;
+    if (r() < 0.35) {                          // 隙間なしの段差(壁)
+      gap = 0;
+      dh = (r() < 0.65 ? 1 : -1) * (1 + Math.floor(r() * Math.min(2, upMax)));
+    } else {                                   // 穴をはさんだ足場
+      gap = 1.2 + r() * (gapMax - 1.2);
+      dh = -2 + Math.floor(r() * (upMax + 3));
+      if (dh >= 3) gap = Math.min(gap, 3);
+    }
+    let nt = top + dh;
+    if (nt < 0) nt = top + Math.abs(dh);
+    if (nt > 14) nt = top - 2;
+    let w = (2.6 - 1.1 * d) + r() * (2.6 - 0.6 * d);
+    if (lv2) {
+      // レベル2:足場の幅をばらつかせる(せまい・ふつう・広い・とても広い)
+      const u = r();
+      w = u < 0.3 ? 1.1 + r() * 0.6 : u < 0.6 ? 2.0 + r() * 1.4 : u < 0.85 ? 3.6 + r() * 1.6 : 5.4 + r() * 2.0;
+    }
+    if (gap === 0) w = Math.max(w, 2.4);
+    // 大きな穴(上級)は途中に浮き足場を置く
+    if (n >= 9 && gap > 4.6) {
+      const fx = x + gap / 2;
+      const ft = Math.round((top + nt) / 2);
+      rects.push({ x0: fx - 0.9, x1: fx + 0.9, top: ft, bottom: ft - 0.5, float: true });
+    }
+    ground(x + gap, x + gap + w, nt);
+    x += gap + w;
+    top = nt;
+  }
+  const gGap = 2.0 + d * 1.5;                  // ゴール床へのジャンプ
+  const goalRect = ground(x + gGap, x + gGap + 6, top);
+  const endX = x + gGap + 6;
+  const goalX = x + gGap + 1.2;                // 旗の位置(ゴール足場の左端=崖の近く)
+  // 左右の端の壁(カエルが場外へ出ないように)
+  ground(-4, -3, 7);
+  ground(endX, endX + 1, top + 7);
+
+  // 描画用:壁の線をどこまで引くか(隣と接している所は線を省く)
+  const gs = rects.filter(q => !q.float).sort((a, b) => a.x0 - b.x0);
+  gs.forEach((q, i) => {
+    const p = gs[i - 1], s = gs[i + 1];
+    q.lb = (p && Math.abs(p.x1 - q.x0) < 1e-6) ? Math.min(p.top, q.top) : q.bottom;
+    q.rb = (s && Math.abs(s.x0 - q.x1) < 1e-6) ? Math.min(s.top, q.top) : q.bottom;
+  });
+  rects.forEach(q => { if (q.float) { q.lb = q.bottom; q.rb = q.bottom; } });
+
+  return {
+    n, rects, count, goalRect, goalX, goalTop: top, endX,
+    startX: 1, startY: 0,
+    aimOne: 1.05 - 0.3 * d,                    // 矢印が端から端まで振れる秒数(上級ほど速い)
+    chargeOne: 0.9 - 0.2 * d                   // パワーが0→最大になる秒数
+  };
+}
+
+/* ★の基準:ジャンプ回数(★3の基準は、以前の基準(足場数×1.5+2)の85%) */
+function starLimit3(count) { return Math.ceil((Math.ceil(count * 1.5) + 2) * 0.85); }
+function starsFor(count, jumps) {
+  if (jumps <= starLimit3(count)) return 3;
+  if (jumps <= Math.ceil(count * 2.5) + 4) return 2;
+  return 1;
+}
+
+/* 0→1→0 と往復する三角波 */
+function tri(x) { const m = ((x % 2) + 2) % 2; return m < 1 ? m : 2 - m; }
+
+function makeFrog(x, y) { return { x, y, vx: 0, vy: 0, air: false }; }
+
+/* ジャンプ開始:角度(度)とパワー(0〜1)から初速を決める */
+function launch(f, angleDeg, p) {
+  const v = V_MIN + (V_MAX - V_MIN) * p, a = angleDeg * Math.PI / 180;
+  f.vx = Math.cos(a) * v;
+  f.vy = Math.sin(a) * v * VY_BOOST;
+  f.air = true;
+  f.lx = f.x;            // 発射した位置(よじ登りの判定に使う)
+  f.bounced = false;     // 壁で跳ね返ったあとは、よじ登らない
+}
+
+function overlap(f, r) {
+  return f.x + FW > r.x0 && f.x - FW < r.x1 && f.y + FH > r.bottom && f.y < r.top;
+}
+
+/* 着地後の位置の補正:カエルの中心が足場の縁から EDGE_IN 以上内側になるよう寄せる。
+   ただし、隣に高い足場(崖)があるときは、その崖にめり込まない位置までにする */
+function settle(f, r, rects) {
+  f.x = Math.max(r.x0 + EDGE_IN, Math.min(r.x1 - EDGE_IN, f.x));
+  for (const q of rects) {
+    if (q === r || f.y + FH <= q.bottom || f.y >= q.top) continue;   // 高さが重ならない足場は関係なし
+    if (q.x1 <= r.x0 + 1e-6) f.x = Math.max(f.x, q.x1 + FW + 0.001);       // 左隣の崖
+    else if (q.x0 >= r.x1 - 1e-6) f.x = Math.min(f.x, q.x0 - FW - 0.001);  // 右隣の崖
+  }
+}
+
+/* 空中の1ステップ。イベント(着地 land / 壁 bounce / 頭ぶつけ bonk)を ev に積む */
+function stepFrog(f, rects, dt, ev) {
+  f.vy -= G * dt;
+  if (f.vy < -40) f.vy = -40;
+
+  // ---- 横方向 ----
+  if (f.vx !== 0) {
+    f.x += f.vx * dt;
+    for (const r of rects) {
+      if (!overlap(f, r)) continue;
+      const dir = f.vx > 0 ? 1 : -1;
+      // 動く前からすでに横方向で重なっていた足場(足場の上にいる・縁にかかっている)は、壁として扱わない。
+      // これを壁扱いすると、足場の反対側へ瞬間移動してしまう
+      const prevX = f.x - f.vx * dt;
+      if (dir > 0 ? prevX + FW > r.x0 + 1e-6 : prevX - FW < r.x1 - 1e-6) continue;
+      const rise = r.top - f.y;
+      const dist = dir > 0 ? (r.x0 - FW) - f.lx : f.lx - (r.x1 + FW);   // 発射位置から崖までの距離
+      if (rise > 0 && rise <= CLIMB_H && dist > CLIMB_MIN_DIST && !f.bounced) {
+        // 離れた所から跳んで崖に届かず、上端(CLIMB_H以内)に当たったときは、自動でよじ登る
+        const fx = dir > 0 ? r.x0 - FW : r.x1 + FW, fy = f.y;   // 登り始めの位置(演出用)
+        f.y = r.top;
+        f.x = dir > 0 ? Math.max(f.x, r.x0 + 0.3) : Math.min(f.x, r.x1 - 0.3);   // 崖の上へ乗り出す
+        settle(f, r, rects);
+        f.vx = 0; f.vy = 0; f.air = false;
+        ev.push({ t: 'land', r, x: f.x, y: f.y, climb: true, fx, fy });
+        return;
+      }
+      if (dist > CLIMB_MIN_DIST) {
+        // 離れた所から跳んで壁に当たった:跳ね返って、少し下がる(壁に張り付き続けないための仕組み)
+        f.bounced = true;
+        f.x = dir > 0 ? r.x0 - FW - 0.02 : r.x1 + FW + 0.02;
+        f.vx = -dir * Math.max(Math.abs(f.vx) * 0.55, 2.5);
+        f.vy = Math.min(f.vy, 0) - 3;
+        ev.push({ t: 'bounce', x: f.x + dir * FW, y: f.y + FH / 2, dir });
+      } else {
+        // 崖のすぐ横から跳んだとき:跳ね返らず壁にそって登る。
+        // 横の速度は保ったまま壁の位置で止め、壁の上に出たら乗り越える(後ろへ戻ったり、その場で動けなくなるのを防ぐ)
+        f.x = dir > 0 ? r.x0 - FW - 0.001 : r.x1 + FW + 0.001;
+      }
+      break;
+    }
+  }
+
+  // ---- 縦方向 ----
+  const py = f.y;
+  f.y += f.vy * dt;
+  for (const r of rects) {
+    if (!overlap(f, r)) continue;
+    if (f.vy > 0) {                             // 下から頭をぶつけた
+      f.y = r.bottom - FH - 0.001;
+      f.vy = 0;
+      ev.push({ t: 'bonk', x: f.x, y: f.y + FH });
+    } else if (py >= r.top - 0.1) {
+      if (f.x > r.x0 - LAND_TOL && f.x < r.x1 + LAND_TOL) {
+        f.y = r.top;                            // 上面に着地
+        settle(f, r, rects);                    // 縁ぎりぎりなら足場の内側へ寄せる(空中に浮いて立たない)
+        f.vx = 0; f.vy = 0; f.air = false;
+        ev.push({ t: 'land', r, x: f.x, y: f.y });
+        return;
+      }
+      // 中心が縁の外にあり、体だけが足場の角にかかっている:横へ押し出して、そのまま落とす
+      f.x = f.x >= (r.x0 + r.x1) / 2 ? r.x1 + FW + 0.001 : r.x0 - FW - 0.001;
+    } else if (f.vx === 0) {                    // 真上ジャンプで縁にかかった時のすべり落とし
+      f.vx = (f.x < (r.x0 + r.x1) / 2 ? -1 : 1) * 1.5;
+    }
+  }
+}
+
+/* 予測線:その角度とパワーでジャンプしたときの放物線(足場や壁に当たるまで) */
+function previewPath(rects, x, y, angleDeg, p) {
+  const v = V_MIN + (V_MAX - V_MIN) * p, a = angleDeg * Math.PI / 180;
+  const vx = Math.cos(a) * v, vy = Math.sin(a) * v * VY_BOOST;
+  const cy = y + FH / 2;
+  const pts = [];
+  for (let t = 0; t <= 2.6; t += 0.03) {
+    const px = x + vx * t, py = cy + vy * t - 0.5 * G * t * t;
+    if (t > 0.06) {
+      let hit = false;
+      for (const r of rects) {
+        if (px > r.x0 - FW && px < r.x1 + FW && py > r.bottom - FH / 2 && py < r.top + FH / 2) { hit = true; break; }
+      }
+      if (hit) break;
+    }
+    if (py < DEAD_Y) break;
+    pts.push({ x: px, y: py });
+  }
+  return pts;
+}
+
+/* ジャンプを最後までシミュレーション(検証用) */
+function simulateJump(rects, x, y, angleDeg, p) {
+  const f = makeFrog(x, y);
+  launch(f, angleDeg, p);
+  const ev = [];
+  for (let t = 0; t < 8; t += DT) {
+    ev.length = 0;
+    stepFrog(f, rects, DT, ev);
+    for (const e of ev) if (e.t === 'land') return { ok: true, x: f.x, y: f.y, r: e.r };
+    if (f.y < DEAD_Y) return { ok: false };
+  }
+  return { ok: false };
+}
+/*PURE-END*/
+
+/* ==========================================================
+   セーブデータ(ステージ制なので進行状況を端末に保存して再開できる)
+   ========================================================== */
+const KEY = 'kerojump.v1';
+const save = { unlocked: 1, stars: [], cur: null, sound: true };
+function loadSave() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (!s || typeof s !== 'object') return;
+    save.unlocked = Math.max(1, Math.min(STAGE_COUNT, s.unlocked | 0));
+    save.stars = Array.isArray(s.stars) ? s.stars.map(v => v | 0) : [];
+    save.sound = s.sound !== false;
+    const c = s.cur;
+    if (c && c.stage >= 1 && c.stage <= STAGE_COUNT && Number.isFinite(c.x) && Number.isFinite(c.y)) {
+      const lv = c.lives | 0;
+      save.cur = { stage: c.stage | 0, x: c.x, y: c.y, jumps: c.jumps | 0, falls: c.falls | 0, lives: (lv >= 1 && lv <= 3) ? lv : 3 };
+    }
+  } catch (e) { /* 保存できない環境でも遊べるようにする */ }
+}
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* 無視 */ }
+}
+
+/* ==========================================================
+   サウンド(BGMとSEは、サウンドボタンでまとめてオン/オフ)
+   ========================================================== */
+let AC = null, master = null, bgmG = null, seG = null, noiseBuf = null;
+const mid = m => 440 * Math.pow(2, (m - 69) / 12);       // MIDI番号→周波数
+
+function initAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  if (!Ctor) return;
+  try { AC = new Ctor(); } catch (e) { AC = null; return; }
+  master = AC.createGain(); master.gain.value = save.sound ? 1 : 0; master.connect(AC.destination);
+  bgmG = AC.createGain(); bgmG.gain.value = 0.16; bgmG.connect(master);
+  seG = AC.createGain(); seG.gain.value = 0.5; seG.connect(master);
+  noiseBuf = AC.createBuffer(1, Math.floor(AC.sampleRate * 0.3), AC.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  startBgm();
+}
+function applySound() {
+  if (master) master.gain.setTargetAtTime(save.sound ? 1 : 0, AC.currentTime, 0.03);
+}
+/* 1音:音程・開始時刻・長さ・波形・音量・出力先(endFreq があれば音程をスライド) */
+function tone(freq, t, dur, type, vol, dest, endFreq) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(dest);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function noise(t, dur, vol, hp, dest) {
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = hp;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(dest);
+  s.start(t); s.stop(t + dur + 0.02);
+}
+/* 効果音 */
+const SE = {
+  click(t) { tone(660, t, 0.07, 'sine', 0.5, seG); },
+  tick(t, p) { tone(300 + 520 * p, t, 0.05, 'triangle', 0.35, seG); },            // パワー調整中のピッ
+  jump(t, p) { tone(260, t, 0.2, 'sine', 0.6, seG, 520 + 380 * p); },             // ぴょん
+  land(t) { tone(170, t, 0.13, 'sine', 0.7, seG, 70); noise(t, 0.05, 0.2, 1500, seG); },
+  bounce(t) { tone(230, t, 0.12, 'square', 0.22, seG, 120); },                    // 壁でボヨン
+  bonk(t) { tone(140, t, 0.1, 'square', 0.2, seG, 90); },
+  fall(t) { tone(620, t, 0.7, 'sine', 0.5, seG, 90); },
+  // 水に落ちた音:ぼちゃん(低い音が下がる)+ 水しぶき(ノイズ)
+  splash(t) { tone(420, t, 0.28, 'sine', 0.7, seG, 110); tone(260, t + 0.07, 0.3, 'sine', 0.5, seG, 90); noise(t, 0.45, 0.45, 500, seG); },
+  climb(t) { tone(330, t, 0.12, 'sine', 0.5, seG, 520); tone(520, t + 0.14, 0.14, 'sine', 0.5, seG, 780); },  // よじ登り
+  clear(t) { [72, 76, 79, 84].forEach((m, i) => tone(mid(m), t + i * 0.12, 0.3, 'triangle', 0.5, seG)); }  // ゴール
+};
+function se(name, arg) {
+  if (!AC || !save.sound) return;
+  try { SE[name](AC.currentTime, arg); } catch (e) { /* 無視 */ }
+}
+/* BGM:C-Am-F-G の明るいアルペジオ(8小節ループ)。8分音符ごとに1ステップ */
+const MEL = [
+  [72, 0, 76, 0, 79, 0, 76, 0], [69, 0, 72, 0, 76, 0, 72, 69],
+  [65, 0, 69, 0, 72, 0, 69, 0], [67, 0, 71, 0, 74, 0, 71, 67],
+  [76, 0, 79, 0, 84, 0, 79, 76], [72, 0, 76, 0, 81, 0, 76, 72],
+  [77, 0, 72, 0, 69, 0, 72, 77], [74, 0, 71, 0, 67, 0, 0, 0]
+];
+const BASS = [48, 45, 41, 43, 48, 45, 41, 43];
+const STEP = 60 / 112 / 2;
+let bgmNext = 0, bgmIdx = 0;
+function startBgm() {
+  bgmNext = AC.currentTime + 0.1; bgmIdx = 0;
+  setInterval(() => {
+    if (!AC || AC.state !== 'running') return;
+    if (bgmNext < AC.currentTime - 0.3) bgmNext = AC.currentTime + 0.05;  // 停止後の遅れを取り戻さない
+    while (bgmNext < AC.currentTime + 0.25) {
+      const bar = (bgmIdx >> 3) & 7, s = bgmIdx & 7;
+      const m = MEL[bar][s];
+      if (m) tone(mid(m), bgmNext, STEP * 1.7, 'triangle', 0.45, bgmG);
+      if (s === 0 || s === 4) tone(mid(BASS[bar] + (s === 4 ? 7 : 0)), bgmNext, STEP * 3, 'triangle', 0.55, bgmG);
+      if (s % 2 === 1) noise(bgmNext, 0.04, 0.1, 7000, bgmG);
+      bgmNext += STEP; bgmIdx = (bgmIdx + 1) % 64;
+    }
+  }, 60);
+}
+
+/* ==========================================================
+   画面まわり
+   ========================================================== */
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const css = getComputedStyle(document.documentElement);
+const col = n => css.getPropertyValue(n).trim();
+const C = {
+  paper: col('--paper'), ink: col('--ink'), ground: col('--ground'), pale: col('--ground-pale'),
+  frog: col('--frog'), frogDeep: col('--frog-deep'), accent: col('--accent'), power: col('--power'),
+  sky: col('--sky'), skyLow: col('--sky-low'), cloud: col('--cloud'),
+  grass: col('--grass'), grassDeep: col('--grass-deep'), dirt: col('--dirt'), dirtDeep: col('--dirt-deep'),
+  grassLight: col('--grass-light'), dirtLight: col('--dirt-light'), water: col('--water'), waterDeep: col('--water-deep'), foam: col('--foam')
+};
+let W = 0, H = 0, DPR = 1, T = 40;                       // 画面幅・高さ・解像度・1タイルのピクセル数
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  T = Math.max(24, Math.min(W / 10, H / 13));            // 横10タイル分が見える大きさ
+}
+window.addEventListener('resize', resize);
+
+/* ---- ゲーム状態 ---- */
+const stageCache = {};
+const getStage = n => stageCache[n] || (stageCache[n] = buildStage(n));
+let scr = 'title';           // title / stages / play / pause / clear
+let phase = 'aim';           // aim(向き決め) / charge(パワー調整) / air(空中) / dead(落下) / won(ゴール)
+let stage = null, frog = null, safe = { x: 1, y: 0 };
+const WATER_Y = -1.5;        // 水面の高さ(どの足場よりも下)。ここに足が着いたら水に落ちたことになる
+const MAX_LIVES = 3;         // ライフの数
+let lives = MAX_LIVES;
+let ripples = [];            // 水面に広がる波紋
+let jumps = 0, falls = 0, facing = 1;
+let aimT = 0, chargeT = 0, tickT = 0, power = 0, lockedAngle = 60;
+let deadT = 0, winT = 0, acc = 0, clock = 0;
+let camX = 0, camY = 0;
+let particles = [];
+const evs = [];
+const CLIMB_T = 0.32;        // よじ登りにかかる秒数
+let climbT = 0, climbFrom = null, climbGoal = false;
+const angleAt = t => ANG_LO + (ANG_HI - ANG_LO) * tri(t / stage.aimOne);
+
+/* ---- メニュー表示 ---- */
+function showPanel(id) {
+  $('ov').hidden = !id;
+  document.querySelectorAll('.panel').forEach(p => { p.hidden = p.id !== id; });
+}
+function syncHud() {
+  const playing = scr === 'play';
+  $('btn-pause').style.visibility = playing ? 'visible' : 'hidden';
+  $('info').style.visibility = playing ? 'visible' : 'hidden';
+  $('ic-on').hidden = !save.sound; $('ic-off').hidden = save.sound;
+  $('btn-snd').setAttribute('aria-pressed', save.sound ? 'true' : 'false');
+}
+function updateHud() {
+  $('i-stage').textContent = stageName(stage.n);
+  $('i-jump').textContent = 'ジャンプ ' + jumps;
+  $('i-life').textContent = '♥'.repeat(lives) + '♡'.repeat(MAX_LIVES - lives);
+  const pct = Math.max(0, Math.min(1, (frog.x - stage.startX) / (stage.goalX - stage.startX)));
+  $('bar-fill').style.width = (pct * 100) + '%';
+}
+let toastTimer = 0;
+function toast(msg, ms) {
+  const el = $('toast'); el.textContent = msg; el.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, ms || 900);
+}
+
+function goTitle() {
+  scr = 'title'; stage = getStage(1); frog = makeFrog(1, 0); phase = 'aim';
+  camX = 3.5; camY = 0; particles = [];
+  const label = save.cur ? 'つづきから(' + stageName(save.cur.stage) + ')'
+    : (save.unlocked > 1 || save.stars.some(Boolean)) ? 'つづきから(' + stageName(save.unlocked) + ')' : 'はじめる';
+  $('b-play').textContent = label;
+  $('hint').hidden = true;
+  showPanel('p-title'); syncHud();
+}
+let stagePage = 1;           // ステージせんたくのページ(1=レベル1 / 2=レベル2)
+/* ステージ名(レベル2は「Lv2 ステージ3」のように表示) */
+const stageName = n => n > LEVEL_SIZE ? 'Lv2 ステージ' + (n - LEVEL_SIZE) : 'ステージ' + n;
+function goStages(page) {
+  scr = 'stages'; $('hint').hidden = true;
+  // ページ指定がなければ、いま遊べる最新ステージのあるページを開く(レベル2が未開放なら1ページ目)
+  stagePage = page || (save.unlocked > LEVEL_SIZE ? 2 : 1);
+  $('tab1').classList.toggle('on', stagePage === 1); $('tab2').classList.toggle('on', stagePage === 2);
+  $('tab2').disabled = save.unlocked <= LEVEL_SIZE;       // レベル2はステージ15をクリアすると開く
+  const grid = $('grid'); grid.textContent = '';
+  const base = (stagePage - 1) * LEVEL_SIZE;
+  for (let i = 1; i <= LEVEL_SIZE; i++) {
+    const n = base + i;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cell'; b.dataset.act = 'stage'; b.dataset.n = n;
+    const s = save.stars[n - 1] | 0;
+    if (n > save.unlocked) { b.disabled = true; b.innerHTML = '<span class="num">' + i + '</span><span class="st">ー</span>'; }
+    else {
+      if (s) b.classList.add('done');
+      b.innerHTML = '<span class="num">' + i + '</span><span class="st">' + (s ? '★'.repeat(s) + '☆'.repeat(3 - s) : '&nbsp;') + '</span>';
+    }
+    grid.appendChild(b);
+  }
+  showPanel('p-stages'); syncHud();
+}
+function startStage(n, resume) {
+  stage = getStage(n); jumps = 0; falls = 0; lives = MAX_LIVES;
+  let sx = stage.startX, sy = stage.startY;
+  const c = save.cur;
+  // 再読み込み・再開のときは、ステージの最初から始める(位置・ジャンプ数・ライフは引き継がない)
+  { save.cur = { stage: n, x: sx, y: sy, jumps: 0, falls: 0, lives }; persist(); }
+  frog = makeFrog(sx, sy); safe = { x: sx, y: sy };
+  phase = 'aim'; aimT = 0; facing = 1; particles = []; ripples = []; climbGoal = false;
+  camX = sx; camY = sy; scr = 'play';
+  showPanel(''); syncHud(); updateHud();
+}
+function pauseGame() {
+  if (scr !== 'play') return;
+  if (phase === 'charge') { phase = 'aim'; aimT = 0; }     // 長押し中のポーズは仕切り直し
+  scr = 'pause'; $('hint').hidden = true;
+  if (bgmG) bgmG.gain.setTargetAtTime(0.06, AC.currentTime, 0.05);
+  showPanel('p-pause'); syncHud();
+}
+function resumeGame() {
+  scr = 'play';
+  if (bgmG) bgmG.gain.setTargetAtTime(0.16, AC.currentTime, 0.05);
+  showPanel(''); syncHud();
+}
+
+/* ---- ゴール・ミス ---- */
+function win() {
+  if (phase === 'won') return;
+  phase = 'won'; winT = 0;
+  $('bar-fill').style.width = '100%';          // ゴールしたら進行バーを満タンにする
+  frog.vx = 0; frog.vy = 0; frog.air = false;
+  const s = starsFor(stage.count, jumps), n = stage.n;
+  save.stars[n - 1] = Math.max(save.stars[n - 1] | 0, s);
+  save.unlocked = Math.max(save.unlocked, Math.min(STAGE_COUNT, n + 1));
+  save.cur = null; persist();
+  se('clear');
+  const colors = [C.frog, C.ground, C.accent];
+  for (let i = 0; i < 28; i++) {
+    const a = Math.PI * (0.15 + 0.7 * Math.random()), v = 5 + Math.random() * 6;
+    particles.push({ x: stage.goalX, y: stage.goalTop + 1.5, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 1.1 + Math.random() * 0.5, r: 0.1, c: colors[i % 3] });
+  }
+}
+function showClear() {
+  scr = 'clear';
+  const n = stage.n, s = save.stars[n - 1] | 0;
+  $('clr-title').textContent = n === STAGE_COUNT ? 'ぜんぶクリア!' : n === LEVEL_SIZE ? 'レベル1 クリア!' : stageName(n) + ' クリア!';
+  $('clr-stars').textContent = '★'.repeat(s) + '☆'.repeat(3 - s);
+  $('clr-stats').textContent = 'ジャンプ ' + jumps + '回 / 落下 ' + falls + '回';
+  $('clr-goal').textContent = starLimit3(stage.count) + '回以内にクリアで★★★。';
+  $('b-next').hidden = n >= STAGE_COUNT;
+  showPanel('p-clear'); syncHud();
+}
+function respawn() {
+  frog = makeFrog(safe.x, safe.y); phase = 'aim'; aimT = 0;
+  camX = frog.x; camY = frog.y; updateHud();
+}
+
+/* ---- パーティクル(土ぼこり・火花・紙ふぶき) ---- */
+function puff(x, y, n, color, spd) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.PI * (0.1 + 0.8 * Math.random()), v = spd * (0.4 + Math.random());
+    particles.push({ x, y, vx: Math.cos(a) * v * (Math.random() < 0.5 ? -1 : 1), vy: Math.sin(a) * v, life: 0, max: 0.4 + Math.random() * 0.2, r: 0.07 + Math.random() * 0.07, c: color });
+  }
+}
+/* 水しぶき:水面から白と水色のしずくが上へ飛び散り、波紋が広がる */
+function splash(x, y) {
+  const cs = [C.foam, C.foam, C.water];
+  for (let i = 0; i < 26; i++) {
+    const a = Math.PI * (0.25 + 0.5 * Math.random()), v = 5 + Math.random() * 6;
+    particles.push({ x: x + (Math.random() - 0.5) * 0.4, y, vx: Math.cos(a) * v * 0.7, vy: Math.sin(a) * v, life: 0, max: 0.7 + Math.random() * 0.4, r: 0.08 + Math.random() * 0.1, c: cs[i % 3] });
+  }
+  ripples.push({ x, t: 0 });
+}
+function spark(x, y, n, color) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 4;
+    particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 0.35, r: 0.08, c: color });
+  }
+}
+
+/* ==========================================================
+   入力:押したタイミングで向きが決まり、押し続けるとパワー、離すとジャンプ
+   ========================================================== */
+function onPress() {
+  initAudio();
+  if (scr !== 'play' || phase !== 'aim') return;
+  lockedAngle = angleAt(aimT);                 // 押した瞬間の矢印の向きで固定
+  facing = 1;                                  // 後ろ向きジャンプはない
+  phase = 'charge'; chargeT = 0; tickT = 0; power = 0;
+  se('click');
+}
+function onRelease() {
+  if (scr !== 'play' || phase !== 'charge') return;
+  launch(frog, lockedAngle, power);
+  phase = 'air'; acc = 0; jumps++;
+  se('jump', power);
+  updateHud();
+}
+cv.addEventListener('pointerdown', e => { e.preventDefault(); onPress(); });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('pointerup', onRelease);
+window.addEventListener('pointercancel', onRelease);
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.code === 'Space' || e.code === 'Enter') { if (scr === 'play') { e.preventDefault(); onPress(); } }
+  else if (e.code === 'Escape' || e.code === 'KeyP') { scr === 'play' ? pauseGame() : (scr === 'pause' && resumeGame()); }
+});
+window.addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'Enter') onRelease(); });
+window.addEventListener('pointerdown', initAudio);       // 最初のタッチで音を有効にする
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { pauseGame(); if (AC) AC.suspend(); }
+  else if (AC) AC.resume();
+});
+
+/* ---- ボタン ---- */
+$('btn-pause').addEventListener('click', () => { se('click'); pauseGame(); });
+$('btn-snd').addEventListener('click', () => {
+  save.sound = !save.sound; persist();
+  initAudio(); applySound(); syncHud();
+  if (save.sound) se('click');
+});
+$('ov').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  initAudio(); se('click');
+  switch (b.dataset.act) {
+    case 'play': {
+      if (save.cur) startStage(save.cur.stage, true);
+      else startStage(Math.min(save.unlocked, STAGE_COUNT), false);
+      break;
+    }
+    case 'stages': goStages(stage && stage.n > LEVEL_SIZE && scr !== 'title' ? 2 : 0); break;
+    case 'page': goStages(+b.dataset.n || +b.dataset.p); break;
+    case 'title': goTitle(); break;
+    case 'resume': resumeGame(); break;
+    case 'retry': startStage(stage.n, false); break;
+    case 'next': startStage(Math.min(STAGE_COUNT, stage.n + 1), false); break;
+    case 'stage': startStage(+b.dataset.n, !!(save.cur && save.cur.stage === +b.dataset.n)); break;
+  }
+});
+
+/* ==========================================================
+   毎フレームの更新
+   ========================================================== */
+function update(dt) {
+  clock += dt;
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life += dt; p.vy -= 14 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.life >= p.max) particles.splice(i, 1);
+  }
+  for (let i = ripples.length - 1; i >= 0; i--) { ripples[i].t += dt; if (ripples[i].t > 0.9) ripples.splice(i, 1); }
+  if (scr !== 'play') return;
+
+  if (phase === 'aim') {
+    aimT += dt;
+  } else if (phase === 'charge') {
+    chargeT += dt;
+    power = tri(chargeT / stage.chargeOne);          // 0→1→0 と往復
+    tickT += dt;
+    if (tickT > 0.09) { tickT = 0; se('tick', power); }
+  } else if (phase === 'air') {
+    acc += dt;
+    let guard = 0;
+    while (acc >= DT && guard++ < 30 && phase === 'air') {
+      acc -= DT; evs.length = 0;
+      stepFrog(frog, stage.rects, DT, evs);
+      if (Math.abs(frog.vx) > 0.5) facing = frog.vx > 0 ? 1 : -1;
+      for (const e of evs) {
+        if (e.t === 'bounce') { se('bounce'); spark(e.x, e.y, 6, C.accent); }
+        else if (e.t === 'bonk') { se('bonk'); spark(e.x, e.y, 4, C.dirt); }
+        else if (e.t === 'land') {
+          aimT = 0; puff(e.x, e.y, 7, C.dirt, 3);
+          if (e.climb) { phase = 'climb'; climbT = 0; climbFrom = { x: e.fx, y: e.fy }; se('climb'); }   // 自動よじ登り
+          else { phase = 'aim'; se('land'); }
+          const r = e.r, w = r.x1 - r.x0;
+          safe = { x: w >= 1.4 ? Math.max(r.x0 + 0.7, Math.min(r.x1 - 0.7, frog.x)) : (r.x0 + r.x1) / 2, y: r.top };
+          save.cur = { stage: stage.n, x: safe.x, y: safe.y, jumps, falls, lives }; persist();
+          updateHud();
+          if (r === stage.goalRect) { if (e.climb) climbGoal = true; else win(); }   // 登る場合は登り終えてからゴール
+        }
+      }
+      // 旗のポールにふれてもゴール
+      if (phase === 'air' && Math.abs(frog.x - stage.goalX) < FW + 0.15 && frog.y < stage.goalTop + 2.2 && frog.y + FH > stage.goalTop) win();
+      // 水面に足が着いたら落下:水しぶきと音、ライフを1つ減らす。落ちたジャンプは回数に数えない
+      if (phase === 'air' && frog.y < WATER_Y) {
+        phase = 'dead'; deadT = 0; falls++; lives--; jumps = Math.max(0, jumps - 1);
+        splash(frog.x, WATER_Y); se('splash');
+        if (lives <= 0) toast('ライフがなくなった!\nはじめから', 1400);
+        else toast('おちた!\nのこり' + lives, 900);
+        // ライフが残っていれば直前の足場から再開。0なら次の respawn() でステージを最初からやり直す
+        save.cur = { stage: stage.n, x: safe.x, y: safe.y, jumps, falls, lives: Math.max(1, lives) }; persist();
+        updateHud();
+      }
+    }
+  } else if (phase === 'climb') {
+    // よじ登り中は操作できない。登り終えたら向き決めに戻る
+    climbT += dt;
+    if (climbT >= CLIMB_T) { phase = 'aim'; aimT = 0; se('land'); if (climbGoal) { climbGoal = false; win(); } }
+  } else if (phase === 'dead') {
+    // 水の中に沈んだ(カエルは描かない)。しばらく待ってから復帰する
+    deadT += dt;
+    if (deadT > (lives <= 0 ? 1.4 : 0.9)) {
+      if (lives <= 0) startStage(stage.n, false);      // ライフ0:ステージを最初から(ライフも全回復)
+      else respawn();
+    }
+  } else if (phase === 'won') {
+    winT += dt;
+    if (winT > 1.0) showClear();
+  }
+
+  // 進行バー:ジャンプ中(空中)も毎フレーム伸ばす。ゴール後は満タンのまま
+  if (phase !== 'won' && phase !== 'dead') $('bar-fill').style.width = (Math.max(0, Math.min(1, (frog.x - stage.startX) / (stage.goalX - stage.startX))) * 100) + '%';
+
+  // カメラ:横はカエルを追い、縦は着地した足場に合わせてゆっくり動く
+  camX += (frog.x - camX) * (1 - Math.exp(-6 * dt));
+  let ty = frog.y;
+  if (phase === 'air' || phase === 'dead') ty = Math.min(Math.max(camY, frog.y - 6), frog.y + 3.5);
+  camY += (ty - camY) * (1 - Math.exp(-4 * dt));
+
+  // 操作の説明(ステージ1の序盤だけ)
+  const hint = $('hint');
+  if (stage.n === 1 && jumps < 6 && (phase === 'aim' || phase === 'charge')) {
+    hint.textContent = phase === 'aim' ? '押したタイミングで向きが決まる' : '押したままパワー調整。離すとジャンプ';
+    hint.hidden = false;
+  } else hint.hidden = true;
+}
+
+/* ==========================================================
+   描画
+   ========================================================== */
+function drawClouds() {
+  ctx.fillStyle = C.cloud; ctx.globalAlpha = 0.9;
+  for (let i = 0; i < 8; i++) {
+    const period = 41.6;
+    const sx = ((((i * 5.2 + (i * 37 % 3)) - camX * 0.2) % period) + period) % period * T - 3 * T;
+    const sy = H * (0.08 + 0.07 * (i % 4));
+    const s = T * (0.8 + 0.15 * (i % 3));
+    ctx.beginPath();
+    ctx.arc(sx, sy, s, 0, Math.PI * 2);
+    ctx.arc(sx + s * 1.1, sy + s * 0.2, s * 0.75, 0, Math.PI * 2);
+    ctx.arc(sx - s * 1.0, sy + s * 0.25, s * 0.65, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawFrog(px, py, face, sx, sy, air) {
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.scale(face * T * sx, -T * sy);               // y上向き・タイル単位で描く
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.lineWidth = 0.07; ctx.strokeStyle = C.frogDeep; ctx.fillStyle = C.frog;
+  // 後ろ足
+  ctx.beginPath(); ctx.ellipse(-0.2, air ? 0.2 : 0.15, air ? 0.36 : 0.28, 0.15, air ? 0.5 : -0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // 体
+  ctx.beginPath(); ctx.ellipse(0, 0.36, 0.46, 0.32, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // 目のふくらみ
+  ctx.beginPath(); ctx.arc(0.2, 0.64, 0.17, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // 目
+  ctx.fillStyle = C.paper; ctx.beginPath(); ctx.arc(0.23, 0.66, 0.1, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(0.26, 0.66, 0.05, 0, Math.PI * 2); ctx.fill();
+  // 口
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 0.04;
+  ctx.beginPath(); ctx.moveTo(0.16, 0.32); ctx.quadraticCurveTo(0.34, 0.26, 0.44, 0.34); ctx.stroke();
+  // 前足
+  ctx.fillStyle = C.frogDeep; ctx.beginPath(); ctx.ellipse(0.3, 0.09, 0.13, 0.09, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // 空:上が濃い青、下へいくほど明るい水色
+  const sg = ctx.createLinearGradient(0, 0, 0, H);
+  sg.addColorStop(0, C.sky); sg.addColorStop(1, C.skyLow);
+  ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H);
+  drawClouds();
+  if (!stage) return;
+
+  const ax = W * 0.3 - T, ay = H * 0.68;                 // カエルを置く画面上の位置
+  const X = wx => ax + (wx - camX) * T;
+  const Y = wy => ay - (wy - camY) * T;
+
+  // ---- 水:足場の下はすべて水。水面は波打ち、足場の穴からも見える ----
+  {
+    const wy = Y(WATER_Y);
+    if (wy < H) {
+      const wg = ctx.createLinearGradient(0, wy, 0, H);
+      wg.addColorStop(0, C.water); wg.addColorStop(1, C.waterDeep);
+      ctx.fillStyle = wg;
+      ctx.beginPath(); ctx.moveTo(0, H);
+      for (let px = 0; px <= W + 12; px += 12) ctx.lineTo(px, wy + Math.sin((px / T) * 1.6 + clock * 2.2) * T * 0.07);
+      ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+      // 水面の白いライン
+      ctx.strokeStyle = C.foam; ctx.lineWidth = Math.max(3, T * 0.07); ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (let px = 0; px <= W + 12; px += 12) { const yy = wy + Math.sin((px / T) * 1.6 + clock * 2.2) * T * 0.07; px ? ctx.lineTo(px, yy) : ctx.moveTo(px, yy); }
+      ctx.stroke();
+    }
+  }
+
+  // ---- 地形:土の塗り → 土の縁(壁) → 上面の草。角は丸くする ----
+  const rs = stage.rects;
+  const vis = rs.filter(r => X(r.x1) >= -10 && X(r.x0) <= W + 10 && Y(r.top) <= H);
+  const rad = T * 0.3;                                   // 角の丸み
+  // 長方形の道のり(角ごとに丸みを指定。arcTo は半径0なら直角になる)
+  const rrPath = (x0, y0, x1, y1, tl, tr, br, bl) => {
+    ctx.moveTo(x0 + tl, y0); ctx.lineTo(x1 - tr, y0); ctx.arcTo(x1, y0, x1, y0 + tr, tr);
+    ctx.lineTo(x1, y1 - br); ctx.arcTo(x1, y1, x1 - br, y1, br);
+    ctx.lineTo(x0 + bl, y1); ctx.arcTo(x0, y1, x0, y1 - bl, bl);
+    ctx.lineTo(x0, y0 + tl); ctx.arcTo(x0, y0, x0 + tl, y0, tl); ctx.closePath();
+  };
+  // 各足場の丸み:壁が見えている側の上の角だけ丸める(となりと続いている側は丸めない)。浮き足場は四隅とも丸い
+  const geo = r => {
+    const x0 = X(r.x0), x1 = X(r.x1), yt = Y(r.top), yb = Math.min(Y(r.bottom), H + 4);
+    const fl = r.float, rr = fl ? Math.min(rad, (yb - yt) / 2) : Math.min(rad, (x1 - x0) / 2);
+    return { x0, x1, yt, yb, tl: (fl || r.lb < r.top) ? rr : 0, tr: (fl || r.rb < r.top) ? rr : 0, bm: fl ? rr : 0 };
+  };
+  ctx.fillStyle = C.dirt;
+  for (const r of vis) {
+    const g = geo(r);
+    ctx.beginPath(); rrPath(g.x0, g.yt, g.x1, g.yb, g.tl, g.tr, g.bm, g.bm); ctx.fill();
+  }
+  ctx.strokeStyle = C.dirtDeep; ctx.lineWidth = Math.max(4, T * 0.12);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (const r of vis) {
+    const g = geo(r);
+    if (r.float) { rrPath(g.x0, g.yt, g.x1, g.yb, g.tl, g.tr, g.bm, g.bm); continue; }
+    if (r.lb < r.top) { ctx.moveTo(g.x0, Math.min(Y(r.lb), H + 20)); ctx.lineTo(g.x0, g.yt + g.tl); ctx.arcTo(g.x0, g.yt, g.x0 + g.tl, g.yt, g.tl); }
+    if (r.rb < r.top) { ctx.moveTo(g.x1, Math.min(Y(r.rb), H + 20)); ctx.lineTo(g.x1, g.yt + g.tr); ctx.arcTo(g.x1, g.yt, g.x1 - g.tr, g.yt, g.tr); }
+  }
+  ctx.stroke();
+  // 土のもよう(小石と点)→ 草。丸い角の形で切り抜いてから塗る
+  const gh = T * GRASS_H;
+  ctx.lineWidth = Math.max(3, T * 0.09);
+  for (const r of vis) {
+    const g = geo(r), isGoal = r === stage.goalRect;
+    ctx.save();
+    ctx.beginPath(); rrPath(g.x0, g.yt, g.x1, g.yb, g.tl, g.tr, g.bm, g.bm); ctx.clip();
+    // 土のもよう:1タイルごとに決まった位置へ小石や点を置く(毎回同じ見た目になる)
+    for (let ix = Math.floor(r.x0); ix < r.x1; ix++) {
+      for (let iy = Math.floor(r.top - GRASS_H) ; iy > r.bottom && Y(iy) < H + T; iy--) {
+        const h = (Math.imul(ix, 73856093) ^ Math.imul(iy, 19349663)) >>> 0;
+        if (h % 3 !== 0) continue;
+        const px = X(ix + 0.2 + ((h >>> 4) % 60) / 100), py = Y(iy - 0.1 - ((h >>> 10) % 60) / 100);
+        if (px < g.x0 + T * 0.25 || px > g.x1 - T * 0.25 || py < g.yt + gh + T * 0.1) continue;
+        ctx.fillStyle = (h >>> 16) % 2 ? C.dirtLight : C.dirtDeep;
+        ctx.globalAlpha = 0.55;
+        ctx.beginPath(); ctx.ellipse(px, py, T * (0.07 + ((h >>> 20) % 4) * 0.025), T * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (isGoal) {
+      // ゴールの足場:草の部分を白黒の市松模様にする
+      const sq = gh / 2;
+      for (let cx = 0, ci = 0; g.x0 + cx < g.x1; cx += sq, ci++) {
+        for (let k = 0; k < 2; k++) {
+          ctx.fillStyle = (ci + k) % 2 ? C.paper : C.ink;
+          ctx.fillRect(g.x0 + cx, g.yt + k * sq, sq + 0.5, sq + 0.5);
+        }
+      }
+      ctx.strokeStyle = C.ink;
+      ctx.beginPath(); ctx.moveTo(g.x0, g.yt + gh); ctx.lineTo(g.x1, g.yt + gh); ctx.stroke();
+    } else {
+      // 草:平らな帯の下に、波形(しずく形)の垂れ下がりをつける
+      const flat = gh * 0.65, n = Math.max(1, Math.round((g.x1 - g.x0) / (T * 0.55))), sw = (g.x1 - g.x0) / n;
+      ctx.fillStyle = C.grass;
+      ctx.beginPath(); ctx.rect(g.x0, g.yt, g.x1 - g.x0, flat);
+      for (let i = 0; i < n; i++) { ctx.moveTo(g.x0 + i * sw, g.yt + flat); ctx.ellipse(g.x0 + (i + 0.5) * sw, g.yt + flat, sw / 2, gh - flat, 0, Math.PI, 0, true); }
+      ctx.fill();
+      ctx.fillStyle = C.grassLight; ctx.fillRect(g.x0, g.yt, g.x1 - g.x0, gh * 0.2);   // 上のハイライト
+      ctx.strokeStyle = C.grassDeep;
+      ctx.beginPath(); ctx.moveTo(g.x0, g.yt + flat);
+      for (let i = 0; i < n; i++) ctx.ellipse(g.x0 + (i + 0.5) * sw, g.yt + flat, sw / 2, gh - flat, 0, Math.PI, 0, true);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // 上の縁(丸い角に沿わせる)
+    ctx.strokeStyle = isGoal ? C.ink : C.grassDeep;
+    ctx.beginPath();
+    ctx.moveTo(g.x0, g.yt + g.tl); ctx.arcTo(g.x0, g.yt, g.x0 + g.tl, g.yt, g.tl);
+    ctx.lineTo(g.x1 - g.tr, g.yt); ctx.arcTo(g.x1, g.yt, g.x1, g.yt + g.tr, g.tr);
+    ctx.stroke();
+  }
+
+  // ---- ゴールの旗 ----
+  {
+    const fx = X(stage.goalX), fy = Y(stage.goalTop);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(4, T * 0.12);
+    ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy - 2.2 * T); ctx.stroke();
+    ctx.fillStyle = C.accent;
+    ctx.beginPath(); ctx.moveTo(fx, fy - 2.2 * T); ctx.lineTo(fx + 0.95 * T, fy - 1.85 * T); ctx.lineTo(fx, fy - 1.5 * T); ctx.closePath(); ctx.fill();
+  }
+
+  // ---- 矢印と予測線(向き決め〜パワー調整のとき) ----
+  const showAim = scr === 'play' && (phase === 'aim' || phase === 'charge');
+  if (showAim) {
+    const ang = phase === 'aim' ? angleAt(aimT) : lockedAngle;
+    const a = ang * Math.PI / 180;
+    const cx = X(frog.x), cy = Y(frog.y + FH / 2);
+    if (phase === 'charge') {
+      const pts = previewPath(rs, frog.x, frog.y, ang, power);
+      if (pts.length > 1) {
+        ctx.strokeStyle = C.accent; ctx.lineWidth = Math.max(5, T * 0.13);
+        ctx.beginPath();
+        pts.forEach((p, i) => { i ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y)); });
+        ctx.stroke();
+        const e = pts[pts.length - 1];
+        ctx.beginPath(); ctx.arc(X(e.x), Y(e.y), T * 0.2, 0, Math.PI * 2); ctx.stroke();   // 着地予定の輪
+      }
+    }
+    // ---- 向きの動く範囲を示す扇形のバー(カエルのまわり) ----
+    const R = 1.05 * T, bw = 0.3 * T;
+    const dx = Math.cos(a), dy = -Math.sin(a);
+    const aLo = -ANG_HI * Math.PI / 180, aHi = -ANG_LO * Math.PI / 180;   // キャンバスの角度は上向きが負
+    ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = C.ink; ctx.lineWidth = bw + Math.max(6, T * 0.12);
+    ctx.beginPath(); ctx.arc(cx, cy, R, aLo, aHi); ctx.stroke();           // 縁
+    ctx.strokeStyle = C.ground; ctx.lineWidth = bw;
+    ctx.beginPath(); ctx.arc(cx, cy, R, aLo, aHi); ctx.stroke();           // 中の黄色(白抜き矢印が映える色)
+    ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(4, T * 0.08);
+    for (const ea of [aLo, aHi]) {                                           // 両端の仕切り線
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ea) * (R - bw * 0.75), cy + Math.sin(ea) * (R - bw * 0.75));
+      ctx.lineTo(cx + Math.cos(ea) * (R + bw * 0.75), cy + Math.sin(ea) * (R + bw * 0.75));
+      ctx.stroke();
+    }
+    // ---- 白抜き矢印(扇ゲージの上に重ねる。パワーが上がるほど先が長くなる) ----
+    const x0 = 0.55 * T, x1 = R + 2.0 * T;          // 矢印は長めで固定。パワーは中の赤で表す
+    const hw = 0.13 * T, hh = 0.36 * T, hl = 0.62 * T;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-a);
+    ctx.beginPath();
+    ctx.moveTo(x0, -hw); ctx.lineTo(x1 - hl, -hw); ctx.lineTo(x1 - hl, -hh); ctx.lineTo(x1, 0);
+    ctx.lineTo(x1 - hl, hh); ctx.lineTo(x1 - hl, hw); ctx.lineTo(x0, hw); ctx.closePath();
+    ctx.fillStyle = C.paper;
+    ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(4, T * 0.09);
+    ctx.fill();
+    if (phase === 'charge' && power > 0) {                  // 矢印の中を、パワーに応じて根元から赤く満たす
+      ctx.save(); ctx.clip();
+      ctx.fillStyle = C.power; ctx.fillRect(x0, -hh, (x1 - x0) * power, hh * 2);
+      ctx.restore();
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---- カエル ----
+  let face = facing, sx = 1, sy = 1, air = false;
+  if (scr === 'play' && phase === 'aim') {
+    face = 1;
+    sy = 1 + 0.03 * Math.sin(clock * 6); sx = 1 / sy;
+  } else if (phase === 'charge') {
+    sy = 1 - 0.28 * power; sx = 1 + 0.18 * power;      // ためるほどしゃがむ
+  } else if (phase === 'air' || phase === 'dead') {
+    air = true;
+    sy = 1 + Math.min(0.22, Math.abs(frog.vy) * 0.014); sx = 1 / sy;
+  } else if (scr !== 'play') {
+    sy = 1 + 0.04 * Math.sin(clock * 3); sx = 1 / sy;   // タイトルでゆらゆら
+  }
+  let fx = frog.x, fy = frog.y;
+  if (phase === 'climb' && climbFrom) {
+    // よじ登り:先に上へ登り、そのあと前へ乗り出す
+    const t = Math.min(1, climbT / CLIMB_T), tu = Math.min(1, t / 0.6), tf = Math.max(0, (t - 0.4) / 0.6);
+    fx = climbFrom.x + (frog.x - climbFrom.x) * tf;
+    fy = climbFrom.y + (frog.y - climbFrom.y) * tu;
+    air = true;
+  }
+  if (phase !== 'dead') drawFrog(X(fx), Y(fy), face, sx, sy, air);   // 水に落ちたあとは描かない
+
+  // ---- 波紋(水面で横に広がる輪) ----
+  ctx.strokeStyle = C.foam; ctx.lineWidth = Math.max(3, T * 0.08);
+  for (const rp of ripples) {
+    const k = rp.t / 0.9;
+    ctx.globalAlpha = 1 - k;
+    ctx.beginPath(); ctx.ellipse(X(rp.x), Y(WATER_Y), T * (0.3 + 1.6 * k), T * (0.08 + 0.2 * k), 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // ---- パーティクル ----
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, 1 - p.life / p.max);
+    ctx.fillStyle = p.c;
+    ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), p.r * T, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---- メインループ ---- */
+let last = 0;
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - last) / 1000 || 0);
+  last = ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+/* ---- 起動 ---- */
+loadSave();
+resize();
+goTitle();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>

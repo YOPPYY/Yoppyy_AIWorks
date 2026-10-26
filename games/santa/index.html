@@ -1,0 +1,838 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>サンタの巡回</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* layout: 全画面キャンバス(夜空と地図)の上に、タイトル / ステージ選択 / HUD / 結果シートを重ねる。夜の世界観に固定した単一テーマ */
+:root{
+  --night:#08102b; --night-2:#13234f; --snow:#eef4ff; --red:#e5484d; --gold:#ffd166; --pine:#3fae83;
+  --line:rgba(255,255,255,.16); --glass:rgba(255,255,255,.09);
+  --font-d:'Mochiy Pop One','Zen Maru Gothic','Hiragino Maru Gothic ProN',sans-serif;
+  --font-b:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Noto Sans JP',sans-serif;
+  --gl:max(16px,env(safe-area-inset-left,0px));
+  --gr:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--night);color:var(--snow);font-family:var(--font-b);font-weight:500;font-size:16px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:disabled{cursor:default}
+.app{position:relative;width:100%;height:100%;overflow:hidden;touch-action:none;background:var(--night)}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+.ibtn{width:44px;height:44px;border-radius:50%;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.ibtn svg{width:22px;height:22px}
+.ibtn:disabled{opacity:.35}
+.ibtn:active:not(:disabled){transform:scale(.94)}
+.chip{height:44px;padding:0 16px;border-radius:22px;background:var(--glass);border:1px solid var(--line);display:flex;align-items:center;font-family:var(--font-d);font-size:16px}
+
+.btn{min-height:54px;padding:0 30px;border-radius:27px;background:var(--red);color:#fff;font-family:var(--font-d);font-size:18px;box-shadow:0 4px 0 #a52d33;display:inline-flex;align-items:center;justify-content:center}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #a52d33}
+.btn.sub{background:var(--glass);border:1px solid var(--line);box-shadow:none}
+.btn.sub:active{transform:scale(.97)}
+
+.corner{position:absolute;top:16px;right:var(--gr);display:flex;gap:8px;z-index:50}
+
+.scr{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;padding-left:var(--gl);padding-right:var(--gr)}
+#scrTitle{justify-content:space-between;padding-top:clamp(56px,12%,110px);padding-bottom:clamp(44px,10%,90px);pointer-events:none}
+#scrTitle .btn{pointer-events:auto;min-width:200px;font-size:22px;min-height:60px}
+.title{font-family:var(--font-d);font-weight:400;font-size:clamp(46px,15vw,72px);line-height:1.14;text-align:center;margin:0;letter-spacing:.02em;text-shadow:0 4px 0 rgba(0,0,0,.3)}
+.title em{font-style:normal;color:var(--gold)}
+
+#scrSelect{background:rgba(8,16,43,.93);align-items:stretch}
+.selhead{height:68px;flex:none;display:flex;align-items:center;gap:10px;padding-top:16px}
+.selhead h2{font-family:var(--font-d);font-weight:400;font-size:20px;margin:0}
+.grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-content:start;padding:8px 0 28px;touch-action:pan-y;overscroll-behavior:contain}
+.tile{border-radius:14px;border:1px solid var(--line);background:var(--glass);padding:12px 0 10px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-d);font-size:24px;line-height:1}
+.tile.done{border-color:rgba(255,209,102,.6)}
+.tile:disabled{opacity:.3}
+.tile:active:not(:disabled){transform:scale(.96)}
+.mini{display:flex;gap:2px}
+.mini svg{width:14px;height:14px;fill:rgba(255,255,255,.18)}
+.mini svg.on{fill:var(--gold)}
+/* 「つくる」への入口(ステージ一覧の上) */
+.rand{flex:none;display:flex;padding:4px 0 8px}
+.rand .btn{flex:1;min-height:52px;padding:0 12px}
+/* 作る画面の下バー: 1段目 ー 軒数 ＋ サイコロ 答え / 2段目 スタート(全幅) */
+.bottom.edit{grid-template-columns:52px 1fr 52px 52px 52px;gap:8px 6px}
+#ansBtn{font-family:var(--font-d);font-size:16px;line-height:1}
+#ansBtn.on{background:rgba(63,174,131,.3);border-color:var(--pine);color:#bff3da}
+.cnt{text-align:center;font-family:var(--font-d);font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.cnt small{font-size:16px;opacity:.6;margin-left:2px;font-family:var(--font-b)}
+#goBtn{grid-column:1/-1;min-height:52px;padding:0 12px;font-size:20px}
+
+.hud{position:absolute;inset:0;z-index:10;pointer-events:none}
+.hud .stage{position:absolute;top:16px;left:var(--gl)}
+.hint{position:absolute;top:72px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:18px;background:rgba(8,16,43,.7);border:1px solid var(--line);white-space:nowrap;font-size:16px;pointer-events:none}
+.bottom{position:absolute;left:var(--gl);right:var(--gr);bottom:20px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;pointer-events:auto}
+.bottom .ibtn{width:52px;height:52px}
+/* 遊んでいる間の下バー左側: ひとつもどす / ヒント(やりなおしのときだけ出る) */
+.lbtns{display:flex;align-items:center;gap:8px}
+#hintBtn{min-height:52px;padding:0 18px;font-size:16px}
+#hintBtn.on{background:rgba(255,209,102,.22);border-color:var(--gold);color:var(--gold)}
+.len{text-align:center;font-family:var(--font-d);font-size:36px;line-height:1;font-variant-numeric:tabular-nums}
+.len small{font-size:16px;opacity:.6;margin-left:4px;font-family:var(--font-b)}
+.left{justify-self:end;font-family:var(--font-d);font-size:16px}
+
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:20;padding:24px var(--gr) 28px var(--gl);background:rgba(8,16,43,.95);border-top:1px solid var(--line);border-radius:24px 24px 0 0;display:flex;flex-direction:column;align-items:center;gap:14px;animation:up .35s ease-out both}
+.stars{display:flex;gap:10px}
+.stars svg{width:50px;height:50px;fill:rgba(255,255,255,.16)}
+.stars svg.on{fill:var(--gold);animation:pop .5s cubic-bezier(.3,1.6,.5,1) both;filter:drop-shadow(0 0 8px rgba(255,209,102,.6))}
+.figs{display:flex;gap:28px;align-items:flex-end}
+.fig{display:flex;flex-direction:column;align-items:center;gap:2px}
+.fig span{font-size:16px;opacity:.85}
+.fig b{font-family:var(--font-d);font-weight:400;font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+.fig.you b{color:var(--gold)}
+.fig.opt b{color:var(--pine)}
+.acts{display:flex;gap:10px;width:100%;max-width:380px}
+.acts .btn{flex:1;padding:0 12px;font-size:17px}
+
+.menu{position:absolute;inset:0;z-index:40;background:rgba(4,8,24,.72);display:flex;align-items:center;justify-content:center;padding:0 var(--gr) 0 var(--gl)}
+.panel{width:min(300px,100%);display:flex;flex-direction:column;gap:12px}
+
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pop{from{transform:scale(0) rotate(-30deg)}to{transform:scale(1) rotate(0)}}
+@media (prefers-reduced-motion:reduce){.sheet,.stars svg.on{animation:none}}
+</style>
+
+<div class="app" id="app">
+  <canvas id="cv"></canvas>
+
+  <section class="scr" id="scrTitle">
+    <h1 class="title">サンタの<br><em>巡回</em></h1>
+    <button class="btn" id="btnStart">はじめる</button>
+  </section>
+
+  <section class="scr" id="scrSelect" hidden>
+    <div class="selhead">
+      <button class="ibtn" id="btnBack" aria-label="もどる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
+      <h2>ステージ</h2>
+    </div>
+    <div class="rand"><button class="btn" id="btnMake">つくる</button></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <div class="hud" id="hud" hidden>
+    <div class="chip stage" id="stageChip">ステージ1</div>
+    <div class="hint" id="hint">家を順にタップ</div>
+    <div class="bottom edit" id="bottomEdit" hidden>
+      <button class="ibtn" id="nMinus" aria-label="へらす"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 12h12"/></svg></button>
+      <div class="cnt"><span id="cntv">6</span><small>軒</small></div>
+      <button class="ibtn" id="nPlus" aria-label="ふやす"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 12h12M12 6v12"/></svg></button>
+      <button class="ibtn" id="dice" aria-label="ランダム配置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="15" cy="9" r="1.2" fill="currentColor"/><circle cx="9" cy="15" r="1.2" fill="currentColor"/></svg></button>
+      <button class="ibtn" id="ansBtn" aria-label="答え" aria-pressed="false">答え</button>
+      <button class="btn" id="goBtn">スタート</button>
+    </div>
+    <div class="bottom" id="bottomPlay">
+      <div class="lbtns">
+      <button class="ibtn" id="undo" aria-label="ひとつもどす"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 4 10l5 5"/><path d="M4 10h9a5 5 0 0 1 0 10h-4"/></svg></button>
+      <button class="btn sub" id="hintBtn" hidden>ヒント</button>
+      </div>
+      <div class="len"><span id="lenv">0</span><small>km</small></div>
+      <div class="left" id="left">あと5</div>
+    </div>
+  </div>
+
+  <div class="corner">
+    <button class="ibtn" id="soundBtn" aria-label="サウンド"></button>
+    <button class="ibtn" id="menuBtn" aria-label="メニュー" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
+  </div>
+
+  <div class="sheet" id="sheet" hidden>
+    <div class="stars" id="stars"></div>
+    <div class="figs">
+      <div class="fig you"><span>あなた</span><b id="youv">0</b></div>
+      <div class="fig opt"><span>最短</span><b id="bestv">0</b></div>
+    </div>
+    <div class="acts">
+      <button class="btn sub" id="again">もういちど</button>
+      <button class="btn" id="next">つぎへ</button>
+    </div>
+  </div>
+
+  <div class="menu" id="menu" hidden>
+    <div class="panel">
+      <button class="btn" id="mResume">つづける</button>
+      <button class="btn sub" id="mRestart">やりなおし</button>
+      <button class="btn sub" id="mEdit" hidden>へんしゅう</button>
+      <button class="btn sub" id="mList">ステージ一覧</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+/*
+  サンタの巡回(巡回セールスマン問題のゲーム)
+  ・盤面は論理座標 100x130 で持ち、画面サイズに合わせて lay() が拡大縮小する
+  ・遊び方: 家を順にタップ → そりが進む → 全部回るとサンタの家に戻って採点
+  ・採点: solve() が厳密な最短距離を求め、プレイヤーの距離と比べて星を決める
+  ・モード: ステージ(全20) / つくる(家とサンタを自由に配置して遊ぶ)
+  ・画面は title / select / game の3つ。game の中の phase は play / result / edit
+*/
+const $=id=>document.getElementById(id);
+const LW=100,LH=130,SPEED=150,NST=20;
+const COUNTS=[5,5,6,6,7,7,7,8,8,8,9,9,9,10,10,10,11,11,12,12];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ---------- 保存 ---------- */
+const KEY='santa-junkai-v1';
+/* save: 端末に保存する内容。stars=各ステージの星, sound=音のオンオフ, mk=つくるで作ったマップ */
+const save={stars:Array(NST).fill(0),sound:true,hinted:false,hintedMk:false,mk:null};
+try{
+  const s=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(s&&Array.isArray(s.stars)){save.stars=COUNTS.map((_,i)=>s.stars[i]|0);save.sound=s.sound!==false;save.hinted=!!s.hinted;save.hintedMk=!!s.hintedMk;
+    /* 作ったマップの復元。壊れたデータは無視する */
+    const m=s.mk,ok=p=>p&&isFinite(p.x)&&isFinite(p.y);
+    if(m&&ok(m.home)&&Array.isArray(m.houses)){const hs=m.houses.filter(ok).slice(0,12);if(hs.length>=4)save.mk={home:{x:clamp(+m.home.x,7,93),y:clamp(+m.home.y,13,123)},houses:hs.map(h=>({x:clamp(+h.x,7,93),y:clamp(+h.y,8,123)}))}}}
+}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+
+/* ---------- サウンド(BGMとSEをまとめてオンオフ) ---------- */
+/* mf: MIDIノート番号 → 周波数(Hz)。69 が A4=440Hz */
+const mf=m=>440*Math.pow(2,(m-69)/12);
+/* BGMのメロディ。数字はノート番号、0は休符。8分音符64ステップで1ループ */
+const MEL=[
+ 76,0,79,0,84,0,79,0, 81,0,79,0,76,0,72,0,
+ 77,0,81,0,84,0,81,77, 79,0,74,0,79,0,83,0,
+ 84,0,83,84,79,0,76,0, 81,0,84,0,81,0,76,0,
+ 77,0,74,0,79,0,83,0, 84,0,0,0,79,0,72,0
+];
+const CHD={C:{r:48,t:[60,64,67]},Am:{r:45,t:[57,60,64]},F:{r:41,t:[57,60,65]},G:{r:43,t:[59,62,67]},Dm:{r:50,t:[57,62,65]}};
+const BARS=['C','Am','F','G','C','Am','Dm','C'];
+const chordAt=s=>{const b=s>>3;return (b===6&&(s&7)>=4)?CHD.G:CHD[BARS[b]]};
+const EIGHTH=.3;
+const PENTA=[72,74,76,79,81,84,86,88,91,93,96,96,96];
+/* Snd: 音の管理。BGMとSEは master のゲインでまとめてオンオフする(右上のサウンドボタン)。
+   音はユーザーが触れてから start() で鳴らし始める(ブラウザの制限) */
+const Snd={
+  ctx:null,on:save.sound,timer:null,step:0,next:0,
+  start(){
+    if(!this.ctx){
+      const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+      const c=this.ctx=new AC();
+      this.master=c.createGain();this.master.gain.value=this.on?1:0;this.master.connect(c.destination);
+      this.bgm=c.createGain();this.bgm.gain.value=.3;this.bgm.connect(this.master);
+      this.se=c.createGain();this.se.gain.value=.8;this.se.connect(this.master);
+    }
+    if(this.ctx.state==='suspended')this.ctx.resume();
+    if(this.on&&!this.timer){this.next=this.ctx.currentTime+.08;this.timer=setInterval(()=>this.sched(),90)}
+  },
+  setOn(v){
+    this.on=v;save.sound=v;persist();
+    if(!this.ctx){if(v)this.start();return}
+    this.master.gain.setTargetAtTime(v?1:0,this.ctx.currentTime,.02);
+    if(v)this.start();else if(this.timer){clearInterval(this.timer);this.timer=null}
+  },
+  sched(){
+    const c=this.ctx;
+    while(this.next<c.currentTime+.4){this.play(this.step,this.next);this.next+=EIGHTH;this.step=(this.step+1)%64}
+  },
+  play(s,t){
+    const m=MEL[s];if(m)this.bell(m,t,.95,.5,this.bgm);
+    const ch=chordAt(s);
+    if(s%4===0)this.tone(mf(ch.r),t,.55,'triangle',.38,this.bgm);
+    if(s%2===1)this.tone(mf(ch.t[(s>>1)%3]),t,.32,'sine',.15,this.bgm);
+  },
+  tone(f,t,d,type,v,dest){
+    const c=this.ctx,o=c.createOscillator(),g=c.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.03);
+  },
+  bell(m,t,d,v,dest){
+    const f=mf(m);
+    this.tone(f,t,d,'sine',v,dest);
+    this.tone(f*2,t,d*.7,'sine',v*.25,dest);
+    this.tone(f*2.756,t,d*.35,'sine',v*.15,dest);
+  },
+  ok(){return this.ctx&&this.on},
+  tap(){if(!this.ok())return;this.tone(700,this.ctx.currentTime,.07,'sine',.22,this.se)},
+  deliver(k){if(!this.ok())return;this.bell(PENTA[Math.min(k-1,PENTA.length-1)],this.ctx.currentTime,.8,.55,this.se)},
+  undo(){
+    if(!this.ok())return;
+    const c=this.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+    o.type='sine';o.frequency.setValueAtTime(520,t);o.frequency.exponentialRampToValueAtTime(280,t+.12);
+    g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);
+    o.connect(g);g.connect(this.se);o.start(t);o.stop(t+.16);
+  },
+  home(){if(!this.ok())return;this.bell(60,this.ctx.currentTime,1,.6,this.se)},
+  stars(n){
+    if(!this.ok())return;const t=this.ctx.currentTime,seq=[72,76,79,84,88,91];
+    for(let i=0;i<2+n;i++)this.bell(seq[i],t+i*.12,.9,.55,this.se);
+  },
+  fail(){
+    if(!this.ok())return;const t=this.ctx.currentTime;
+    this.tone(330,t,.3,'triangle',.28,this.se);this.tone(262,t+.2,.5,'triangle',.28,this.se);
+  }
+};
+document.addEventListener('visibilitychange',()=>{
+  if(!Snd.ctx)return;
+  if(document.hidden)Snd.ctx.suspend();else if(Snd.on)Snd.ctx.resume();
+});
+
+/* ---------- ステージ生成と最短解(ヘルド・カープ法) ---------- */
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* ヘルド・カープ法(巡回セールスマン問題の厳密解)。
+   dp[訪問済みの家の集合][最後にいた家] = そこまでの最短距離。小さい集合から順に伸ばしていく。
+   pts[0]=サンタの家, pts[1..]=家。戻り値 len=最短の往復距離, order=家の番号(0始まり)を回る順に並べたもの */
+function solve(pts){
+  const n=pts.length-1,D=pts.map(a=>pts.map(b=>Math.hypot(a.x-b.x,a.y-b.y)));
+  const M=1<<n,dp=new Float64Array(M*n).fill(Infinity),par=new Int8Array(M*n).fill(-1);
+  for(let j=0;j<n;j++)dp[(1<<j)*n+j]=D[0][j+1];
+  for(let m=1;m<M;m++)for(let j=0;j<n;j++){
+    if(!(m&(1<<j)))continue;const cur=dp[m*n+j];if(cur===Infinity)continue;
+    for(let k=0;k<n;k++){
+      if(m&(1<<k))continue;const nm=m|(1<<k),v=cur+D[j+1][k+1];
+      if(v<dp[nm*n+k]){dp[nm*n+k]=v;par[nm*n+k]=j}
+    }
+  }
+  let best=Infinity,bj=0;const full=M-1;
+  for(let j=0;j<n;j++){const v=dp[full*n+j]+D[j+1][0];if(v<best){best=v;bj=j}}
+  const order=[];let m=full,j=bj;
+  while(j>=0){order.push(j);const pj=par[m*n+j];m^=(1<<j);j=pj}
+  order.reverse();
+  return{len:best,order,D};
+}
+/* 「いちばん近い家へ行く」だけで回った距離。これが最短とほぼ同じ配置は簡単すぎるので避ける目安に使う */
+function nnLen(D,n){
+  const seen=Array(n+1).fill(false);seen[0]=true;let cur=0,len=0;
+  for(let k=0;k<n;k++){
+    let b=-1,bd=1e9;
+    for(let j=1;j<=n;j++)if(!seen[j]&&D[cur][j]<bd){bd=D[cur][j];b=j}
+    seen[b]=true;len+=bd;cur=b;
+  }
+  return len+D[cur][0];
+}
+/* n軒の盤面を作る。base は乱数の種(同じ種なら同じ盤面)。
+   家どうしが近すぎないよう間隔 md を保ち、hard なら最近傍法より5%以上短い最短解がある配置だけ採用する */
+function genCore(n,base,hard){
+  let fall=null;
+  for(let md=(n>=11?13:n>=9?15:n>=7?18:21);md>6&&!fall;md-=3){
+    for(let t=0;t<60;t++){
+      const r=rng(base+t*104729+17),pts=[];let g=0;
+      while(pts.length<n+1&&g<4000){g++;const p={x:9+r()*82,y:9+r()*112};if(pts.every(q=>Math.hypot(p.x-q.x,p.y-q.y)>=md))pts.push(p)}
+      if(pts.length<n+1)continue;
+      const sol=solve(pts),st={home:pts[0],houses:pts.slice(1),opt:sol.order,optLen:sol.len};
+      fall=st;
+      if(!hard||nnLen(sol.D,n)>=sol.len*1.05)return st;
+    }
+  }
+  return fall;
+}
+const genStage=i=>genCore(COUNTS[i],i*7919,i>=2);
+const stages=[];
+const stage=i=>stages[i]||(stages[i]=genStage(i));
+
+/* ---------- 状態 ---------- */
+/* G=いま遊んでいる盤面, demo=タイトルなどの自動デモ中, scr=表示中の画面 */
+let G=null,demo=false,paused=false,scr='title',curStage=0,demoIdx=0;
+/* making=つくるモード中(このとき curStage は使わない), mk=作成中のマップ(サンタ=home と 家=houses の位置),
+   drag=いまつかんでいるもの(家またはサンタ) */
+let making=false,mk=null,drag=null;
+/* ansOn=「答え」ボタンがオン(作る画面で最短ルートを見せる), ans=その計算結果。位置が変わったら null に戻して計算し直す */
+let ansOn=false,ans=null;
+/* ヒント: prevEdges=前回の(最後まで回った)ルートのうち最短ルートにも含まれる辺。hintOn=ヒント表示中。
+   辺は [a,b] の組で、-1=サンタの家、0以上=家の番号。やりなおしの間だけ残り、新しいステージや3つ星で消える */
+let prevEdges=null,hintOn=false;
+const MK_MIN=4,MK_MAX=12;
+let W=1,H=1,DPR=1,sheetH=230;
+const inset={top:190,bottom:180};
+const cv=$('cv'),cx=cv.getContext('2d');
+
+/* 1回の遊びの状態を作る。st=盤面(home=サンタの家, houses=家, opt=最短の順番, optLen=最短距離)
+   path=選んだ家の順番, sd=そりが進んだ距離, arrived=配り終えた家の数, order=各家を何番目に回ったか */
+function makeGame(st){
+  const g={st,n:st.houses.length,path:[],sd:0,arrived:0,order:Array(st.houses.length).fill(0),phase:'play',pts:[st.home],cum:[0],total:0,wait:0,stars:0};
+  return g;
+}
+/* 選んだ順番から、そりが通る折れ線 pts と各点までの累積距離 cum を作り直す。全部選んだら最後はサンタの家に戻る */
+function rebuild(){
+  const st=G.st,pts=[st.home,...G.path.map(i=>st.houses[i])];
+  if(G.path.length===G.n)pts.push(st.home);
+  const cum=[0];
+  for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));
+  G.pts=pts;G.cum=cum;G.total=cum[cum.length-1];
+}
+/* 進んだ距離 sd から、そりの現在位置と進行方向を求める */
+function posAt(sd){
+  const{pts,cum}=G;
+  if(pts.length<2)return{x:pts[0].x,y:pts[0].y,dx:1,dy:0};
+  let k=1;while(k<cum.length-1&&cum[k]<sd)k++;
+  const a=pts[k-1],b=pts[k],L=(cum[k]-cum[k-1])||1,u=clamp((sd-cum[k-1])/L,0,1);
+  return{x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u,dx:b.x-a.x,dy:b.y-a.y};
+}
+/* 論理座標(100x130)を画面に収める倍率 s と原点 ox,oy。上下の余白 inset は画面ごとに変わる */
+function lay(){
+  const aw=Math.max(60,W-32),ah=Math.max(60,H-inset.top-inset.bottom),s=Math.min(aw/LW,ah/LH);
+  return{s,ox:(W-LW*s)/2,oy:inset.top+(ah-LH*s)/2};
+}
+
+/* ---------- 画面切り替え ---------- */
+function targetInsets(){
+  /* 下の余白: 結果ならシートの高さ、作る画面なら2段のバーの高さ、遊んでいる間は1段のバーの高さ */
+  if(scr==='game')return{top:100,bottom:(G&&G.phase==='result'&&!demo)?sheetH+10:(G&&G.phase==='edit')?160:100};
+  return{top:200,bottom:170};
+}
+function showScreen(name){
+  scr=name;
+  $('scrTitle').hidden=name!=='title';
+  $('scrSelect').hidden=name!=='select';
+  $('hud').hidden=name!=='game';
+  $('menuBtn').hidden=name!=='game';
+  if(name!=='game'){$('sheet').hidden=true;$('menu').hidden=true;paused=false;if(!demo)startDemo()}
+}
+function startDemo(){
+  demo=true;paused=false;
+  const di=[3,4,5][demoIdx++%3];
+  G=makeGame(stage(di));rebuild();
+}
+/* 盤面 st で遊び始める */
+function begin(st){
+  demo=false;paused=false;drag=null;hintOn=false;
+  G=makeGame(st);rebuild();
+  $('sheet').hidden=true;$('menu').hidden=true;
+  showScreen('game');
+  $('hint').textContent='家を順にタップ';
+  $('hint').hidden=!(!making&&curStage===0&&!save.hinted);
+  updateHud();
+}
+/* keep=true はやりなおし(前回のルートからヒントを出す)。それ以外は新しいステージなのでヒントを消す */
+function startStage(i,keep){making=false;curStage=i;if(!keep)prevEdges=null;begin(stage(i))}
+/* やりなおし: つくるモードなら同じマップをもう一度、通常ステージなら同じステージ */
+function restartCur(){if(making)playMk(true);else startStage(curStage,true)}
+
+/* ---------- つくる(家とサンタを自由に配置して遊ぶ) ---------- */
+/* 保存データが壊れていたときなどに使う初期配置 */
+const MK_DEFAULT={home:{x:50,y:112},houses:[{x:20,y:88},{x:80,y:84},{x:30,y:50},{x:70,y:46},{x:24,y:16},{x:76,y:18}]};
+/* 作成中マップの初期化: 保存済みがあればそれを、なければランダムで6軒 */
+function mkInit(){
+  if(save.mk){mk={home:{...save.mk.home},houses:save.mk.houses.map(h=>({...h}))};return}
+  mkRandom(6);
+  if(!mk)mk={home:{...MK_DEFAULT.home},houses:MK_DEFAULT.houses.map(h=>({...h}))};
+}
+/* n軒のランダム配置(サンタの位置も含む)。genCore は「最寄りの家へ行くだけでは最短にならない」配置を選ぶ */
+function mkRandom(n){
+  const st=genCore(n,Math.floor(Math.random()*1e9),true);
+  if(!st)return;
+  mk={home:{x:st.home.x,y:st.home.y},houses:st.houses.map(h=>({x:h.x,y:h.y}))};
+}
+/* 家をひとつ足す: ランダムな候補のうち、他の家やサンタから一番離れた場所に置く */
+function mkAdd(){
+  if(mk.houses.length>=MK_MAX)return false;
+  let best=null,bd=-1;
+  for(let t=0;t<60;t++){
+    const p={x:9+Math.random()*82,y:10+Math.random()*112};
+    const d=Math.min(Math.hypot(p.x-mk.home.x,p.y-mk.home.y)*0.8,...mk.houses.map(h=>Math.hypot(p.x-h.x,p.y-h.y)));
+    if(d>bd){bd=d;best=p}
+  }
+  mk.houses.push({x:Math.round(best.x*10)/10,y:Math.round(best.y*10)/10});
+  return true;
+}
+/* 家をひとつ減らす(最後に足した家から消える) */
+function mkRemove(){if(mk.houses.length<=MK_MIN)return false;mk.houses.pop();return true}
+/* 作ったマップを端末に保存する */
+function mkSave(){save.mk={home:{x:mk.home.x,y:mk.home.y},houses:mk.houses.map(h=>({x:h.x,y:h.y}))};persist()}
+/* 作る画面用の盤面。位置は mk と同じオブジェクトを共有するので、ドラッグ中の移動がそのまま画面に出る */
+function mkStage(){return{home:mk.home,houses:mk.houses,opt:[],optLen:0}}
+function refreshEdit(){ans=null;G=makeGame(mkStage());G.phase='edit';rebuild();updateHud()}
+/* 作る画面を開く */
+function editMk(){
+  if(!mk){mkInit();mkSave()} /* 初回に作った配置もすぐ保存し、開き直しても同じマップにする */
+  making=true;curStage=-1;demo=false;paused=false;drag=null;
+  $('sheet').hidden=true;$('menu').hidden=true;
+  showScreen('game');
+  refreshEdit();
+}
+/* スタート: 作ったマップの最短ルートをここで計算して遊び始める。位置はコピーするので、遊んでいる間は動かない */
+function playMk(keep){
+  if(!mk||mk.houses.length<MK_MIN)return;
+  if(keep!==true)prevEdges=null; /* スタートボタンから(イベントが渡る)なら、マップが変わったかもしれないのでヒントを消す */
+  const st={home:{x:mk.home.x,y:mk.home.y},houses:mk.houses.map(h=>({x:h.x,y:h.y})),opt:[],optLen:0};
+  const sol=solve([st.home,...st.houses]);
+  st.opt=sol.order;st.optLen=sol.len;
+  making=true;curStage=-1;
+  begin(st);
+}
+
+/* ---- ドラッグ操作(作る画面): 家やサンタをつかんで動かす ---- */
+const GAP_HOUSE=10,GAP_HOME=13; /* 重ならないための最小間隔(論理座標) */
+/* 画面上の指の位置(px,py)と、論理座標(x,y)の両方を返す */
+function pointerLogic(e){
+  const r=cv.getBoundingClientRect(),L=lay(),px=e.clientX-r.left,py=e.clientY-r.top;
+  return{px,py,L,x:(px-L.ox)/L.s,y:(py-L.oy)/L.s};
+}
+/* 押した位置に一番近い家かサンタをつかむ。つかんだ点とのズレ(dx,dy)を覚えておき、動かし始めに飛ばないようにする */
+function dragStart(e){
+  if(drag)return;
+  const p=pointerLogic(e);let best=null,bd=1e9;
+  const test=(kind,i,o,reach)=>{
+    const d=Math.hypot(p.L.ox+o.x*p.L.s-p.px,p.L.oy+o.y*p.L.s-p.py);
+    if(d<reach&&d<bd){bd=d;best={kind,i,dx:o.x-p.x,dy:o.y-p.y,id:e.pointerId}}
+  };
+  mk.houses.forEach((h,i)=>test('house',i,h,36));
+  test('home',0,mk.home,44);
+  if(!best)return;
+  drag=best;
+  try{cv.setPointerCapture(e.pointerId)}catch(_){}
+  if(!save.hintedMk){save.hintedMk=true;persist();$('hint').hidden=true}
+  Snd.tap();
+}
+/* 指に合わせて動かす。盤面の外には出さず、他の家やサンタに近づきすぎたら押し出す */
+function dragMove(e){
+  if(!drag||e.pointerId!==drag.id)return;
+  const p=pointerLogic(e),isHome=drag.kind==='home';
+  const o=isHome?mk.home:mk.houses[drag.i];
+  const minY=isHome?13:8; /* サンタの家は屋根の星があるぶん上端を少し空ける */
+  let x=clamp(p.x+drag.dx,7,93),y=clamp(p.y+drag.dy,minY,123);
+  const others=mk.houses.filter((_,j)=>isHome||j!==drag.i).map(h=>[h,isHome?GAP_HOME:GAP_HOUSE]);
+  if(!isHome)others.push([mk.home,GAP_HOME]);
+  for(let pass=0;pass<2;pass++){ /* 2回まわして押し出しを収束させる */
+    for(const[q,gap]of others){
+      const dx=x-q.x,dy=y-q.y,d=Math.hypot(dx,dy);
+      if(d<gap){
+        if(d>1e-6){x=q.x+dx/d*gap;y=q.y+dy/d*gap}else x=q.x+gap;
+      }
+    }
+    x=clamp(x,7,93);y=clamp(y,minY,123);
+  }
+  o.x=x;o.y=y;ans=null; /* 位置が変わったので「答え」を計算し直す */
+}
+/* 指を離したら保存する */
+function dragEnd(e){
+  if(!drag||(e&&e.pointerId!==drag.id))return;
+  drag=null;mkSave();
+}
+
+function updateHud(){
+  if(!G||demo)return;
+  $('stageChip').textContent=making?'つくる':'ステージ'+(curStage+1);
+  $('lenv').textContent=Math.round(G.total*3);
+  const left=G.n-G.path.length;
+  $('left').textContent=left>0?'あと'+left:'かえろう';
+  $('undo').disabled=!G.path.length||G.phase==='result';
+  /* ヒントボタン: やりなおしで、前回のルートに正しい部分があるときだけ出す */
+  const canHint=!!prevEdges&&prevEdges.length>0&&G.phase==='play';
+  $('hintBtn').hidden=!canHint;
+  $('hintBtn').classList.toggle('on',hintOn);
+  $('hintBtn').setAttribute('aria-pressed',String(hintOn));
+  const ed=G.phase==='edit';
+  $('bottomPlay').hidden=ed||G.phase==='result'; /* 結果シートの裏に距離などが透けないよう、結果では隠す */
+  $('bottomEdit').hidden=!ed;
+  if(ed){
+    /* 作る画面: 軒数の表示と、増減ボタンの上限・下限 */
+    $('cntv').textContent=mk.houses.length;
+    $('nMinus').disabled=mk.houses.length<=MK_MIN;
+    $('nPlus').disabled=mk.houses.length>=MK_MAX;
+    $('hint').textContent='ドラッグで動かす';
+    $('hint').hidden=save.hintedMk;
+    $('ansBtn').classList.toggle('on',ansOn);$('ansBtn').setAttribute('aria-pressed',String(ansOn));
+  }
+}
+
+/* ---------- ステージ一覧 ---------- */
+const STAR='<polygon points="12,2.5 14.9,9 22,9.7 16.6,14.4 18.2,21.5 12,17.8 5.8,21.5 7.4,14.4 2,9.7 9.1,9"/>';
+const starSvg=(on,style)=>`<svg viewBox="0 0 24 24" class="${on?'on':''}"${style?` style="${style}"`:''} aria-hidden="true">${STAR}</svg>`;
+function renderGrid(){
+  const g=$('grid');g.innerHTML='';
+  for(let i=0;i<NST;i++){
+    const b=document.createElement('button');
+    const open=i===0||save.stars[i-1]>=1;
+    b.className='tile'+(save.stars[i]>=1?' done':'');
+    b.disabled=!open;
+    b.setAttribute('aria-label','ステージ'+(i+1));
+    b.innerHTML=`<span>${i+1}</span><span class="mini">${[0,1,2].map(k=>starSvg(k<save.stars[i])).join('')}</span>`;
+    b.addEventListener('click',()=>{Snd.start();startStage(i)});
+    g.appendChild(b);
+  }
+}
+
+/* ---------- 操作 ---------- */
+/* 画面を押したとき。作る画面ならつかむ、遊んでいる間なら一番近い家を選ぶ */
+function onTap(e){
+  Snd.start();
+  if(scr==='game'&&G&&!demo&&!paused&&G.phase==='edit'){dragStart(e);return}
+  if(scr!=='game'||!G||demo||paused||G.phase!=='play'||G.path.length>=G.n)return;
+  const r=cv.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top,L=lay();
+  let best=-1,bd=38;
+  G.st.houses.forEach((h,i)=>{
+    if(G.path.includes(i))return;
+    const d=Math.hypot(L.ox+h.x*L.s-px,L.oy+h.y*L.s-py);
+    if(d<bd){bd=d;best=i}
+  });
+  if(best<0)return;
+  G.path.push(best);rebuild();Snd.tap();
+  const h=G.st.houses[best];ring(h.x,h.y);
+  if(!save.hinted){save.hinted=true;persist();$('hint').hidden=true}
+  updateHud();
+}
+/* 最後に選んだ家をひとつ取り消す */
+function undo(){
+  if(!G||demo||paused||G.phase!=='play'||!G.path.length)return;
+  const removed=G.path.pop();G.order[removed]=0;
+  G.arrived=Math.min(G.arrived,G.path.length);
+  rebuild();G.sd=Math.min(G.sd,G.total);
+  Snd.undo();updateHud();
+}
+function setSoundIcon(){
+  const on='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>';
+  const off='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+  $('soundBtn').innerHTML=Snd.on?on:off;
+  $('soundBtn').setAttribute('aria-pressed',String(Snd.on));
+}
+cv.addEventListener('pointerdown',e=>{e.preventDefault();onTap(e)});
+cv.addEventListener('pointermove',dragMove);
+cv.addEventListener('pointerup',dragEnd);
+cv.addEventListener('pointercancel',dragEnd);
+document.addEventListener('pointerdown',()=>Snd.start());
+$('btnStart').addEventListener('click',()=>{renderGrid();showScreen('select')});
+$('btnBack').addEventListener('click',()=>showScreen('title'));
+$('soundBtn').addEventListener('click',()=>{Snd.setOn(!Snd.on);setSoundIcon()});
+$('menuBtn').addEventListener('click',()=>{
+  const ed=!!G&&G.phase==='edit';
+  $('mRestart').hidden=ed;$('mEdit').hidden=!making||ed;
+  paused=true;$('menu').hidden=false;
+});
+$('mEdit').addEventListener('click',editMk);
+$('btnMake').addEventListener('click',()=>{Snd.start();editMk()});
+/* 軒数の増減とランダム配置。どれも保存して作る画面を描き直す */
+$('nMinus').addEventListener('click',()=>{if(mkRemove()){Snd.undo();mkSave();refreshEdit()}});
+$('nPlus').addEventListener('click',()=>{if(mkAdd()){Snd.tap();mkSave();refreshEdit()}});
+$('dice').addEventListener('click',()=>{mkRandom(mk.houses.length);Snd.tap();mkSave();refreshEdit()});
+$('goBtn').addEventListener('click',playMk);
+/* 答え: オンの間、作る画面に最短ルートを表示する */
+$('ansBtn').addEventListener('click',()=>{ansOn=!ansOn;ans=null;Snd.tap();updateHud()});
+$('mResume').addEventListener('click',()=>{paused=false;$('menu').hidden=true});
+$('mRestart').addEventListener('click',restartCur);
+$('mList').addEventListener('click',()=>{renderGrid();showScreen('select')});
+$('undo').addEventListener('click',undo);
+/* ヒント: 押すたびに表示/非表示を切り替える */
+$('hintBtn').addEventListener('click',()=>{hintOn=!hintOn;Snd.tap();updateHud()});
+$('again').addEventListener('click',restartCur);
+$('next').addEventListener('click',()=>{if(making)editMk();else startStage(curStage+1)});
+['gesturestart','gesturechange','contextmenu','dblclick'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+
+/* ---------- 演出 ---------- */
+const parts=[];
+function burst(ax,ay){
+  const cols=['#ffd166','#e5484d','#3fae83','#eef4ff'];
+  for(let i=0;i<10;i++){const a=Math.random()*6.28,v=40+Math.random()*60;parts.push({k:'b',ax,ay,px:0,py:-6,vx:Math.cos(a)*v,vy:Math.sin(a)*v-40,life:.7,max:.7,col:cols[i%4],sz:2.5+Math.random()*2.5})}
+}
+function ring(ax,ay){parts.push({k:'r',ax,ay,life:.45,max:.45})}
+function confetti(){
+  const cols=['#ffd166','#e5484d','#3fae83','#eef4ff'];
+  for(let i=0;i<46;i++)parts.push({k:'c',px:Math.random()*W,py:-10-Math.random()*H*.3,vx:(Math.random()-.5)*60,vy:80+Math.random()*120,life:2.4,max:2.4,col:cols[i%4],sz:4+Math.random()*3});
+}
+const rnd=(()=>{const r=rng(5);return r})();
+const SKY=Array.from({length:70},()=>({x:rnd(),y:rnd()*.62,r:.5+rnd()*1.2,p:rnd()*6.28}));
+const FLAKES=Array.from({length:55},()=>({x:rnd(),y:rnd(),r:1+rnd()*2,v:14+rnd()*26,d:rnd()*6.28}));
+
+/* ---------- 更新 ---------- */
+function deliver(i){
+  G.order[i]=G.arrived;
+  const h=G.st.houses[i];burst(h.x,h.y);
+  if(!demo)Snd.deliver(G.arrived);
+}
+/* プレイヤーのルートのうち、最短ルートにも含まれる辺を [a,b] の組で返す(辺の向きは区別しない) */
+function correctEdges(){
+  const key=(a,b)=>a<b?a+'_'+b:b+'_'+a;
+  const opt=[-1,...G.st.opt,-1],usr=[-1,...G.path,-1],optSet=new Set(),out=[];
+  for(let i=1;i<opt.length;i++)optSet.add(key(opt[i-1],opt[i]));
+  for(let i=1;i<usr.length;i++)if(optSet.has(key(usr[i-1],usr[i])))out.push([usr[i-1],usr[i]]);
+  return out;
+}
+/* 全部回ってサンタの家に戻ったとき。最短距離との比で星を決める(最短ぴったり=3、10%増しまで=2、25%増しまで=1) */
+function finish(){
+  G.phase='result';
+  if(demo){G.wait=1.8;return}
+  const r=G.total/G.st.optLen,stars=r<=1.0005?3:r<=1.1?2:r<=1.25?1:0;
+  G.stars=stars;
+  /* 次のやりなおし用に、今回のルートの正しい辺を覚える(3つ星なら不要) */
+  prevEdges=stars>=3?null:correctEdges();
+  if(!making&&stars>save.stars[curStage]){save.stars[curStage]=stars;persist()}
+  $('stars').innerHTML=[0,1,2].map(i=>starSvg(i<stars,`animation-delay:${.15+i*.18}s`)).join('');
+  $('youv').textContent=Math.round(G.total*3);
+  $('bestv').textContent=Math.round(G.st.optLen*3);
+  const canNext=making||(save.stars[curStage]>=1&&curStage<NST-1);
+  $('next').textContent=making?'へんしゅう':'つぎへ';
+  $('next').hidden=!canNext;
+  $('again').className=canNext?'btn sub':'btn';
+  $('sheet').hidden=false;
+  requestAnimationFrame(()=>{sheetH=$('sheet').offsetHeight});
+  if(stars>=2)confetti();
+  if(stars>0)Snd.stars(stars);else Snd.fail();
+  updateHud();
+}
+/* 毎フレームの更新: 余白の補間 → 演出の粒子 → そりを進める → 家に着いたら配達 → 全部回ったら終了 */
+function update(dt){
+  const ti=targetInsets(),k=Math.min(1,dt*8);
+  inset.top+=(ti.top-inset.top)*k;inset.bottom+=(ti.bottom-inset.bottom)*k;
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];p.life-=dt;
+    if(p.life<=0){parts.splice(i,1);continue}
+    if(p.k==='b'){p.vy+=160*dt;p.px+=p.vx*dt;p.py+=p.vy*dt}
+    else if(p.k==='c'){p.px+=p.vx*dt;p.py+=p.vy*dt}
+  }
+  if(!G||paused)return;
+  if(demo){
+    if(G.phase==='play'){
+      if(G.path.length<G.n&&G.sd>=G.total-.5){G.path.push(G.st.opt[G.path.length]);rebuild()}
+    }else{G.wait-=dt;if(G.wait<=0){startDemo();return}}
+  }
+  if(G.phase!=='play')return;
+  if(G.sd<G.total)G.sd=Math.min(G.total,G.sd+SPEED*dt);
+  while(G.arrived<G.path.length&&G.sd>=G.cum[G.arrived+1]-1e-6){
+    G.arrived++;deliver(G.path[G.arrived-1]);
+  }
+  if(G.path.length===G.n&&G.arrived===G.n&&G.sd>=G.total-1e-6){
+    if(!demo)Snd.home();
+    finish();
+  }
+}
+
+/* ---------- 描画 ---------- */
+function drawHouse(c,x,y,u,body,roof,lit){
+  const hw=u*.62,bh=u*.62;
+  if(lit){const g=c.createRadialGradient(x,y+bh*.3,0,x,y+bh*.3,u*1.5);g.addColorStop(0,'rgba(255,209,102,.45)');g.addColorStop(1,'rgba(255,209,102,0)');c.fillStyle=g;c.fillRect(x-u*1.6,y-u*1.2,u*3.2,u*3.2)}
+  c.fillStyle=body;c.fillRect(x-hw,y-bh*.2,hw*2,bh*1.1);
+  c.fillStyle=roof;c.beginPath();c.moveTo(x-hw*1.28,y-bh*.2);c.lineTo(x,y-bh*1.35);c.lineTo(x+hw*1.28,y-bh*.2);c.closePath();c.fill();
+  c.fillStyle='rgba(255,255,255,.92)';c.beginPath();c.moveTo(x-hw*.5,y-bh*.78);c.lineTo(x,y-bh*1.35);c.lineTo(x+hw*.5,y-bh*.78);c.quadraticCurveTo(x,y-bh*.9,x-hw*.5,y-bh*.78);c.fill();
+  c.fillStyle=lit?'#ffd166':'#27345f';c.fillRect(x-hw*.27,y+bh*.08,hw*.54,bh*.52);
+}
+function drawStar(c,x,y,r){
+  c.beginPath();
+  for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;c.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}
+  c.closePath();c.fill();
+}
+function drawSled(c,x,y,dx,dy,k,t){
+  const flip=dx<0;
+  c.save();c.translate(x,y+(reduce?0:Math.sin(t*6)*1.2));
+  const raw=flip?Math.atan2(-dy,-dx):Math.atan2(dy,dx);
+  c.rotate(raw*.5);if(flip)c.scale(-1,1);
+  c.strokeStyle='#ffd166';c.lineWidth=1.2;c.beginPath();c.moveTo(k*1.2,0);c.lineTo(k*.55,k*.1);c.stroke();
+  c.fillStyle='#a0693c';c.beginPath();c.ellipse(k*1.55,0,k*.42,k*.27,0,0,6.3);c.fill();
+  c.beginPath();c.arc(k*1.95,-k*.2,k*.18,0,6.3);c.fill();
+  c.fillStyle='#e5484d';c.beginPath();c.arc(k*2.1,-k*.18,k*.07,0,6.3);c.fill();
+  c.strokeStyle='#ffd166';c.lineWidth=2;c.lineCap='round';c.beginPath();c.moveTo(-k*.85,k*.82);c.lineTo(k*.8,k*.82);c.quadraticCurveTo(k*1.2,k*.8,k*1.15,k*.5);c.stroke();
+  c.fillStyle='#e5484d';c.beginPath();c.moveTo(-k*.9,-k*.05);c.lineTo(k*.7,-k*.05);c.quadraticCurveTo(k*.85,k*.55,k*.35,k*.58);c.lineTo(-k*.7,k*.58);c.quadraticCurveTo(-k*1.02,k*.55,-k*.9,-k*.05);c.fill();
+  c.fillStyle='#3fae83';c.beginPath();c.arc(-k*.62,-k*.12,k*.28,0,6.3);c.fill();
+  c.fillStyle='#ffd9bd';c.beginPath();c.arc(-k*.05,-k*.38,k*.26,0,6.3);c.fill();
+  c.fillStyle='#fff';c.beginPath();c.arc(-k*.05,-k*.2,k*.16,0,6.3);c.fill();
+  c.fillStyle='#e5484d';c.beginPath();c.moveTo(-k*.32,-k*.5);c.lineTo(k*.22,-k*.5);c.lineTo(-k*.34,-k*1.06);c.closePath();c.fill();
+  c.fillStyle='#fff';c.fillRect(-k*.34,-k*.57,k*.58,k*.12);c.beginPath();c.arc(-k*.36,-k*1.08,k*.1,0,6.3);c.fill();
+  c.restore();
+}
+function strokePath(c,P){c.beginPath();P.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.stroke()}
+/* 毎フレームの描画: 夜空 → (ヒント) → そりの軌跡 → 家 → 作る画面の持ち手 → そり → 演出 → 雪 */
+function draw(t){
+  const c=cx;c.setTransform(DPR,0,0,DPR,0,0);c.lineCap='round';c.lineJoin='round';c.setLineDash([]);
+  const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#08102b');g.addColorStop(.6,'#13234f');g.addColorStop(1,'#223a78');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+  for(const s of SKY){c.globalAlpha=.4+(reduce?.2:.3*Math.sin(t*1.4+s.p));c.fillStyle='#eef4ff';c.beginPath();c.arc(s.x*W,s.y*H,s.r,0,6.3);c.fill()}
+  c.globalAlpha=1;
+  if(!G)return;
+  const L=lay(),X=x=>L.ox+x*L.s,Y=y=>L.oy+y*L.s,st=G.st;
+  c.globalAlpha=(scr==='game')?1:.85;
+  const P=G.pts.map(p=>[X(p.x),Y(p.y)]);
+  /* ヒント: 前回のルートのうち正しい部分を黄色の点線で見せる(軌跡より下の層) */
+  if(hintOn&&prevEdges&&G.phase==='play'&&!demo){
+    const pt=n=>n<0?[X(st.home.x),Y(st.home.y)]:[X(st.houses[n].x),Y(st.houses[n].y)];
+    c.strokeStyle='#ffd166';c.lineWidth=4.5;c.setLineDash([1,10]);
+    for(const[a,b]of prevEdges)strokePath(c,[pt(a),pt(b)]);
+    c.setLineDash([]);
+  }
+  if(P.length>1){
+    c.strokeStyle='rgba(255,209,102,.45)';c.lineWidth=2;c.setLineDash([6,8]);strokePath(c,P);c.setLineDash([]);
+    c.strokeStyle='#ffd166';c.lineWidth=3.5;c.shadowColor='rgba(255,209,102,.6)';c.shadowBlur=8;
+    c.beginPath();c.moveTo(P[0][0],P[0][1]);
+    for(let k=1;k<P.length;k++){
+      if(G.cum[k]<=G.sd)c.lineTo(P[k][0],P[k][1]);
+      else{const q=posAt(G.sd);c.lineTo(X(q.x),Y(q.y));break}
+    }
+    c.stroke();c.shadowBlur=0;
+  }
+  /* 作る画面で「答え」がオンのとき、最短ルートを緑の線で見せる(家より下の層に描く) */
+  const showAns=G.phase==='edit'&&ansOn&&st.houses.length>=MK_MIN;
+  if(showAns){
+    if(!ans)ans=solve([st.home,...st.houses]);
+    const R=[[X(st.home.x),Y(st.home.y)],...ans.order.map(i=>[X(st.houses[i].x),Y(st.houses[i].y)]),[X(st.home.x),Y(st.home.y)]];
+    c.strokeStyle='#3fae83';c.lineWidth=3.5;c.shadowColor='rgba(63,174,131,.7)';c.shadowBlur=8;
+    strokePath(c,R);c.shadowBlur=0;
+  }
+  const u=clamp(L.s*5,16,30); /* 家の大きさ(サンタの家は1.3倍) */
+  st.houses.forEach((h,i)=>{
+    const lit=G.order[i]>0,x=X(h.x),y=Y(h.y);
+    drawHouse(c,x,y,u,lit?'#ffe9a8':'#aeb9e0',lit?'#3fae83':'#6d7fc0',lit);
+    if(lit){c.fillStyle='rgba(238,244,255,.92)';c.font='700 16px "Zen Maru Gothic",sans-serif';c.textAlign='center';c.textBaseline='top';c.fillText(String(G.order[i]),x,y+u*.62)}
+  });
+  drawHouse(c,X(st.home.x),Y(st.home.y),u*1.3,'#f1d3a6','#e5484d',false);
+  c.fillStyle='#ffd166';drawStar(c,X(st.home.x),Y(st.home.y)-u*1.3*1.35-5,6);
+  /* 作る画面: 動かせるものに点線の輪をつけ、つかんでいるものは金色の実線にする */
+  if(G.phase==='edit'){
+    st.houses.forEach((h,i)=>{
+      const held=drag&&drag.kind==='house'&&drag.i===i;
+      c.setLineDash(held?[]:[3,4]);c.strokeStyle=held?'#ffd166':'rgba(238,244,255,.3)';c.lineWidth=held?2.6:1.6;
+      c.beginPath();c.arc(X(h.x),Y(h.y)-u*.1,u*(held?1.3:1.05),0,6.3);c.stroke();
+    });
+    const hh=drag&&drag.kind==='home';
+    c.setLineDash(hh?[]:[3,4]);c.strokeStyle=hh?'#ffd166':'rgba(238,244,255,.3)';c.lineWidth=hh?2.6:1.6;
+    c.beginPath();c.arc(X(st.home.x),Y(st.home.y)-u*.15,u*1.3*(hh?1.45:1.2),0,6.3);c.stroke();
+    c.setLineDash([]);
+    /* 答えの回る順番を、各家の下に番号で表示 */
+    if(showAns){
+      c.fillStyle='#8be8be';c.font='700 16px "Zen Maru Gothic",sans-serif';c.textAlign='center';c.textBaseline='top';
+      ans.order.forEach((hi,k)=>c.fillText(String(k+1),X(st.houses[hi].x),Y(st.houses[hi].y)+u*1.05));
+    }
+  }
+  const q=posAt(G.sd),kk=clamp(L.s*4.4,15,26); /* そりの大きさ */
+  drawSled(c,X(q.x),Y(q.y)-kk*.5,q.dx,q.dy,kk,t);
+  c.globalAlpha=1;
+  for(const p of parts){
+    const a=clamp(p.life/p.max,0,1);
+    if(p.k==='r'){c.globalAlpha=a;c.strokeStyle='#ffd166';c.lineWidth=2;c.beginPath();c.arc(X(p.ax),Y(p.ay),6+(1-a)*22,0,6.3);c.stroke()}
+    else if(p.k==='b'){c.globalAlpha=a;c.fillStyle=p.col;c.fillRect(X(p.ax)+p.px,Y(p.ay)+p.py,p.sz,p.sz)}
+    else{c.globalAlpha=Math.min(1,a*2);c.fillStyle=p.col;c.fillRect(p.px,p.py,p.sz,p.sz*.6)}
+  }
+  c.globalAlpha=.9;c.fillStyle='#eef4ff';
+  for(const f of FLAKES){
+    const fy=((f.y*H+(reduce?0:t*f.v))%(H+10)),fx=f.x*W+(reduce?0:Math.sin(t*.8+f.d)*12);
+    c.beginPath();c.arc(fx,fy,f.r,0,6.3);c.fill();
+  }
+  c.globalAlpha=1;
+}
+
+/* ---------- キャンバスの実測(拡大表示の再発防止) ---------- */
+function fit(){
+  const r=cv.getBoundingClientRect();
+  const w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height)),d=Math.min(window.devicePixelRatio||1,3);
+  if(w!==W||h!==H||d!==DPR){W=w;H=h;DPR=d;cv.width=Math.round(w*d);cv.height=Math.round(h*d)}
+}
+window.addEventListener('resize',fit);
+window.addEventListener('orientationchange',fit);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fit);
+if(window.ResizeObserver)new ResizeObserver(fit).observe($('app'));
+setInterval(fit,500);
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  fit();update(dt);draw(now/1000);
+  requestAnimationFrame(frame);
+}
+
+setSoundIcon();
+fit();
+showScreen('title');
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
